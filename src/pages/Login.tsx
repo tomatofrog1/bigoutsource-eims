@@ -151,15 +151,6 @@ export default function Login() {
                 <p className="text-[9px] text-[#6B7280]">Read Only</p>
               </button>
             </div>
-
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-              className="w-full py-2.5 px-3 bg-white border border-[#E5E7EB] hover:border-[#111827] rounded-xl transition-all text-xs font-bold text-[#374151] disabled:opacity-50"
-            >
-              Continue with Google Demo
-            </button>
           </form>
 
           <div className="mt-8 pt-8 border-t border-[#F3F4F6] text-center">
