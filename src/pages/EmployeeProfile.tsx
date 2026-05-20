@@ -152,6 +152,60 @@ export default function EmployeeProfile() {
                 </button>
               </div>
             </section>
+
+            <section className="bg-white rounded-2xl border border-[#E5E7EB] p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2 bg-[#F3F4F6] rounded-xl text-[#111827]">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-black text-[#111827]">Audit Log</h3>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  {
+                    user: 'Miguel Santos',
+                    action: 'Updated phone number',
+                    field: 'Phone Number',
+                    from: '+1 555-0100',
+                    to: employee.phone,
+                    time: 'Today, 10:42 AM',
+                  },
+                  {
+                    user: 'Admin User',
+                    action: 'Changed device assignment',
+                    field: 'PC Name',
+                    from: 'BO-DSK-00',
+                    to: employee.pcName,
+                    time: 'Yesterday, 4:18 PM',
+                  },
+                ].map((log, i) => (
+                  <div key={i} className="rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] p-5">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-[#111827]">{log.action}</p>
+                        <p className="text-xs font-bold text-[#6B7280] mt-1">by {log.user}</p>
+                      </div>
+                      <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-wider">{log.time}</p>
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-bold">
+                      <div>
+                        <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1">Field</p>
+                        <p className="text-[#111827]">{log.field}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1">Previous</p>
+                        <p className="text-[#9CA3AF] line-through">{log.from}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1">New Value</p>
+                        <p className="text-[#111827]">{log.to}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
 
           {/* Right Column: Security & Contact */}
