@@ -17,12 +17,12 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import logo from '../../public/logo-only-bigoutsource.svg';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['super_admin', 'hr_admin', 'it_admin', 'viewer'] },
-  { icon: Users, label: 'Employee Records', path: '/directory', roles: ['super_admin', 'hr_admin', 'it_admin', 'viewer'] },
-  { icon: Building2, label: 'Departments', path: '/departments', roles: ['super_admin', 'hr_admin', 'it_admin', 'viewer'] },
-  { icon: Laptop, label: 'IT Assets', path: '/assets', roles: ['super_admin', 'it_admin', 'viewer'] },
-  { icon: FileText, label: 'Reports', path: '/reports', roles: ['super_admin', 'hr_admin', 'it_admin'] },
-  { icon: History, label: 'Audit Logs', path: '/logs', roles: ['super_admin', 'hr_admin', 'it_admin'] },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin', 'viewer'] },
+  { icon: Users, label: 'Employee Records', path: '/directory', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin', 'viewer'] },
+  { icon: Building2, label: 'Departments', path: '/departments', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin', 'viewer'] },
+  { icon: Laptop, label: 'IT Assets', path: '/assets', roles: ['super_admin', 'admin', 'it_admin', 'viewer'] },
+  { icon: FileText, label: 'Reports', path: '/reports', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin'] },
+  { icon: History, label: 'Audit Logs', path: '/logs', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin'] },
   { icon: UsersRound, label: 'User Management', path: '/users', roles: ['super_admin'] },
   { icon: Settings, label: 'Settings', path: '/settings', roles: ['super_admin'] },
 ];

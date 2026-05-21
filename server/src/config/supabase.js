@@ -1,7 +1,22 @@
 import { env } from './env.js';
 import { AppError } from '../utils/apiResponse.js';
+import { createClient } from '@supabase/supabase-js';
 
 const restBaseUrl = `${env.supabase.url.replace(/\/$/, '')}/rest/v1`;
+
+export const supabaseAdmin = createClient(env.supabase.url, env.supabase.serviceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
+
+export const supabaseAuth = createClient(env.supabase.url, env.supabase.publishableKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
 
 function buildUrl(resource, searchParams = {}) {
   const url = new URL(`${restBaseUrl}/${resource}`);

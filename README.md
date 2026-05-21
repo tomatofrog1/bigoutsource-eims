@@ -45,12 +45,17 @@ Set the Supabase server credentials in `server/.env`:
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-JWT_SECRET=replace_with_a_long_random_secret
-ADMIN_EMAIL=admin@bigoutsource.com
-ADMIN_PASSWORD=Admin123!
+SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
+SEED_SUPER_ADMIN_EMAIL=admin@bigoutsource.com
+SEED_SUPER_ADMIN_PASSWORD=replace_with_a_strong_temporary_password
+SEED_SUPER_ADMIN_FULL_NAME=System Administrator
+SEED_SUPER_ADMIN_DEPARTMENT=Administration
+SEED_SUPER_ADMIN_SITE=HQ
 ```
 
 Keep the service-role key out of root `.env` and out of any `VITE_` variable.
+
+Run `server/sql/auth_setup.sql` in the Supabase SQL Editor before starting the API. It creates/updates `public.user_profiles` for pending account approvals.
 
 Start the API:
 

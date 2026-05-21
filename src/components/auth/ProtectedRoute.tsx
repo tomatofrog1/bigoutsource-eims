@@ -27,11 +27,17 @@ export default function ProtectedRoute({ roles }: ProtectedRouteProps) {
     return <Navigate to="/" replace />;
   }
 
-  if (user.status === 'disabled') {
+  if (user.status === 'pending' || user.status === 'disabled') {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-[#F9FAFB] p-4 text-center">
-        <h1 className="text-2xl font-bold text-[#EF4444] mb-2">Account Disabled</h1>
-        <p className="text-[#6B7280]">Your account has been deactivated. Please contact the Super Admin.</p>
+        <h1 className="text-2xl font-bold text-[#EF4444] mb-2">
+          {user.status === 'pending' ? 'Account Pending Approval' : 'Account Disabled'}
+        </h1>
+        <p className="text-[#6B7280]">
+          {user.status === 'pending'
+            ? 'Your account request is waiting for Super Admin approval.'
+            : 'Your account has been deactivated. Please contact the Super Admin.'}
+        </p>
       </div>
     );
   }

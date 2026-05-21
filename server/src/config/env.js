@@ -9,6 +9,8 @@ dotenv.config({ path: resolve(__dirname, '../../../.env'), quiet: true });
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const supabasePublishableKey =
+  process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || supabaseServiceRoleKey;
 
 const required = [
   ['SUPABASE_URL', supabaseUrl],
@@ -32,13 +34,13 @@ export const env = {
   supabase: {
     url: supabaseUrl,
     serviceRoleKey: supabaseServiceRoleKey,
+    publishableKey: supabasePublishableKey,
   },
-  jwt: {
-    secret: process.env.JWT_SECRET || 'development-only-change-me',
-    expiresIn: process.env.JWT_EXPIRES_IN || '1d',
-  },
-  admin: {
-    email: process.env.ADMIN_EMAIL || process.env.SEED_ADMIN_EMAIL || 'admin@bigoutsource.com',
-    password: process.env.ADMIN_PASSWORD || process.env.SEED_ADMIN_PASSWORD || '',
+  seedSuperAdmin: {
+    email: process.env.SEED_SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || '',
+    password: process.env.SEED_SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || '',
+    fullName: process.env.SEED_SUPER_ADMIN_FULL_NAME || 'System Administrator',
+    department: process.env.SEED_SUPER_ADMIN_DEPARTMENT || 'Administration',
+    site: process.env.SEED_SUPER_ADMIN_SITE || 'HQ',
   },
 };

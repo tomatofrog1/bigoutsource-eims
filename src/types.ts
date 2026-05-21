@@ -1,4 +1,4 @@
-export type UserRole = 'super_admin' | 'hr_admin' | 'it_admin' | 'viewer';
+export type UserRole = 'super_admin' | 'admin' | 'hr_admin' | 'it_admin' | 'viewer';
 export type EmployeeStatus = 'active' | 'inactive';
 
 export interface Employee {
@@ -28,7 +28,9 @@ export interface AppUser {
   uid: string;
   email: string;
   role: UserRole;
-  status: 'active' | 'disabled';
+  status: 'pending' | 'active' | 'disabled';
+  fullName?: string;
+  department?: string;
   site: string;
 }
 

@@ -22,14 +22,19 @@ cp .env.example .env
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-JWT_SECRET=replace_with_a_long_random_secret
-ADMIN_EMAIL=admin@bigoutsource.com
-ADMIN_PASSWORD=Admin123!
+SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
+SEED_SUPER_ADMIN_EMAIL=admin@bigoutsource.com
+SEED_SUPER_ADMIN_PASSWORD=replace_with_a_strong_temporary_password
+SEED_SUPER_ADMIN_FULL_NAME=System Administrator
+SEED_SUPER_ADMIN_DEPARTMENT=Administration
+SEED_SUPER_ADMIN_SITE=HQ
 ```
 
 Keep the service-role key only in `server/.env`. Do not expose it through a `VITE_` frontend variable.
 
-4. Start the API:
+4. Run `server/sql/auth_setup.sql` in the Supabase SQL Editor to create/update `public.user_profiles`.
+
+5. Start the API:
 
 ```bash
 npm run dev
@@ -66,8 +71,11 @@ updated_at timestamptz
 ## Main Endpoints
 
 - `POST /api/auth/login`
+- `POST /api/auth/register`
 - `GET /api/auth/me`
 - `POST /api/auth/logout`
+- `GET /api/users`
+- `PUT /api/users/:id/approve`
 - `GET /api/employees`
 - `POST /api/employees`
 - `PUT /api/employees/:id`

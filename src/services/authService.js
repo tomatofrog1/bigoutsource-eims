@@ -12,10 +12,11 @@ export const authService = {
   },
 
   async register(input) {
-    return apiRequest('/auth/register', {
+    const data = await apiRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify(input),
     });
+    return data.user;
   },
 
   me() {

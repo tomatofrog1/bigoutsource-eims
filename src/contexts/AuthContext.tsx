@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { AppUser, UserRole } from '../types';
+import { AppUser } from '../types';
 import toast from 'react-hot-toast';
 import { authService } from '../services/authService';
 import { clearAuthToken, getAuthToken } from '../services/api';
@@ -8,8 +8,7 @@ interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  loginAsDemo: (role: UserRole) => void;
+  register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
   isIT: boolean;
@@ -18,12 +17,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+interface RegisterInput {
+  email: string;
+  password: string;
+  fullName: string;
+  department: string;
+  site: string;
+}
+
 function toAppUser(apiUser: any): AppUser {
   return {
     uid: apiUser.id,
     email: apiUser.email,
+    fullName: apiUser.fullName,
     role: apiUser.role,
     status: apiUser.status,
+    department: apiUser.department || 'Unassigned',
     site: apiUser.site || 'Unassigned',
   };
 }
@@ -35,18 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function bootstrapSession() {
       const token = getAuthToken();
-      const savedDemoUser = localStorage.getItem('nexus_demo_user');
-
-      if (!token && savedDemoUser) {
-        try {
-          setUser(JSON.parse(savedDemoUser));
-        } catch (e) {
-          localStorage.removeItem('nexus_demo_user');
-        } finally {
-          setLoading(false);
-        }
-        return;
-      }
 
       if (!token) {
         setLoading(false);
@@ -70,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      localStorage.removeItem('nexus_demo_user');
       const apiUser = await authService.login(email, pass);
       setUser(toAppUser(apiUser));
       toast.success('Successfully logged in');
@@ -82,38 +78,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async () => {
-    // Simulated Google Login
-    const googleUser: AppUser = {
-      uid: 'google_user_demo',
-      email: 'google.demo@bigoutsource.com',
-      role: 'super_admin',
-      status: 'active',
-      site: 'HQ'
-    };
-    clearAuthToken();
-    setUser(googleUser);
-    localStorage.setItem('nexus_demo_user', JSON.stringify(googleUser));
-    toast.success('Successfully Signed in with Google (Demo)');
-  };
-
-  const loginAsDemo = (role: UserRole) => {
-    const demoUser: AppUser = {
-      uid: `demo_${role}`,
-      email: `${role.replace('_', '.')}@demo-bigoutsource.com`,
-      role: role,
-      status: 'active',
-      site: role === 'super_admin' ? 'HQ' : role === 'it_admin' ? 'Site A' : 'Remote'
-    };
-    clearAuthToken();
-    setUser(demoUser);
-    localStorage.setItem('nexus_demo_user', JSON.stringify(demoUser));
-    toast.success(`Logged in as Demo ${role.replace('_', ' ').toUpperCase()}`);
+  const register = async (input: RegisterInput) => {
+    setLoading(true);
+    try {
+      await authService.register(input);
+      toast.success('Account request submitted for approval');
+    } catch (error: any) {
+      toast.error(error.message || 'Registration failed');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = async () => {
     await authService.logout();
-    localStorage.removeItem('nexus_demo_user');
     setUser(null);
     toast.success('Logged out');
   };
@@ -122,12 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     login,
-    loginWithGoogle,
-    loginAsDemo,
+    register,
     logout,
-    isAdmin: user?.role === 'super_admin',
-    isIT: user?.role === 'super_admin' || user?.role === 'it_admin',
-    isHR: user?.role === 'super_admin' || user?.role === 'hr_admin',
+    isAdmin: user?.role === 'super_admin' || user?.role === 'admin',
+    isIT: user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'it_admin',
+    isHR: user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'hr_admin',
   };
 
   return (
