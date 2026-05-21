@@ -1,5 +1,5 @@
 export type UserRole = 'super_admin' | 'hr_admin' | 'it_admin' | 'viewer';
-export type EmployeeStatus = 'active' | 'inactive' | 'archive';
+export type EmployeeStatus = 'active' | 'inactive';
 
 export interface Employee {
   id: string;
@@ -18,7 +18,7 @@ export interface Employee {
   windowsKey: string;
   rustDeskId: string;
   remoteId: string;
-  esetStatus: 'Installed' | 'Missing' | 'Update Required';
+  esetStatus: 'Active' | 'Inactive';
   activityWatchStatus: 'Installed' | 'Missing';
   updatedAt: string;
   updatedBy: string;

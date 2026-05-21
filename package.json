@@ -10,10 +10,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "server:dev": "npm --prefix server run dev",
-    "server:start": "npm --prefix server start",
-    "server:db:create": "npm --prefix server run db:create",
-    "server:migrate": "npm --prefix server run migrate",
-    "server:seed": "npm --prefix server run seed"
+    "server:start": "npm --prefix server start"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

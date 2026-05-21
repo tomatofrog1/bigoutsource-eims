@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { UserModel } from '../models/user.model.js';
 import { AppError } from '../utils/apiResponse.js';
 
 export async function authenticate(req, res, next) {
@@ -13,13 +12,15 @@ export async function authenticate(req, res, next) {
 
     const token = header.split(' ')[1];
     const payload = jwt.verify(token, env.jwt.secret);
-    const user = await UserModel.findById(payload.sub);
-
-    if (!user || user.status !== 'active') {
-      throw new AppError('Invalid or inactive account', 401);
-    }
-
-    req.user = user;
+    req.user = {
+      id: payload.sub,
+      email: payload.email || env.admin.email,
+      status: 'active',
+      site: payload.site || 'HQ',
+      siteId: payload.site || 'HQ',
+      roles: payload.roles || [payload.role || 'viewer'],
+      role: payload.role || payload.roles?.[0] || 'viewer',
+    };
     return next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {

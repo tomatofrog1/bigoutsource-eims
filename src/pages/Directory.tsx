@@ -19,7 +19,6 @@ import { MOCK_EMPLOYEES, Employee } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 import { employeeService } from '@/src/services/employeeService';
 import { siteService } from '@/src/services/siteService';
-import { getAuthToken } from '@/src/services/api';
 
 type SiteOption = {
   id: string;
@@ -43,13 +42,13 @@ type AddEmployeeForm = {
   boEmail: string;
   emailPassword: string;
   lmsAccount: string;
-  status: 'active' | 'inactive' | 'archive';
+  status: 'active' | 'inactive';
   siteId: string;
   siteName: string;
   pcName: string;
   rustdeskId: string;
   remoteId: string;
-  esetStatus: 'installed' | 'missing' | 'update_required';
+  esetStatus: 'active' | 'inactive';
   biosDate: string;
   activityWatchStatus: 'installed' | 'missing';
   windowsKey: string;
@@ -71,16 +70,18 @@ const initialForm: AddEmployeeForm = {
   pcName: '',
   rustdeskId: '',
   remoteId: '',
-  esetStatus: 'missing',
+  esetStatus: 'inactive',
   biosDate: '',
   activityWatchStatus: 'missing',
   windowsKey: '',
 };
 
-function titleStatus(value?: string) {
-  if (value === 'installed') return 'Installed';
-  if (value === 'update_required') return 'Update Required';
-  return 'Missing';
+function titleEsetStatus(value?: string) {
+  return value === 'active' || value === 'Active' || value === 'installed' ? 'Active' : 'Inactive';
+}
+
+function titleActivityWatchStatus(value?: string) {
+  return value === 'installed' || value === 'Installed' ? 'Installed' : 'Missing';
 }
 
 function asArray(value: any) {
@@ -112,8 +113,8 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     rustDeskId: emp.rustDeskId || emp.rustdeskId || '',
     rustdeskId: emp.rustdeskId || emp.rustDeskId || '',
     remoteId: emp.remoteId || '',
-    esetStatus: titleStatus(emp.esetStatus) as Employee['esetStatus'],
-    activityWatchStatus: titleStatus(emp.activityWatchStatus) as Employee['activityWatchStatus'],
+    esetStatus: titleEsetStatus(emp.esetStatus || emp.eset) as Employee['esetStatus'],
+    activityWatchStatus: titleActivityWatchStatus(emp.activityWatchStatus || emp.activitywatch) as Employee['activityWatchStatus'],
     updatedAt: emp.updatedAt || '',
     updatedBy: emp.updatedBy || '',
   };
@@ -247,13 +248,8 @@ export default function Directory() {
   const handleAddEmployee = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
-      toast.error('First name, last name, account, and site are required');
-      return;
-    }
-
-    if (!getAuthToken()) {
-      toast.error('Demo login cannot add database records. Sign in with a server account first.');
+    if (!form.employeeNumber.trim() || !form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
+      toast.error('ID, first name, last name, account, and site are required');
       return;
     }
 
@@ -332,7 +328,6 @@ export default function Directory() {
                 <option value="All">All Status</option>
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
-                <option value="Archive">Archive</option>
               </select>
             </div>
           </div>
@@ -401,7 +396,7 @@ export default function Directory() {
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1.5">
-                        <div className={cn('w-1.5 h-1.5 rounded-full', emp.esetStatus === 'Installed' ? 'bg-green-500' : 'bg-red-500')} />
+                        <div className={cn('w-1.5 h-1.5 rounded-full', emp.esetStatus === 'Active' ? 'bg-green-500' : 'bg-red-500')} />
                         <span className="text-[10px] font-bold text-[#6B7280] uppercase">ESET</span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -471,8 +466,8 @@ export default function Directory() {
 
             <form onSubmit={handleAddEmployee} className="overflow-y-auto max-h-[calc(92vh-81px)]">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-                <Field label="ID">
-                  <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="Optional employee ID" />
+                <Field label="ID" required>
+                  <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="BOSS00045" />
                 </Field>
                 <Field label="First Name" required>
                   <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="First name" />
@@ -496,7 +491,6 @@ export default function Directory() {
                   <Select value={form.status} onChange={(value) => updateForm('status', value)}>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
-                    <option value="archive">Archive</option>
                   </Select>
                 </Field>
                 <Field label="Site" required>
@@ -520,9 +514,8 @@ export default function Directory() {
                 </Field>
                 <Field label="ESET">
                   <Select value={form.esetStatus} onChange={(value) => updateForm('esetStatus', value)}>
-                    <option value="missing">Missing</option>
-                    <option value="installed">Installed</option>
-                    <option value="update_required">Update Required</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="active">Active</option>
                   </Select>
                 </Field>
                 <Field label="BIOS Date">

@@ -1,6 +1,6 @@
 # Employee Tracker API
 
-Node.js, Express, and PostgreSQL backend for the Employee Tracking System.
+Node.js and Express backend for the Employee Tracking System, backed by the Supabase `employees` table.
 
 ## Setup
 
@@ -11,29 +11,25 @@ cd server
 npm install
 ```
 
-2. Create a PostgreSQL database:
-
-```sql
-CREATE DATABASE employee_tracker;
-```
-
-3. Copy environment variables:
+2. Copy environment variables:
 
 ```bash
 cp .env.example .env
 ```
 
-4. Update `.env` with your local database credentials and a strong `JWT_SECRET`.
+3. Update `.env`:
 
-5. Create the database, then run migrations and seeds:
-
-```bash
-npm run db:create
-npm run migrate
-npm run seed
+```env
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+JWT_SECRET=replace_with_a_long_random_secret
+ADMIN_EMAIL=admin@bigoutsource.com
+ADMIN_PASSWORD=Admin123!
 ```
 
-6. Start the API:
+Keep the service-role key only in `server/.env`. Do not expose it through a `VITE_` frontend variable.
+
+4. Start the API:
 
 ```bash
 npm run dev
@@ -41,25 +37,41 @@ npm run dev
 
 Default API URL: `http://localhost:5000`
 
-## Seed Admin
+## Supabase Table
 
-The seed script creates one Super Admin user from:
+The server expects a single `employees` table with these columns:
 
-- `SEED_ADMIN_EMAIL`
-- `SEED_ADMIN_PASSWORD`
-
-Defaults are shown in `.env.example`.
+```sql
+id text primary key,
+name text not null,
+account text not null,
+site text not null,
+phone_number text,
+address text,
+bigoutsource_email text,
+email_password text,
+lms_account text,
+status text,
+pc_name text,
+rustdesk_id text,
+remote_id text,
+eset text,
+bios_date date,
+activitywatch text,
+windows_license_key text,
+created_at timestamptz,
+updated_at timestamptz
+```
 
 ## Main Endpoints
 
 - `POST /api/auth/login`
-- `POST /api/auth/register`
 - `GET /api/auth/me`
 - `POST /api/auth/logout`
 - `GET /api/employees`
 - `POST /api/employees`
+- `PUT /api/employees/:id`
+- `DELETE /api/employees/:id`
 - `GET /api/sites`
 - `GET /api/devices`
-- `POST /api/device-assignments`
-- `PUT /api/device-assignments/:id/return`
 - `GET /api/audit-logs`

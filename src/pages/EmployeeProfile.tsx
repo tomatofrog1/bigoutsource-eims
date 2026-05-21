@@ -44,7 +44,7 @@ type EmployeeForm = {
   boEmail: string;
   emailPassword: string;
   lmsAccount: string;
-  status: 'active' | 'inactive' | 'archive';
+  status: 'active' | 'inactive';
   siteId: string;
   site: string;
   pcName: string;
@@ -52,7 +52,7 @@ type EmployeeForm = {
   windowsKey: string;
   rustdeskId: string;
   remoteId: string;
-  esetStatus: 'installed' | 'missing' | 'update_required';
+  esetStatus: 'active' | 'inactive';
   activityWatchStatus: 'installed' | 'missing';
 };
 
@@ -73,7 +73,7 @@ const emptyEmployee: EmployeeForm = {
   windowsKey: '',
   rustdeskId: '',
   remoteId: '',
-  esetStatus: 'missing',
+  esetStatus: 'inactive',
   activityWatchStatus: 'missing',
 };
 
@@ -96,11 +96,8 @@ const editableFields: Array<keyof EmployeeForm> = [
   'activityWatchStatus',
 ];
 
-function normalizeStatus(value?: string): EmployeeForm['esetStatus'] {
-  if (value === 'Installed') return 'installed';
-  if (value === 'Update Required') return 'update_required';
-  if (value === 'installed' || value === 'update_required') return value;
-  return 'missing';
+function normalizeEsetStatus(value?: string): EmployeeForm['esetStatus'] {
+  return value === 'Active' || value === 'active' || value === 'installed' ? 'active' : 'inactive';
 }
 
 function normalizeActivityWatch(value?: string): EmployeeForm['activityWatchStatus'] {
@@ -108,9 +105,7 @@ function normalizeActivityWatch(value?: string): EmployeeForm['activityWatchStat
 }
 
 function formatStatus(value: string) {
-  if (value === 'installed') return 'Installed';
-  if (value === 'update_required') return 'Update Required';
-  return 'Missing';
+  return value === 'active' ? 'Active' : 'Inactive';
 }
 
 function generateLmsAccount(fullName = '') {
@@ -173,7 +168,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     windowsKey: emp?.windowsKey || '',
     rustdeskId: emp?.rustdeskId || emp?.rustDeskId || '',
     remoteId: emp?.remoteId || '',
-    esetStatus: normalizeStatus(emp?.esetStatus),
+    esetStatus: normalizeEsetStatus(emp?.esetStatus || emp?.eset),
     activityWatchStatus: normalizeActivityWatch(emp?.activityWatchStatus),
   };
 }
@@ -409,7 +404,6 @@ export default function EmployeeProfile() {
                     <Select value={form.status} onChange={(value) => updateForm('status', value)}>
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
-                      <option value="archive">Archive</option>
                     </Select>
                   ) : (
                     employee.status.toUpperCase()
@@ -480,12 +474,11 @@ export default function EmployeeProfile() {
                   label="ESET Status"
                   value={formatStatus(employee.esetStatus)}
                   editing={isEditing}
-                  status={employee.esetStatus === 'installed'}
+                  status={employee.esetStatus === 'active'}
                 >
                   <Select value={form.esetStatus} onChange={(value) => updateForm('esetStatus', value)}>
-                    <option value="missing">Missing</option>
-                    <option value="installed">Installed</option>
-                    <option value="update_required">Update Required</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="active">Active</option>
                   </Select>
                 </ComplianceField>
                 <ComplianceField

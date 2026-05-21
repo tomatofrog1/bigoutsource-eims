@@ -14,9 +14,10 @@ export const DeviceService = {
   },
 
   async create(data, user, meta = {}) {
-    const device = await DeviceModel.create(data, user.id);
+    const device = await DeviceModel.create(data);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: user?.id || 'system',
+      userEmail: user?.email || 'System',
       action: 'device.create',
       entityType: 'devices',
       entityId: device.id,
@@ -27,10 +28,11 @@ export const DeviceService = {
   },
 
   async update(id, data, user, meta = {}) {
-    const device = await DeviceModel.update(id, data, user.id);
+    const device = await DeviceModel.update(id, data);
     if (!device) throw new AppError('Device not found', 404);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: user?.id || 'system',
+      userEmail: user?.email || 'System',
       action: 'device.update',
       entityType: 'devices',
       entityId: id,
@@ -43,7 +45,8 @@ export const DeviceService = {
     const removed = await DeviceModel.remove(id);
     if (!removed) throw new AppError('Device not found', 404);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: user?.id || 'system',
+      userEmail: user?.email || 'System',
       action: 'device.delete',
       entityType: 'devices',
       entityId: id,
@@ -52,9 +55,10 @@ export const DeviceService = {
   },
 
   async assign(data, user, meta = {}) {
-    const assignment = await DeviceModel.assign(data, user.id);
+    const assignment = await DeviceModel.assign(data);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: user?.id || 'system',
+      userEmail: user?.email || 'System',
       action: 'device.assign',
       entityType: 'device_assignments',
       entityId: assignment.id,
@@ -65,10 +69,11 @@ export const DeviceService = {
   },
 
   async returnAssignment(id, user, meta = {}) {
-    const assignment = await DeviceModel.returnAssignment(id, user.id);
+    const assignment = await DeviceModel.returnAssignment(id);
     if (!assignment) throw new AppError('Active assignment not found', 404);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: user?.id || 'system',
+      userEmail: user?.email || 'System',
       action: 'device.return',
       entityType: 'device_assignments',
       entityId: id,

@@ -11,15 +11,6 @@ export const AuthController = {
     }
   },
 
-  async register(req, res, next) {
-    try {
-      const user = await AuthService.register(req.body, req.user, { ipAddress: req.ip });
-      return success(res, user, 'User registered', 201);
-    } catch (error) {
-      return next(error);
-    }
-  },
-
   async me(req, res, next) {
     try {
       return success(res, AuthService.me(req.user));

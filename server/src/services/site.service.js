@@ -10,7 +10,8 @@ export const SiteService = {
   async create(data, user, meta = {}) {
     const site = await SiteModel.create(data);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: user?.id || 'system',
+      userEmail: user?.email || 'System',
       action: 'site.create',
       entityType: 'sites',
       entityId: site.id,
@@ -24,7 +25,8 @@ export const SiteService = {
     const site = await SiteModel.update(id, data);
     if (!site) throw new AppError('Site not found', 404);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: user?.id || 'system',
+      userEmail: user?.email || 'System',
       action: 'site.update',
       entityType: 'sites',
       entityId: id,
@@ -37,7 +39,8 @@ export const SiteService = {
     const removed = await SiteModel.remove(id);
     if (!removed) throw new AppError('Site not found', 404);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: user?.id || 'system',
+      userEmail: user?.email || 'System',
       action: 'site.delete',
       entityType: 'sites',
       entityId: id,

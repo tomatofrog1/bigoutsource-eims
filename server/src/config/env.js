@@ -1,11 +1,22 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
-dotenv.config();
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const required = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'JWT_SECRET'];
+dotenv.config({ path: resolve(__dirname, '../../.env'), quiet: true });
+dotenv.config({ path: resolve(__dirname, '../../../.env'), quiet: true });
 
-for (const key of required) {
-  if (!process.env[key]) {
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+const required = [
+  ['SUPABASE_URL', supabaseUrl],
+  ['SUPABASE_SERVICE_ROLE_KEY', supabaseServiceRoleKey],
+];
+
+for (const [key, value] of required) {
+  if (!value) {
     throw new Error(`Missing required environment variable: ${key}`);
   }
 }
@@ -18,16 +29,16 @@ export const env = {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
-  db: {
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT || 5432),
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  supabase: {
+    url: supabaseUrl,
+    serviceRoleKey: supabaseServiceRoleKey,
   },
   jwt: {
-    secret: process.env.JWT_SECRET,
+    secret: process.env.JWT_SECRET || 'development-only-change-me',
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+  },
+  admin: {
+    email: process.env.ADMIN_EMAIL || process.env.SEED_ADMIN_EMAIL || 'admin@bigoutsource.com',
+    password: process.env.ADMIN_PASSWORD || process.env.SEED_ADMIN_PASSWORD || '',
   },
 };

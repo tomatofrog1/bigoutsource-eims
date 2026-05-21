@@ -1,71 +1,45 @@
-import { query } from '../config/db.js';
+import { randomUUID } from 'node:crypto';
+
+const auditLogs = [];
+
+function matchesText(value, search) {
+  return String(value || '').toLowerCase().includes(String(search || '').toLowerCase());
+}
 
 export const AuditLogModel = {
-  async create({ userId, action, entityType, entityId = null, details = {}, ipAddress = null }) {
-    const result = await query(
-      `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [userId, action, entityType, entityId, details, ipAddress]
-    );
-    return result.rows[0];
+  async create({ userId, userEmail = 'System', action, entityType, entityId = null, details = {}, ipAddress = null }) {
+    const log = {
+      id: randomUUID(),
+      userId,
+      userEmail,
+      action,
+      entityType,
+      entityId,
+      details,
+      ipAddress,
+      createdAt: new Date().toISOString(),
+    };
+
+    auditLogs.unshift(log);
+    return log;
   },
 
   async findAll(filters = {}) {
-    const conditions = [];
-    const params = [];
-
-    if (filters.entityType) {
-      params.push(filters.entityType);
-      conditions.push(`al.entity_type = $${params.length}`);
-    }
-
-    if (filters.entityId) {
-      params.push(filters.entityId);
-      conditions.push(`al.entity_id = $${params.length}`);
-    }
-
-    if (filters.action) {
-      params.push(`%${filters.action}%`);
-      conditions.push(`al.action ILIKE $${params.length}`);
-    }
-
-    if (filters.userEmail) {
-      params.push(`%${filters.userEmail}%`);
-      conditions.push(`u.email ILIKE $${params.length}`);
-    }
-
-    if (filters.search) {
-      params.push(`%${filters.search}%`);
-      conditions.push(`(
-        al.action ILIKE $${params.length}
-        OR al.entity_type ILIKE $${params.length}
-        OR u.email ILIKE $${params.length}
-        OR al.details::text ILIKE $${params.length}
-      )`);
-    }
-
     const limit = Math.min(Number(filters.limit || 500), 1000);
-    params.push(limit);
 
-    const result = await query(
-      `SELECT
-         al.id,
-         al.user_id AS "userId",
-         al.action,
-         al.entity_type AS "entityType",
-         al.entity_id AS "entityId",
-         al.details,
-         al.ip_address AS "ipAddress",
-         al.created_at AS "createdAt",
-         u.email AS "userEmail"
-       FROM audit_logs al
-       LEFT JOIN users u ON u.id = al.user_id
-       ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
-       ORDER BY al.created_at DESC
-       LIMIT $${params.length}`,
-      params
-    );
-    return result.rows;
+    return auditLogs
+      .filter((log) => !filters.entityType || log.entityType === filters.entityType)
+      .filter((log) => !filters.entityId || log.entityId === filters.entityId)
+      .filter((log) => !filters.action || matchesText(log.action, filters.action))
+      .filter((log) => !filters.userEmail || matchesText(log.userEmail, filters.userEmail))
+      .filter(
+        (log) =>
+          !filters.search ||
+          matchesText(log.action, filters.search) ||
+          matchesText(log.entityType, filters.search) ||
+          matchesText(log.userEmail, filters.search) ||
+          matchesText(JSON.stringify(log.details), filters.search)
+      )
+      .slice(0, limit);
   },
 };

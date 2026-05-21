@@ -1,41 +1,37 @@
-import { query } from '../config/db.js';
+import { SITE_OPTIONS } from './employee.model.js';
 
 export const SiteModel = {
   async findAll() {
-    const result = await query(
-      `SELECT id, name, code, address, is_active AS "isActive", created_at AS "createdAt", updated_at AS "updatedAt"
-       FROM sites
-       ORDER BY name ASC`
-    );
-    return result.rows;
+    return SITE_OPTIONS.map((name) => ({
+      id: name,
+      name,
+      code: name.toUpperCase().replace(/\s+/g, '_'),
+      address: null,
+      isActive: true,
+    }));
   },
 
   async create(data) {
-    const result = await query(
-      `INSERT INTO sites (name, code, address, is_active)
-       VALUES ($1, $2, $3, COALESCE($4, TRUE))
-       RETURNING id, name, code, address, is_active AS "isActive", created_at AS "createdAt", updated_at AS "updatedAt"`,
-      [data.name, data.code || null, data.address || null, data.isActive]
-    );
-    return result.rows[0];
+    return {
+      id: data.name,
+      name: data.name,
+      code: data.code || data.name?.toUpperCase().replace(/\s+/g, '_'),
+      address: data.address || null,
+      isActive: data.isActive ?? true,
+    };
   },
 
   async update(id, data) {
-    const result = await query(
-      `UPDATE sites
-       SET name = COALESCE($2, name),
-           code = COALESCE($3, code),
-           address = COALESCE($4, address),
-           is_active = COALESCE($5, is_active)
-       WHERE id = $1
-       RETURNING id, name, code, address, is_active AS "isActive", created_at AS "createdAt", updated_at AS "updatedAt"`,
-      [id, data.name, data.code, data.address, data.isActive]
-    );
-    return result.rows[0] || null;
+    return {
+      id,
+      name: data.name || id,
+      code: data.code || id.toUpperCase().replace(/\s+/g, '_'),
+      address: data.address || null,
+      isActive: data.isActive ?? true,
+    };
   },
 
-  async remove(id) {
-    const result = await query('DELETE FROM sites WHERE id = $1', [id]);
-    return result.rowCount > 0;
+  async remove() {
+    return true;
   },
 };

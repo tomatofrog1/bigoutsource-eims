@@ -22,6 +22,12 @@ const trackedFields = [
   'activityWatchStatus',
 ];
 
+const systemUser = {
+  id: 'system',
+  email: 'System',
+  roles: ['super_admin'],
+};
+
 function comparable(value) {
   if (value === undefined || value === null) return '';
   if (value instanceof Date) return value.toISOString().slice(0, 10);
@@ -50,13 +56,20 @@ export const EmployeeService = {
   },
 
   async create(data, user, meta = {}) {
-    if (!data.siteId && !data.siteName) {
+    const actor = user || systemUser;
+
+    if (!data.employeeNumber && !data.employeeId && !data.id) {
+      throw new AppError('id is required', 400);
+    }
+
+    if (!data.siteId && !data.siteName && !data.site) {
       throw new AppError('site is required', 400);
     }
 
-    const employee = await EmployeeModel.create(data, user.id);
+    const employee = await EmployeeModel.create(data);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: actor.id,
+      userEmail: actor.email,
       action: 'employee.create',
       entityType: 'employees',
       entityId: employee.id,
@@ -72,15 +85,17 @@ export const EmployeeService = {
   },
 
   async update(id, data, user, meta = {}) {
+    const actor = user || systemUser;
     const before = await EmployeeModel.findById(id);
     if (!before) throw new AppError('Employee not found', 404);
 
-    const employee = await EmployeeModel.update(id, data, user.id);
+    const employee = await EmployeeModel.update(id, data);
     if (!employee) throw new AppError('Employee not found', 404);
 
     const changes = diffEmployee(before, employee);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: actor.id,
+      userEmail: actor.email,
       action: 'employee.update',
       entityType: 'employees',
       entityId: id,
@@ -95,10 +110,12 @@ export const EmployeeService = {
   },
 
   async remove(id, user, meta = {}) {
+    const actor = user || systemUser;
     const removed = await EmployeeModel.remove(id);
     if (!removed) throw new AppError('Employee not found', 404);
     await AuditLogModel.create({
-      userId: user.id,
+      userId: actor.id,
+      userEmail: actor.email,
       action: 'employee.delete',
       entityType: 'employees',
       entityId: id,

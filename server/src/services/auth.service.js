@@ -1,9 +1,7 @@
-import { transaction } from '../config/db.js';
-import { UserModel } from '../models/user.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
-import { comparePassword, hashPassword } from '../utils/hashPassword.js';
 import { generateToken } from '../utils/generateToken.js';
 import { AppError } from '../utils/apiResponse.js';
+import { env } from '../config/env.js';
 
 function publicUser(user) {
   return {
@@ -19,20 +17,24 @@ function publicUser(user) {
 
 export const AuthService = {
   async login({ email, password }, meta = {}) {
-    const user = await UserModel.findByEmail(email);
-
-    if (!user || !(await comparePassword(password, user.passwordHash))) {
+    if (!env.admin.password || email.toLowerCase() !== env.admin.email.toLowerCase() || password !== env.admin.password) {
       throw new AppError('Invalid email or password', 401);
     }
 
-    if (user.status !== 'active') {
-      throw new AppError('Account is disabled', 403);
-    }
+    const user = {
+      id: 'admin',
+      email: env.admin.email,
+      status: 'active',
+      site: 'HQ',
+      siteId: 'HQ',
+      roles: ['super_admin'],
+    };
 
-    const token = generateToken({ sub: user.id, roles: user.roles });
+    const token = generateToken({ sub: user.id, email: user.email, roles: user.roles, role: user.roles[0], site: user.site });
 
     await AuditLogModel.create({
       userId: user.id,
+      userEmail: user.email,
       action: 'auth.login',
       entityType: 'users',
       entityId: user.id,
@@ -40,29 +42,6 @@ export const AuthService = {
     });
 
     return { token, user: publicUser(user) };
-  },
-
-  async register({ email, password, role = 'viewer', siteId = null }, actor, meta = {}) {
-    if (!actor.roles.includes('super_admin')) {
-      throw new AppError('Only Super Admin can register users', 403);
-    }
-
-    const existing = await UserModel.findByEmail(email);
-    if (existing) throw new AppError('Email is already registered', 409);
-
-    const passwordHash = await hashPassword(password);
-    const user = await transaction((client) => UserModel.create({ email, passwordHash, siteId, role }, client));
-
-    await AuditLogModel.create({
-      userId: actor.id,
-      action: 'auth.register',
-      entityType: 'users',
-      entityId: user.id,
-      details: { email, role },
-      ipAddress: meta.ipAddress,
-    });
-
-    return publicUser(user);
   },
 
   me(user) {

@@ -7,7 +7,7 @@ export const createDeviceValidator = {
   windowsKey: { required: false, type: 'string' },
   rustdeskId: { required: false, type: 'string' },
   remoteId: { required: false, type: 'string' },
-  esetStatus: { required: false, type: 'string', enum: ['installed', 'missing', 'update_required'] },
+  esetStatus: { required: false, type: 'string', enum: ['active', 'inactive'] },
   activityWatchStatus: { required: false, type: 'string', enum: ['installed', 'missing'] },
   status: { required: false, type: 'string', enum: ['available', 'assigned', 'repair', 'retired'] },
   siteId: { required: false, type: 'string' },

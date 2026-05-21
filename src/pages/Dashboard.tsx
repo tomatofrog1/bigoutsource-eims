@@ -64,7 +64,7 @@ export default function Dashboard() {
     return [
       { label: 'Total Personnel', value: employees.length, icon: Users },
       { label: 'Active Staff', value: active, icon: UserCheck },
-      { label: 'Inactive/Archive', value: inactive, icon: UserMinus },
+      { label: 'Inactive Staff', value: inactive, icon: UserMinus },
       { label: 'Assigned Assets', value: assigned, icon: Laptop },
     ];
   }, [employees, devices]);
@@ -72,8 +72,8 @@ export default function Dashboard() {
   const securityAlerts = useMemo(
     () => [
       {
-        label: 'Missing ESET',
-        value: devices.filter((device) => device.esetStatus === 'missing' || device.esetStatus === 'Missing').length,
+        label: 'Inactive ESET',
+        value: devices.filter((device) => device.esetStatus === 'inactive' || device.esetStatus === 'Inactive').length,
         color: 'text-red-600',
         bg: 'bg-red-50',
       },
