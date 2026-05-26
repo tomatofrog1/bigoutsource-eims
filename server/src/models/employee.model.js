@@ -79,7 +79,9 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (valueFrom(data, 'windowsKey', 'windowsLicenseKey') !== undefined) {
     payload.windows_license_key = blankToNull(valueFrom(data, 'windowsKey', 'windowsLicenseKey'));
   }
-
+  if (data?.is_archived !== undefined) {
+  payload.is_archived = data.is_archived;
+  }
   return payload;
 }
 
@@ -115,6 +117,7 @@ function normalize(row) {
     eset: row.eset || 'inactive',
     activityWatchStatus: row.activitywatch || 'missing',
     activitywatch: row.activitywatch || 'missing',
+    isArchived: row.is_archived ?? false,
     createdAt: row.created_at || '',
     updatedAt: row.updated_at || '',
   };

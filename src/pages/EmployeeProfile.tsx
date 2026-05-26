@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { ElementType, ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
+  Archive,
   ArrowLeft,
   Briefcase,
   Calendar,
@@ -16,6 +17,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  RotateCcw,
   Save,
   ShieldAlert,
   ShieldCheck,
@@ -54,6 +56,7 @@ type EmployeeForm = {
   remoteId: string;
   esetStatus: 'active' | 'inactive';
   activityWatchStatus: 'installed' | 'missing';
+  isArchived?: boolean;
 };
 
 const emptyEmployee: EmployeeForm = {
@@ -75,6 +78,7 @@ const emptyEmployee: EmployeeForm = {
   remoteId: '',
   esetStatus: 'inactive',
   activityWatchStatus: 'missing',
+  isArchived: false,
 };
 
 const editableFields: Array<keyof EmployeeForm> = [
@@ -170,6 +174,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     remoteId: emp?.remoteId || '',
     esetStatus: normalizeEsetStatus(emp?.esetStatus || emp?.eset),
     activityWatchStatus: normalizeActivityWatch(emp?.activityWatchStatus),
+    isArchived: emp?.is_archived ?? false,
   };
 }
 
@@ -183,6 +188,9 @@ export default function EmployeeProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [archiveIntent, setArchiveIntent] = useState<'archive' | 'unarchive' | null>(null);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
 
   const hasChanges = useMemo(
@@ -296,6 +304,36 @@ export default function EmployeeProfile() {
     }
   };
 
+  const toggleArchiveEmployee = async () => {
+    if (!id) return;
+
+    setIsArchiving(true);
+
+    try {
+      const newValue = !employee.isArchived;
+
+      const updated = await employeeService.update(id, {
+        ...employee,
+        is_archived: newValue,
+      });
+
+      const normalized = normalizeEmployee(updated);
+
+      setEmployee(normalized);
+      setForm(normalized);
+
+      toast.success(newValue ? 'Employee archived' : 'Employee unarchived');
+
+      setShowArchiveModal(false);
+      setArchiveIntent(null);
+    } catch (error: any) {
+      console.error('Archive error:', error);
+      toast.error(error.message || 'Unable to update archive status');
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <PageLayout title="Employee Profile">
@@ -334,10 +372,27 @@ export default function EmployeeProfile() {
                 </div>
               ) : (
                 <div>
-                  <h2 className="text-3xl font-black text-[#111827] tracking-tight">{employee.fullName || 'Unnamed Employee'}</h2>
-                  <p className="text-[#6B7280] font-bold mt-1 uppercase text-xs tracking-widest">
-                    {employee.employeeNumber || 'No ID'} | {employee.site || 'Unassigned'}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-3xl font-black text-[#111827] tracking-tight">
+                        {employee.fullName || 'Unnamed Employee'}
+                      </h2>
+
+                      {employee.isArchived ? (
+                        <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold border border-red-200">
+                          Archived
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold border border-green-200">
+                          Active
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-[#6B7280] font-bold mt-1 uppercase text-xs tracking-widest">
+                      {employee.employeeNumber || 'No ID'} | {employee.site || 'Unassigned'}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -364,14 +419,41 @@ export default function EmployeeProfile() {
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={startEditing}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
-                >
-                  <Edit className="w-4 h-4" />
-                  Update Record
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={startEditing}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Update Record
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
+                      setShowArchiveModal(true);
+                    }}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg ${
+                      employee.isArchived
+                        ? "bg-green-600 text-white hover:bg-green-700 shadow-green-500/20"
+                        : "bg-red-600 text-white hover:bg-red-700 shadow-red-500/20"
+                    }`}
+                  >
+                    {employee.isArchived ? (
+                      <>
+                        <RotateCcw className="w-4 h-4" />
+                        Unarchive
+                      </>
+                    ) : (
+                      <>
+                        <Archive className="w-4 h-4" />
+                        Archive
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -531,6 +613,67 @@ export default function EmployeeProfile() {
           </div>
         </div>
       </form>
+
+      {showArchiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md bg-white rounded-3xl border border-[#E5E7EB] shadow-2xl p-6">
+            <div className="flex items-start gap-4">
+              <div
+                className={`p-3 rounded-2xl ${
+                  employee.isArchived
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-red-100 text-red-600'
+                }`}
+              >
+                <Archive className="w-6 h-6" />
+              </div>
+
+              <div className="flex-1">
+                <h3 className="text-lg font-black text-[#111827]">
+                  {archiveIntent === 'unarchive' ? 'Unarchive Employee' : 'Archive Employee'}
+                </h3>
+
+                <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
+                  Are you sure you want to{' '}
+                  <span className="font-bold text-[#111827]">
+                    {archiveIntent === 'unarchive' ? 'unarchive' : 'archive'} {employee.fullName}
+                  </span>
+                  ? This employee will be removed from the active directory.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowArchiveModal(false);
+                  setArchiveIntent(null);
+                }}
+                disabled={isArchiving}
+                className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827]"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleArchiveEmployee}
+                disabled={isArchiving}
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 disabled:opacity-50"
+              >
+                {isArchiving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Archive className="w-4 h-4" />
+                )}
+
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   );
 }
