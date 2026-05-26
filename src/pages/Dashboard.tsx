@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowUpRight, Clock, Laptop, MapPin, UserCheck, UserMinus, Users } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, Clock, Laptop, MapPin, UserCheck, UserMinus, Users, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
@@ -57,17 +57,23 @@ export default function Dashboard() {
   }, []);
 
   const stats = useMemo(() => {
-    const active = employees.filter((employee) => employee.status === 'active').length;
-    const inactive = employees.filter((employee) => employee.status !== 'active').length;
     const assigned = devices.filter((device) => device.status === 'assigned').length;
+    const onSite = employees.filter((employee) => employee.site === 'HQ' || employee.site === 'Candelaria').length;
 
     return [
       { label: 'Total Personnel', value: employees.length, icon: Users },
-      { label: 'Active Staff', value: active, icon: UserCheck },
-      { label: 'Inactive Staff', value: inactive, icon: UserMinus },
+      { label: 'On-Site Personnel', value: onSite, icon: Building2 },
       { label: 'Assigned Assets', value: assigned, icon: Laptop },
     ];
   }, [employees, devices]);
+
+  // Static data for pie chart (will be connected to database later)
+  const staffStatus = useMemo(() => {
+    return {
+      active: 32,
+      inactive: 8,
+    };
+  }, []);
 
   const securityAlerts = useMemo(
     () => [
@@ -105,7 +111,7 @@ export default function Dashboard() {
 
   return (
     <PageLayout title="System Overview">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm">
             <div className="flex items-center justify-between mb-4">
@@ -121,6 +127,69 @@ export default function Dashboard() {
             <p className="text-3xl font-black text-[#111827] mt-1">{isLoading ? '...' : stat.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Staff Status Pie Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm">
+          <h3 className="text-lg font-bold text-[#111827] mb-6 flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-[#9CA3AF]" />
+            Staff Status Distribution
+          </h3>
+          <div className="flex items-center justify-center">
+            <svg width="200" height="200" viewBox="0 0 200 200" className="mb-6">
+              {/* Pie Chart Background Circle */}
+              <circle cx="100" cy="100" r="80" fill="none" stroke="#E5E7EB" strokeWidth="8" />
+              {/* Active segment (blue) - 80% of circle */}
+              <circle
+                cx="100"
+                cy="100"
+                r="80"
+                fill="none"
+                stroke="#3B82F6"
+                strokeWidth="8"
+                strokeDasharray={`${(staffStatus.active / (staffStatus.active + staffStatus.inactive)) * 502.65} 502.65`}
+                strokeDashoffset="0"
+                transform="rotate(-90 100 100)"
+              />
+              {/* Inactive segment (red) - 20% of circle */}
+              <circle
+                cx="100"
+                cy="100"
+                r="80"
+                fill="none"
+                stroke="#EF4444"
+                strokeWidth="8"
+                strokeDasharray={`${(staffStatus.inactive / (staffStatus.active + staffStatus.inactive)) * 502.65} 502.65`}
+                strokeDashoffset={`-${(staffStatus.active / (staffStatus.active + staffStatus.inactive)) * 502.65}`}
+                transform="rotate(-90 100 100)"
+              />
+              {/* Center text */}
+              <text x="100" y="95" textAnchor="middle" className="text-sm font-black fill-[#111827]">
+                {staffStatus.active + staffStatus.inactive}
+              </text>
+              <text x="100" y="110" textAnchor="middle" className="text-xs fill-[#6B7280] font-bold">
+                Total Staff
+              </text>
+            </svg>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <span className="text-sm font-bold text-[#4B5563]">Active</span>
+              </div>
+              <span className="text-sm font-black text-[#111827]">{staffStatus.active}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="text-sm font-bold text-[#4B5563]">Inactive/Offboarding</span>
+              </div>
+              <span className="text-sm font-black text-[#111827]">{staffStatus.inactive}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
