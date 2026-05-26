@@ -53,12 +53,7 @@ const apiLimiter = rateLimit({
 app.use('/api', apiLimiter);
 app.get('/health', (req, res) => res.json({ success: true, message: 'API is healthy' }));
 app.use('/api/auth', authRoutes);
-app.use('/api/accounts', accountRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/sites', siteRoutes);
-app.use('/api/devices', deviceRoutes);
-app.use('/api/device-assignments', assignmentRouter);
-app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/accounts', authenticate, accountRoutes);
 app.use('/api/employees', authenticate, employeeRoutes);
 app.use('/api/sites', authenticate, siteRoutes);
 app.use('/api/devices', authenticate, deviceRoutes);
