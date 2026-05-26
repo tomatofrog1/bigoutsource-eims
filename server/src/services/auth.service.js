@@ -64,6 +64,15 @@ async function createConfirmedAuthUser({ email, password, fullName, department, 
   return data.user;
 }
 
+async function updateSeedAuthPassword(userId, password) {
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    password,
+    email_confirm: true,
+  });
+
+  if (error) throw new AppError(authErrorMessage(error), 400);
+}
+
 async function assertActiveProfile(userId) {
   const profile = await UserProfileModel.findById(userId);
 
@@ -175,6 +184,7 @@ export const AuthService = {
           approvedAt: existingProfile.approvedAt || new Date().toISOString(),
         });
       }
+      await updateSeedAuthPassword(existingProfile.id, password);
       return;
     }
 
@@ -187,6 +197,8 @@ export const AuthService = {
         department: env.seedSuperAdmin.department,
         site: env.seedSuperAdmin.site,
       });
+    } else {
+      await updateSeedAuthPassword(authUser.id, password);
     }
 
     await UserProfileModel.create({

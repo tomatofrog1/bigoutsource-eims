@@ -23,12 +23,14 @@ cp .env.example .env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
-SEED_SUPER_ADMIN_EMAIL=admin@bigoutsource.com
-SEED_SUPER_ADMIN_PASSWORD=replace_with_a_strong_temporary_password
-SEED_SUPER_ADMIN_FULL_NAME=System Administrator
+SEED_SUPER_ADMIN_EMAIL=kamote@gmail.com
+SEED_SUPER_ADMIN_PASSWORD=kamote123
+SEED_SUPER_ADMIN_FULL_NAME=Local Super Admin
 SEED_SUPER_ADMIN_DEPARTMENT=Administration
 SEED_SUPER_ADMIN_SITE=HQ
 ```
+
+In local development, the API uses `kamote@gmail.com` / `kamote123` as the seeded super admin when the `SEED_SUPER_ADMIN_*` variables are unset. Production does not use this fallback.
 
 Keep the service-role key only in `server/.env`. Do not expose it through a `VITE_` frontend variable.
 
@@ -40,7 +42,7 @@ Keep the service-role key only in `server/.env`. Do not expose it through a `VIT
 npm run dev
 ```
 
-Default API URL: `http://localhost:5000`
+Default API URL: `http://localhost:5001`
 
 ## Supabase Table
 
