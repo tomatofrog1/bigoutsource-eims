@@ -7,9 +7,10 @@ import { useLocation } from 'react-router-dom';
 interface PageLayoutProps {
   children: ReactNode;
   title: string;
+  contentClassName?: string;
 }
 
-export function PageLayout({ children, title }: PageLayoutProps) {
+export function PageLayout({ children, title, contentClassName = 'max-w-6xl mx-auto' }: PageLayoutProps) {
   const location = useLocation();
 
   return (
@@ -25,7 +26,7 @@ export function PageLayout({ children, title }: PageLayoutProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="max-w-6xl mx-auto"
+              className={contentClassName}
             >
               {children}
             </motion.div>

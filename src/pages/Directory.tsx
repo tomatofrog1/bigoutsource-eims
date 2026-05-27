@@ -523,51 +523,52 @@ export default function Directory() {
   };
 
   return (
-    <PageLayout title="Personnel Database">
-      <aside className="fixed left-68 top-32 z-30 hidden w-56 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
-            <p className="mt-1 text-xs font-bold text-[#4B5563]">{isCustomFieldView ? `${visibleFieldKeys.length}/4 selected` : 'Default fields shown'}</p>
+    <PageLayout title="Personnel Database" contentClassName="w-full max-w-none">
+      <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[14rem_minmax(0,1fr)]">
+        <aside className="sticky top-0 hidden self-start rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
+              <p className="mt-1 text-xs font-bold text-[#4B5563]">{isCustomFieldView ? `${visibleFieldKeys.length}/4 selected` : 'Default fields shown'}</p>
+            </div>
+            <button
+              type="button"
+              onClick={resetFields}
+              disabled={!isCustomFieldView}
+              className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[10px] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Reset
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={resetFields}
-            disabled={!isCustomFieldView}
-            className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[10px] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Reset
-          </button>
-        </div>
-        <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-          {directoryFields.map((field) => {
-            const checked = isFieldVisible(field.key);
-            const disabled = isCustomFieldView && !checked && !canSelectMoreFields;
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+            {directoryFields.map((field) => {
+              const checked = isFieldVisible(field.key);
+              const disabled = isCustomFieldView && !checked && !canSelectMoreFields;
 
-            return (
-              <label
-                key={field.key}
-                className={cn(
-                  'flex items-start gap-2 rounded-xl border border-[#E5E7EB] px-3 py-2 text-xs font-bold text-[#374151] transition-all',
-                  checked ? 'bg-[#F9FAFB]' : 'bg-white',
-                  disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-[#D1D5DB]'
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={disabled}
-                  onChange={() => toggleField(field.key)}
-                  className="mt-0.5 h-4 w-4 rounded border-[#D1D5DB] accent-[#111827]"
-                />
-                <span className="leading-snug">{field.label}</span>
-              </label>
-            );
-          })}
-        </div>
-      </aside>
+              return (
+                <label
+                  key={field.key}
+                  className={cn(
+                    'flex items-start gap-2 rounded-xl border border-[#E5E7EB] px-3 py-2 text-xs font-bold text-[#374151] transition-all',
+                    checked ? 'bg-[#F9FAFB]' : 'bg-white',
+                    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-[#D1D5DB]'
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={() => toggleField(field.key)}
+                    className="mt-0.5 h-4 w-4 rounded border-[#D1D5DB] accent-[#111827]"
+                  />
+                  <span className="leading-snug">{field.label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </aside>
 
-      <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-[300px]">
             <div className="relative flex-1">
@@ -683,6 +684,7 @@ export default function Directory() {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {isModalOpen && (
