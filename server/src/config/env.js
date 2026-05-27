@@ -10,7 +10,7 @@ dotenv.config({ path: resolve(__dirname, '../../../.env'), quiet: true });
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabasePublishableKey =
-  process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || supabaseServiceRoleKey;
 const nodeEnv = process.env.NODE_ENV || 'development';
 const useLocalSeedAdmin = nodeEnv !== 'production';
 
