@@ -625,20 +625,34 @@ export default function EmployeeProfile() {
                     : 'bg-red-100 text-red-600'
                 }`}
               >
-                <Archive className="w-6 h-6" />
+                {employee.isArchived ? (
+                  <RotateCcw className="w-6 h-6" />
+                ) : (
+                  <Archive className="w-6 h-6" />
+                )}
               </div>
 
               <div className="flex-1">
                 <h3 className="text-lg font-black text-[#111827]">
-                  {archiveIntent === 'unarchive' ? 'Unarchive Employee' : 'Archive Employee'}
+                  {archiveIntent === 'unarchive'
+                    ? 'Unarchive Employee'
+                    : 'Archive Employee'}
                 </h3>
 
                 <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
                   Are you sure you want to{' '}
                   <span className="font-bold text-[#111827]">
-                    {archiveIntent === 'unarchive' ? 'unarchive' : 'archive'} {employee.fullName}
+                    {archiveIntent === 'unarchive'
+                      ? `unarchive ${employee.fullName}`
+                      : `archive ${employee.fullName}`}
                   </span>
-                  ? This employee will be removed from the active directory.
+                  ?
+                </p>
+
+                <p className="mt-2 text-sm text-[#6B7280]">
+                  {archiveIntent === 'unarchive'
+                    ? 'This employee will be restored to the active directory.'
+                    : 'This employee will be removed from the active directory.'}
                 </p>
               </div>
             </div>
@@ -660,15 +674,23 @@ export default function EmployeeProfile() {
                 type="button"
                 onClick={toggleArchiveEmployee}
                 disabled={isArchiving}
-                className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 disabled:opacity-50"
+                className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${
+                  archiveIntent === 'unarchive'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
               >
                 {isArchiving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
+                ) : archiveIntent === 'unarchive' ? (
+                  <RotateCcw className="w-4 h-4" />
                 ) : (
                   <Archive className="w-4 h-4" />
                 )}
 
-                Confirm
+                {archiveIntent === 'unarchive'
+                  ? 'Confirm Unarchive'
+                  : 'Confirm Archive'}
               </button>
             </div>
           </div>
