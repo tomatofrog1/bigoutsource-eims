@@ -315,7 +315,7 @@ export default function Directory() {
   );
 
   const filteredEmployees = employees
-    // .filter((emp) => !emp.isArchived)
+    .filter((emp) => !emp.isArchived)
     .filter((emp) => {
       const search = searchTerm.toLowerCase();
       const matchesSearch =
