@@ -19,6 +19,8 @@ import Assets from './pages/Assets';
 import Reports from './pages/Reports';
 import AuditLogs from './pages/AuditLogs';
 import UserManagement from './pages/UserManagement';
+import EmployeeImportReview from './pages/EmployeeImportReview';
+import { ImportIssuesButton } from './components/imports/ImportIssuesButton';
 import { settingsService } from './services/settingsService';
 import { userService } from './services/userService';
 
@@ -27,6 +29,7 @@ export default function App() {
     <AuthProvider>
       <Router>
         <SuperAdminRegistrationNotifier />
+        <ImportIssuesButton />
         <Routes>
           <Route path="/login" element={<Login />} />
           
@@ -39,6 +42,8 @@ export default function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/logs" element={<AuditLogs />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/employee-imports/issues" element={<EmployeeImportReview />} />
+            <Route path="/employee-imports/:batchId" element={<EmployeeImportReview />} />
             <Route element={<ProtectedRoute roles={['super_admin']} />}>
               <Route path="/users" element={<UserManagement />} />
             </Route>

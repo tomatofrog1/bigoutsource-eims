@@ -11,6 +11,7 @@ import auditLogRoutes from './routes/auditLog.routes.js';
 import accountRoutes from './routes/account.routes.js';
 import userRoutes from './routes/user.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import employeeImportRoutes from './routes/employeeImport.routes.js';
 import { authenticate, requireRole } from './middleware/auth.middleware.js';
 import { errorHandler, notFound } from './middleware/error.middleware.js';
 
@@ -55,6 +56,7 @@ app.get('/health', (req, res) => res.json({ success: true, message: 'API is heal
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', authenticate, accountRoutes);
 app.use('/api/employees', authenticate, employeeRoutes);
+app.use('/api/employee-imports', authenticate, employeeImportRoutes);
 app.use('/api/sites', authenticate, siteRoutes);
 app.use('/api/devices', authenticate, deviceRoutes);
 app.use('/api/device-assignments', authenticate, assignmentRouter);
