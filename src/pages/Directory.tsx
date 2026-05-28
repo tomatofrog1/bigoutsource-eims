@@ -93,6 +93,8 @@ const defaultVisibleFieldKeys: DirectoryFieldKey[] = [
   'accountAssignment',
   'site',
 ];
+const requiredVisibleFieldKeys: DirectoryFieldKey[] = ['fullName'];
+const maxVisibleFieldCount = 4;
 
 const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (emp: EmployeeRecord) => ReactNode }> = [
   { key: 'id', label: 'Record ID', render: (emp) => emp.id || '-' },
@@ -406,10 +408,13 @@ export default function Directory() {
   const visibleFieldKeys = selectedFields ?? defaultVisibleFieldKeys;
   const visibleFields = directoryFields.filter((field) => visibleFieldKeys.includes(field.key));
   const isCustomFieldView = selectedFields !== null;
-  const canSelectMoreFields = visibleFieldKeys.length < 4;
+  const canSelectMoreFields = visibleFieldKeys.length < maxVisibleFieldCount;
   const isFieldVisible = (field: DirectoryFieldKey) => visibleFieldKeys.includes(field);
+  const isRequiredField = (field: DirectoryFieldKey) => requiredVisibleFieldKeys.includes(field);
 
   const toggleField = (field: DirectoryFieldKey) => {
+    if (isRequiredField(field)) return;
+
     setSelectedFields((current) => {
       const nextFields = current ?? defaultVisibleFieldKeys;
 
@@ -417,8 +422,8 @@ export default function Directory() {
         return nextFields.filter((item) => item !== field);
       }
 
-      if (nextFields.length >= 4) {
-        toast.error('You can display up to 4 selected items at a time');
+      if (nextFields.length >= maxVisibleFieldCount) {
+        toast.error(`You can display up to ${maxVisibleFieldCount} selected items at a time`);
         return current;
       }
 
@@ -545,7 +550,8 @@ export default function Directory() {
           <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
             {directoryFields.map((field) => {
               const checked = isFieldVisible(field.key);
-              const disabled = isCustomFieldView && !checked && !canSelectMoreFields;
+              const required = isRequiredField(field.key);
+              const disabled = required || (!checked && !canSelectMoreFields);
 
               return (
                 <label
@@ -553,7 +559,8 @@ export default function Directory() {
                   className={cn(
                     'flex items-start gap-2 rounded-xl border border-[#E5E7EB] px-3 py-2 text-xs font-bold text-[#374151] transition-all',
                     checked ? 'bg-[#F9FAFB]' : 'bg-white',
-                    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-[#D1D5DB]'
+                    disabled && !required ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-[#D1D5DB]',
+                    required && 'cursor-not-allowed'
                   )}
                 >
                   <input
