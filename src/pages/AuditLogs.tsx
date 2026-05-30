@@ -24,19 +24,60 @@ function actionLabel(action: string) {
   return action.replace(/\./g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function detailsText(details: any) {
-  if (!details) return 'No details recorded';
+function formatFieldName(field: string) {
+  return field
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatValue(value: any) {
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (Array.isArray(value)) {
+    if (!value.length) return 'None';
+    if (value.every((item) => typeof item !== 'object' || item === null)) return value.map(formatValue).join(', ');
+    return `${value.length} item${value.length === 1 ? '' : 's'}`;
+  }
+  if (typeof value === 'object') {
+    const summary = Object.entries(value)
+      .filter(([, entryValue]) => entryValue !== null && entryValue !== undefined && entryValue !== '')
+      .slice(0, 3)
+      .map(([key, entryValue]) => `${formatFieldName(key)}: ${formatValue(entryValue)}`)
+      .join(', ');
+
+    return summary || 'Recorded';
+  }
+  return String(value);
+}
+
+function detailsItems(details: any) {
+  if (!details) return [];
 
   if (Array.isArray(details.changes) && details.changes.length) {
-    return details.changes.map((change: any) => `${change.field}: "${change.from || '-'}" to "${change.to || '-'}"`).join('; ');
+    return details.changes.map((change: any) => ({
+      field: formatFieldName(change.field),
+      from: formatValue(change.from),
+      to: formatValue(change.to),
+    }));
   }
 
-  return (
-    Object.entries(details)
-      .filter(([key]) => key !== 'changes')
-      .map(([key, value]) => `${key}: ${String(value || '-')}`)
-      .join('; ') || 'No details recorded'
-  );
+  return Object.entries(details)
+    .filter(([key]) => key !== 'changes')
+    .map(([key, value]) => ({
+      field: formatFieldName(key),
+      value: formatValue(value),
+    }));
+}
+
+function detailsText(details: any) {
+  const items = detailsItems(details);
+
+  if (!items.length) return 'No details recorded';
+
+  return items
+    .map((item: any) => ('to' in item ? `${item.field}: "${item.from}" to "${item.to}"` : `${item.field}: ${item.value}`))
+    .join('; ');
 }
 
 function actorLabel(log: any) {
@@ -148,7 +189,14 @@ export default function AuditLogs() {
         </div>
 
         <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left border-collapse">
+          <table className="w-full min-w-[900px] table-fixed text-left border-collapse">
+            <colgroup>
+              <col className="w-[16%]" />
+              <col className="w-[22%]" />
+              <col className="w-[13%]" />
+              <col className="w-[17%]" />
+              <col className="w-[32%]" />
+            </colgroup>
             <thead>
               <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                 <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Timestamp</th>
@@ -164,7 +212,7 @@ export default function AuditLogs() {
                   <td className="px-6 py-4 text-xs font-bold text-[#111827] whitespace-nowrap">{formatDate(log.createdAt)}</td>
                   <td className="px-6 py-4">
                     <p className="text-sm font-bold text-[#111827]">{actorLabel(log)}</p>
-                    <p className="text-[10px] text-[#6B7280] uppercase font-bold tracking-tighter">ID: {log.userId || 'n/a'}</p>
+                    <p className="text-[10px] text-[#6B7280] uppercase font-bold tracking-tighter break-all">ID: {log.userId || 'n/a'}</p>
                     {log.userEmail && <p className="text-[10px] text-[#9CA3AF] mt-1">{log.userEmail}</p>}
                   </td>
                   <td className="px-6 py-4">
@@ -177,8 +225,7 @@ export default function AuditLogs() {
                     <p className="text-[10px] text-[#9CA3AF] mt-1">Entity: {log.entityType}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-[#4B5563] leading-relaxed">{detailsText(log.details)}</p>
-                    {log.ipAddress && <p className="text-[10px] text-[#9CA3AF] mt-1">IP: {log.ipAddress}</p>}
+                    <AuditDetails details={log.details} />
                   </td>
                 </tr>
               ))}
@@ -197,6 +244,38 @@ export default function AuditLogs() {
         </div>
       </div>
     </PageLayout>
+  );
+}
+
+function AuditDetails({ details }: { details: any }) {
+  const items = detailsItems(details);
+
+  if (!items.length) {
+    return <p className="text-sm font-medium text-[#9CA3AF]">No details recorded</p>;
+  }
+
+  return (
+    <div className="space-y-2 w-full">
+      {items.map((item: any, index: number) => (
+        <div key={index} className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3">
+          {'to' in item ? (
+            <div className="flex flex-col gap-1 text-sm">
+              <span className="font-black text-[#111827]">{item.field}</span>
+              <div className="flex flex-wrap items-center gap-2 text-[#6B7280] min-w-0">
+                <span className="line-through text-red-500 break-all min-w-0">{item.from}</span>
+                <span className="font-bold text-[#9CA3AF]">-&gt;</span>
+                <span className="font-bold text-green-600 break-all min-w-0">{item.to}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1 text-sm">
+              <span className="font-black text-[#111827]">{item.field}</span>
+              <span className="text-[#4B5563] font-medium break-all">{item.value}</span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 
