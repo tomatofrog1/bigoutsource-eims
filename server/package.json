@@ -9,7 +9,7 @@
     "start": "node src/server.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.106.1",
+    "@supabase/supabase-js": "^2.106.2",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",

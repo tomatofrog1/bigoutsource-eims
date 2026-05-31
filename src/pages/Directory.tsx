@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   ChevronRight,
@@ -10,7 +10,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
@@ -19,6 +19,7 @@ import { cn } from '@/src/lib/utils';
 import { employeeService } from '@/src/services/employeeService';
 import { siteService } from '@/src/services/siteService';
 import { accountService } from '@/src/services/accountService';
+import { employeeImportService } from '@/src/services/employeeImportService';
 
 type SiteOption = {
   id: string;
@@ -231,6 +232,8 @@ function normalizeAccountList(value: any) {
 }
 
 export default function Directory() {
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [sites, setSites] = useState<SiteOption[]>(mockSites);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -251,6 +254,7 @@ export default function Directory() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAccount, setIsSavingAccount] = useState(false);
+  const [isStagingImport, setIsStagingImport] = useState(false);
   const [form, setForm] = useState<AddEmployeeForm>(initialForm);
 
   const loadAccounts = async () => {
@@ -463,7 +467,60 @@ export default function Directory() {
   };
 
   const handleImport = () => {
-    toast.error('Import validation: Please select a valid Excel file');
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (file?: File) => {
+    if (!file) return;
+
+    setIsStagingImport(true);
+
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { cellDates: true });
+      const worksheet = workbook.Sheets['IT Master Tracker'];
+
+      if (!worksheet) {
+        throw new Error('The workbook does not contain an IT Master Tracker sheet.');
+      }
+
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:V1');
+      range.e.c = Math.min(range.e.c, 21);
+
+      const matrix = XLSX.utils.sheet_to_json<any[]>(worksheet, {
+        header: 1,
+        defval: '',
+        raw: false,
+        range: XLSX.utils.encode_range(range),
+      });
+      const headers = (matrix[0] || []).map((header) => String(header || '').trim());
+      const rows = matrix
+        .slice(1)
+        .map((values, index) => {
+          const rawData = headers.reduce<Record<string, string>>((record, header, headerIndex) => {
+            if (header) record[header] = String(values[headerIndex] ?? '').trim();
+            return record;
+          }, {});
+
+          return {
+            sourceRow: index + 2,
+            rawData,
+          };
+        })
+        .filter((row) => Object.values(row.rawData).some((value) => value !== ''));
+
+      if (!rows.length) {
+        throw new Error('No employee rows were found in IT Master Tracker.');
+      }
+
+      const staged = await employeeImportService.stage(rows);
+      toast.success(`${staged.summary?.total || rows.length} rows staged for review`);
+      navigate(`/employee-imports/${staged.importBatchId}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Unable to stage import file');
+    } finally {
+      setIsStagingImport(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const closeModal = () => {
@@ -626,12 +683,20 @@ export default function Directory() {
           </div>
 
           <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(event) => void handleImportFile(event.target.files?.[0])}
+            />
             <button
               onClick={handleImport}
+              disabled={isStagingImport}
               className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
             >
-              <Download className="w-4 h-4" />
-              Import
+              {isStagingImport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isStagingImport ? 'Staging' : 'Import'}
             </button>
             <button
               onClick={exportToExcel}
