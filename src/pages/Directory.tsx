@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Download,
   Loader2,
-  Plus,
   Search,
   Upload,
   UserPlus,
@@ -237,7 +236,6 @@ export default function Directory() {
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [sites, setSites] = useState<SiteOption[]>(mockSites);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
-  const [recentAccounts, setRecentAccounts] = useState<AccountOption[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [siteFilter, setSiteFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -245,30 +243,16 @@ export default function Directory() {
   const [selectedFields, setSelectedFields] = useState<DirectoryFieldKey[] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
-  const [isAccountManagerOpen, setIsAccountManagerOpen] = useState(false);
-  const [accountSearch, setAccountSearch] = useState('');
-  const [accountTypeFilters, setAccountTypeFilters] = useState<Array<AccountOption['accountType']>>(['internal', 'external']);
-  const [isAddingAccount, setIsAddingAccount] = useState(false);
-  const [newAccountName, setNewAccountName] = useState('');
-  const [newAccountType, setNewAccountType] = useState<AccountOption['accountType'] | ''>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSavingAccount, setIsSavingAccount] = useState(false);
   const [isStagingImport, setIsStagingImport] = useState(false);
   const [form, setForm] = useState<AddEmployeeForm>(initialForm);
 
   const loadAccounts = async () => {
-    const [allResult, recentResult] = await Promise.allSettled([
-      accountService.list(),
-      accountService.recent(4),
-    ]);
+    const allResult = await accountService.list().catch(() => null);
 
-    if (allResult.status === 'fulfilled') {
-      setAccounts(normalizeAccountList(allResult.value));
-    }
-
-    if (recentResult.status === 'fulfilled') {
-      setRecentAccounts(normalizeAccountList(recentResult.value));
+    if (allResult) {
+      setAccounts(normalizeAccountList(allResult));
     }
   };
 
@@ -342,26 +326,11 @@ export default function Directory() {
   };
 
   const selectedAccount = accounts.find((account) => account.name === form.accountAssignment);
-  const filteredAccounts = accounts.filter((account) => {
-    const matchesSearch = account.name.toLowerCase().includes(accountSearch.trim().toLowerCase());
-    const matchesType = accountTypeFilters.length === 0 || accountTypeFilters.includes(account.accountType);
-    return matchesSearch && matchesType;
-  });
-
-  const toggleAccountTypeFilter = (type: AccountOption['accountType']) => {
-    setAccountTypeFilters((current) => {
-      if (current.includes(type)) {
-        return [];
-      }
-
-      return [type];
-    });
-  };
-
-  const selectAccount = async (account: AccountOption, { closeManager = true } = {}) => {
+  const internalAccounts = accounts.filter((account) => account.accountType === 'internal');
+  const externalAccounts = accounts.filter((account) => account.accountType === 'external');
+  const selectAccount = async (account: AccountOption) => {
     updateForm('accountAssignment', account.name);
     setIsAccountDropdownOpen(false);
-    if (closeManager) setIsAccountManagerOpen(false);
 
     const updated = await accountService.touch(account.id).catch(() => null);
     if (updated) {
@@ -369,43 +338,6 @@ export default function Directory() {
       if (normalized) {
         setAccounts((current) => current.map((item) => (item.id === normalized.id ? normalized : item)));
       }
-    }
-    accountService.recent(4).then((value) => setRecentAccounts(normalizeAccountList(value))).catch(() => {});
-  };
-
-  const addAccount = async () => {
-    if (!newAccountName.trim()) {
-      toast.error('Account name is required');
-      return;
-    }
-
-    if (!newAccountType) {
-      toast.error('Select whether the account is internal or external');
-      return;
-    }
-
-    setIsSavingAccount(true);
-
-    try {
-      const created = await accountService.create({
-        name: newAccountName.trim(),
-        accountType: newAccountType,
-      });
-      const account = normalizeAccount(created);
-
-      if (!account) throw new Error('The server did not return the created account.');
-
-      setAccounts((current) => [account, ...current.filter((item) => item.id !== account.id)]);
-      setRecentAccounts((current) => [account, ...current.filter((item) => item.id !== account.id)].slice(0, 4));
-      setNewAccountName('');
-      setNewAccountType('');
-      setIsAddingAccount(false);
-      await selectAccount(account);
-      toast.success('Account added');
-    } catch (error: any) {
-      toast.error(error.message || 'Unable to add account');
-    } finally {
-      setIsSavingAccount(false);
     }
   };
 
@@ -527,11 +459,6 @@ export default function Directory() {
     if (isSaving) return;
     setIsModalOpen(false);
     setIsAccountDropdownOpen(false);
-    setIsAccountManagerOpen(false);
-    setIsAddingAccount(false);
-    setAccountSearch('');
-    setNewAccountName('');
-    setNewAccountType('');
     setForm(initialForm);
   };
 
@@ -575,7 +502,7 @@ export default function Directory() {
 
       setEmployees((current) => [createdEmployee, ...current]);
       if (selectedAccount) {
-        await selectAccount(selectedAccount, { closeManager: false });
+        await selectAccount(selectedAccount);
       }
       toast.success('Employee record added');
       closeModal();
@@ -675,9 +602,11 @@ export default function Directory() {
                 className="px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#111827]"
               >
                 <option value="All Account">All Accounts</option>
-                <option value="IT Department">IT Department</option>
-                <option value="HR Department">HR Department</option>
-                <option value="Accounting Department">Accounting Department</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.name}>
+                    {account.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -808,33 +737,14 @@ export default function Directory() {
                     </button>
                     {isAccountDropdownOpen && (
                       <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                        {recentAccounts.length ? (
-                          recentAccounts.map((account) => (
-                            <button
-                              key={account.id}
-                              type="button"
-                              onClick={() => void selectAccount(account, { closeManager: false })}
-                              className="flex w-full items-center justify-between gap-3 border-b border-[#F3F4F6] px-3 py-2.5 text-left text-sm font-bold text-[#111827] transition-all last:border-b-0 hover:bg-[#F9FAFB]"
-                            >
-                              <span className="truncate">{account.name}</span>
-                              <span className="rounded-lg bg-[#F3F4F6] px-2 py-1 text-[10px] font-black uppercase text-[#6B7280]">
-                                {account.accountType}
-                              </span>
-                            </button>
-                          ))
+                        {accounts.length ? (
+                          <div className="max-h-64 overflow-y-auto">
+                            <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
+                            <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
+                          </div>
                         ) : (
-                          <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No recent accounts yet</div>
+                          <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAccountDropdownOpen(false);
-                            setIsAccountManagerOpen(true);
-                          }}
-                          className="flex w-full items-center justify-center gap-2 bg-[#F9FAFB] px-3 py-3 text-xs font-black uppercase tracking-tight text-[#4B5563] transition-all hover:text-[#111827]"
-                        >
-                          Expand / Browse All
-                        </button>
                       </div>
                     )}
                   </div>
@@ -920,149 +830,6 @@ export default function Directory() {
         </div>
       )}
 
-      {isAccountManagerOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#111827]/55 px-4 py-6 backdrop-blur-sm">
-          <div className="flex h-full max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
-              <div>
-                <h2 className="text-lg font-black text-[#111827]">Account Manager</h2>
-                <p className="text-xs font-bold text-[#6B7280]">Search, filter, select, or create an account.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAccountManagerOpen(false)}
-                className="p-2 rounded-xl text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#111827] transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
-              <div className="relative">
-                <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={accountSearch}
-                  onChange={(event) => setAccountSearch(event.target.value)}
-                  placeholder="Search accounts..."
-                  className="w-full pl-10 pr-4 py-3 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {(['internal', 'external'] as Array<AccountOption['accountType']>).map((type) => {
-                  const active = accountTypeFilters.includes(type);
-
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => toggleAccountTypeFilter(type)}
-                      className={cn(
-                        'rounded-xl border px-4 py-2.5 text-sm font-black capitalize transition-all',
-                        active
-                          ? 'border-[#111827] bg-[#111827] text-white shadow-lg shadow-[#11182720]'
-                          : 'border-[#E5E7EB] bg-white text-[#4B5563] hover:text-[#111827]'
-                      )}
-                    >
-                      {type}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[#E5E7EB]">
-                {filteredAccounts.length ? (
-                  filteredAccounts.map((account) => (
-                    <button
-                      key={account.id}
-                      type="button"
-                      onClick={() => void selectAccount(account)}
-                      className="flex w-full items-center justify-between gap-4 border-b border-[#F3F4F6] px-5 py-4 text-left transition-all last:border-b-0 hover:bg-[#F9FAFB]"
-                    >
-                      <span className="min-w-0 flex-1 truncate text-sm font-black text-[#111827]">{account.name}</span>
-                      <span
-                        className={cn(
-                          'rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-tight',
-                          account.accountType === 'internal' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
-                        )}
-                      >
-                        {account.accountType}
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="flex h-40 flex-col items-center justify-center px-6 text-center">
-                    <p className="text-sm font-black text-[#111827]">No accounts found</p>
-                    <p className="mt-1 text-xs font-bold text-[#6B7280]">Try another search or add a new account.</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] p-4">
-                {!isAddingAccount ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingAccount(true)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-4 py-3 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151]"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add New Account
-                  </button>
-                ) : (
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto] md:items-center">
-                    <input
-                      type="text"
-                      value={newAccountName}
-                      onChange={(event) => setNewAccountName(event.target.value)}
-                      placeholder="Account name"
-                      className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all"
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['internal', 'external'] as Array<AccountOption['accountType']>).map((type) => (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => setNewAccountType(type)}
-                          className={cn(
-                            'rounded-xl border px-4 py-2.5 text-xs font-black capitalize transition-all',
-                            newAccountType === type ? 'border-[#111827] bg-[#111827] text-white' : 'border-[#E5E7EB] bg-white text-[#4B5563]'
-                          )}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAddingAccount(false);
-                          setNewAccountName('');
-                          setNewAccountType('');
-                        }}
-                        disabled={isSavingAccount}
-                        className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-xs font-black text-[#4B5563] transition-all hover:text-[#111827]"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={addAccount}
-                        disabled={isSavingAccount}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#111827] px-4 py-2.5 text-xs font-black text-white transition-all hover:bg-[#374151] disabled:opacity-60"
-                      >
-                        {isSavingAccount && <Loader2 className="h-4 w-4 animate-spin" />}
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </PageLayout>
   );
 }
@@ -1075,6 +842,39 @@ function Field({ label, required, children }: { label: string; required?: boolea
       </span>
       {children}
     </label>
+  );
+}
+
+function AccountDropdownGroup({
+  title,
+  accounts,
+  onSelect,
+}: {
+  title: string;
+  accounts: AccountOption[];
+  onSelect: (account: AccountOption) => void;
+}) {
+  if (!accounts.length) return null;
+
+  return (
+    <div className="border-b border-[#F3F4F6] last:border-b-0">
+      <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+        {title}
+      </div>
+      {accounts.map((account) => (
+        <button
+          key={account.id}
+          type="button"
+          onClick={() => onSelect(account)}
+          className="flex w-full items-center justify-between gap-3 border-t border-[#F3F4F6] px-3 py-2.5 text-left text-sm font-bold text-[#111827] transition-all hover:bg-[#F9FAFB]"
+        >
+          <span className="truncate">{account.name}</span>
+          <span className="rounded-lg bg-[#F3F4F6] px-2 py-1 text-[10px] font-black uppercase text-[#6B7280]">
+            {account.accountType}
+          </span>
+        </button>
+      ))}
+    </div>
   );
 }
 
