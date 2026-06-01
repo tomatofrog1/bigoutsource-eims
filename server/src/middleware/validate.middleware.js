@@ -26,6 +26,10 @@ export function validate(schema) {
         errors.push(`${field} must be a valid email`);
       }
 
+      if (rules.pattern && !rules.pattern.test(value)) {
+        errors.push(rules.message || `${field} is invalid`);
+      }
+
       if (rules.enum && !rules.enum.includes(value)) {
         errors.push(`${field} must be one of: ${rules.enum.join(', ')}`);
       }
