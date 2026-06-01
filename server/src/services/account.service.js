@@ -1,5 +1,4 @@
 import { AccountModel } from '../models/account.model.js';
-import { EmployeeModel } from '../models/employee.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { auditActor } from '../utils/auditActor.js';
@@ -55,57 +54,6 @@ export const AccountService = {
     });
 
     return account;
-  },
-
-  async update(id, data, user, meta = {}) {
-    const before = await AccountModel.findById(id);
-    if (!before) throw new AppError('Account not found', 404);
-
-    const name = String(data.name || '').trim();
-    if (!name) throw new AppError('name is required', 400);
-
-    const account = await AccountModel.update(id, {
-      name,
-      accountType: data.accountType || data.account_type || before.accountType,
-    });
-
-    let reassignedEmployees = [];
-    if (before.name !== account.name) {
-      reassignedEmployees = await EmployeeModel.updateAccountAssignment(before.name, account.name);
-    }
-
-    await AuditLogModel.create({
-      ...auditActor(user),
-      action: 'account.update',
-      entityType: 'accounts',
-      entityId: account.id,
-      details: {
-        from: before.name,
-        to: account.name,
-        accountType: account.accountType,
-        reassignedEmployees: reassignedEmployees.length,
-      },
-      ipAddress: meta.ipAddress,
-    });
-
-    return account;
-  },
-
-  async remove(id, user, meta = {}) {
-    const account = await AccountModel.findById(id);
-    if (!account) throw new AppError('Account not found', 404);
-
-    const removed = await AccountModel.remove(id);
-    if (!removed) throw new AppError('Account not found', 404);
-
-    await AuditLogModel.create({
-      ...auditActor(user),
-      action: 'account.delete',
-      entityType: 'accounts',
-      entityId: id,
-      details: { name: account.name, accountType: account.accountType },
-      ipAddress: meta.ipAddress,
-    });
   },
 
   touch(id) {

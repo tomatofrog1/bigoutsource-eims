@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, Download, Edit3, Loader2, MoreVertical, Plus, Search, Trash2, UsersRound, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
+import { Building2, Loader2, MoreVertical, Plus, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { useAuth } from '@/src/contexts/AuthContext';
@@ -19,19 +17,6 @@ type Department = {
   createdAt?: string;
 };
 
-type EmployeeRecord = {
-  id?: string;
-  employeeId?: string;
-  employeeNumber?: string;
-  fullName?: string;
-  accountAssignment?: string;
-  account?: string;
-  site?: string;
-  status?: string;
-  boEmail?: string;
-  phone?: string;
-  pcName?: string;
-};
 function suggestDepartmentCode(name = '') {
   return name
     .split(/\s+/)
@@ -60,17 +45,13 @@ function asArray(value: any) {
 }
 
 export default function Departments() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const canManageDepartments = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'hr_admin';
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   const [departmentName, setDepartmentName] = useState('');
   const [departmentCode, setDepartmentCode] = useState('');
   const [isDepartmentCodeEdited, setIsDepartmentCodeEdited] = useState(false);
@@ -89,7 +70,6 @@ export default function Departments() {
       }, {});
 
       setDepartments(normalizedDepartments);
-      setEmployees(asArray(employeeList));
       setEmployeeCounts(counts);
     } catch (error: any) {
       toast.error(error.message || 'Unable to load departments');
@@ -116,29 +96,12 @@ export default function Departments() {
   const closeModal = () => {
     if (isSaving) return;
     setIsModalOpen(false);
-    setEditingDepartment(null);
-    setDepartmentName('');
-    setDepartmentType('internal');
-  };
-
-  const openCreateModal = () => {
-    setEditingDepartment(null);
     setDepartmentName('');
     setDepartmentCode('');
     setIsDepartmentCodeEdited(false);
     setDepartmentType('internal');
-    setIsModalOpen(true);
   };
 
-  const openRenameModal = (department: Department) => {
-    setOpenMenuId(null);
-    setEditingDepartment(department);
-    setDepartmentName(department.name);
-    setDepartmentType(department.accountType);
-    setIsModalOpen(true);
-  };
-
-  const saveDepartment = async (event: React.FormEvent) => {
   const updateDepartmentName = (value: string) => {
     setDepartmentName(value);
     if (!isDepartmentCodeEdited) setDepartmentCode(suggestDepartmentCode(value));
@@ -164,34 +127,6 @@ export default function Departments() {
 
     setIsSaving(true);
     try {
-      if (editingDepartment) {
-        const previousName = editingDepartment.name;
-        const updated = await accountService.update(editingDepartment.id, {
-          name: departmentName.trim(),
-          accountType: departmentType,
-        });
-        const department = normalizeDepartment(updated);
-        if (!department) throw new Error('The server did not return the updated department.');
-
-        setDepartments((current) => current.map((item) => (item.id === department.id ? department : item)));
-        setEmployees((current) =>
-          current.map((employee) => {
-            const account = employee.accountAssignment || employee.account || '';
-            return account === previousName ? { ...employee, accountAssignment: department.name, account: department.name } : employee;
-          })
-        );
-        setEmployeeCounts((current) => {
-          const count = current[previousName] || 0;
-          const next = { ...current };
-          delete next[previousName];
-          next[department.name] = count;
-          return next;
-        });
-        toast.success('Department renamed');
-        closeModal();
-        return;
-      }
-
       const created = await accountService.create({
         name: departmentName.trim(),
         accountType: departmentType,
@@ -208,58 +143,6 @@ export default function Departments() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const deleteDepartment = async (department: Department) => {
-    setOpenMenuId(null);
-    const count = employeeCounts[department.name] || 0;
-    const confirmed = window.confirm(
-      count > 0
-        ? `Delete "${department.name}"? This removes it from department choices, but the ${count} assigned employee record${count === 1 ? '' : 's'} will stay unchanged.`
-        : `Delete "${department.name}"?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await accountService.remove(department.id);
-      setDepartments((current) => current.filter((item) => item.id !== department.id));
-      toast.success('Department deleted');
-    } catch (error: any) {
-      toast.error(error.message || 'Unable to delete department');
-    }
-  };
-
-  const employeesForDepartment = (department: Department) =>
-    employees.filter((employee) => (employee.accountAssignment || employee.account || '') === department.name);
-
-  const manageEmployees = (department: Department) => {
-    setOpenMenuId(null);
-    navigate(`/directory?account=${encodeURIComponent(department.name)}`);
-  };
-
-  const exportEmployees = (department: Department) => {
-    setOpenMenuId(null);
-    const rows = employeesForDepartment(department).map((employee) => ({
-      ID: employee.employeeNumber || employee.employeeId || employee.id || '',
-      Name: employee.fullName || '',
-      Account: employee.accountAssignment || employee.account || '',
-      Site: employee.site || '',
-      Status: employee.status || '',
-      Email: employee.boEmail || '',
-      Phone: employee.phone || '',
-      'PC Name': employee.pcName || '',
-    }));
-
-    if (!rows.length) {
-      toast.error('No employees to export for this department');
-      return;
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Employees');
-    XLSX.writeFile(workbook, `${department.name.replace(/[\\/:*?"<>|]/g, '-')}_Employees.xlsx`);
-    toast.success('Department employees exported');
   };
 
   return (
@@ -279,7 +162,7 @@ export default function Departments() {
           {canManageDepartments && (
             <button
               type="button"
-              onClick={openCreateModal}
+              onClick={() => setIsModalOpen(true)}
               className="flex items-center justify-center gap-2 rounded-lg bg-[#111827] px-4 py-2 text-sm font-medium text-white shadow-sm transition-shadow hover:bg-[#374151]"
             >
               <Plus className="h-4 w-4" />
@@ -289,30 +172,8 @@ export default function Departments() {
         </div>
 
         <div className="space-y-8">
-          <DepartmentGroup
-            title="Internal"
-            departments={internalDepartments}
-            employeeCounts={employeeCounts}
-            canManageDepartments={canManageDepartments}
-            openMenuId={openMenuId}
-            onToggleMenu={(id) => setOpenMenuId((current) => (current === id ? null : id))}
-            onRename={openRenameModal}
-            onDelete={deleteDepartment}
-            onManageEmployees={manageEmployees}
-            onExportEmployees={exportEmployees}
-          />
-          <DepartmentGroup
-            title="External"
-            departments={externalDepartments}
-            employeeCounts={employeeCounts}
-            canManageDepartments={canManageDepartments}
-            openMenuId={openMenuId}
-            onToggleMenu={(id) => setOpenMenuId((current) => (current === id ? null : id))}
-            onRename={openRenameModal}
-            onDelete={deleteDepartment}
-            onManageEmployees={manageEmployees}
-            onExportEmployees={exportEmployees}
-          />
+          <DepartmentGroup title="Internal" departments={internalDepartments} employeeCounts={employeeCounts} />
+          <DepartmentGroup title="External" departments={externalDepartments} employeeCounts={employeeCounts} />
         </div>
 
         {(isLoading || filteredDepartments.length === 0) && (
@@ -330,17 +191,15 @@ export default function Departments() {
           <div className="w-full max-w-xl rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
               <div>
-                <h2 className="text-lg font-black text-[#111827]">{editingDepartment ? 'Rename Department' : 'New Department'}</h2>
-                <p className="text-xs font-bold text-[#6B7280]">
-                  {editingDepartment ? 'Renaming also updates assigned employee records.' : 'Departments added here become account choices in Employee Records.'}
-                </p>
+                <h2 className="text-lg font-black text-[#111827]">New Department</h2>
+                <p className="text-xs font-bold text-[#6B7280]">Departments added here become account choices in Employee Records.</p>
               </div>
               <button type="button" onClick={closeModal} className="rounded-xl p-2 text-[#9CA3AF] transition-all hover:bg-[#F3F4F6] hover:text-[#111827]">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={saveDepartment} className="space-y-5 p-6">
+            <form onSubmit={addDepartment} className="space-y-5 p-6">
               <label className="block">
                 <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Department Name</span>
                 <input
@@ -404,7 +263,7 @@ export default function Departments() {
                   className="inline-flex items-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] disabled:opacity-60"
                 >
                   {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {editingDepartment ? 'Save Changes' : 'Add Department'}
+                  Add Department
                 </button>
               </div>
             </form>
@@ -419,24 +278,10 @@ function DepartmentGroup({
   title,
   departments,
   employeeCounts,
-  canManageDepartments,
-  openMenuId,
-  onToggleMenu,
-  onRename,
-  onDelete,
-  onManageEmployees,
-  onExportEmployees,
 }: {
   title: string;
   departments: Department[];
   employeeCounts: Record<string, number>;
-  canManageDepartments: boolean;
-  openMenuId: string | null;
-  onToggleMenu: (id: string) => void;
-  onRename: (department: Department) => void;
-  onDelete: (department: Department) => void;
-  onManageEmployees: (department: Department) => void;
-  onExportEmployees: (department: Department) => void;
 }) {
   if (!departments.length) return null;
 
@@ -450,31 +295,9 @@ function DepartmentGroup({
               <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3">
                 <Building2 className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => onToggleMenu(department.id)}
-                  className="rounded-xl p-2 text-[#9CA3AF] transition-all hover:bg-[#F3F4F6] hover:text-[#111827]"
-                  aria-label={`Open actions for ${department.name}`}
-                  aria-expanded={openMenuId === department.id}
-                >
-                  <MoreVertical className="h-5 w-5" />
-                </button>
-
-                {openMenuId === department.id && (
-                  <div className="absolute right-0 top-10 z-20 w-52 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white py-1 shadow-xl shadow-[#1118271F]">
-                    <MenuButton icon={UsersRound} label="Manage Employees" onClick={() => onManageEmployees(department)} />
-                    <MenuButton icon={Download} label="Export Employees" onClick={() => onExportEmployees(department)} />
-                    {canManageDepartments && (
-                      <>
-                        <div className="my-1 border-t border-[#F3F4F6]" />
-                        <MenuButton icon={Edit3} label="Rename" onClick={() => onRename(department)} />
-                        <MenuButton icon={Trash2} label="Delete" onClick={() => onDelete(department)} tone="danger" />
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              <button className="p-2 text-[#9CA3AF] opacity-0 transition-opacity group-hover:opacity-100">
+                <MoreVertical className="h-5 w-5" />
+              </button>
             </div>
 
             <h3 className="mb-1 text-lg font-bold text-[#111827]">{department.name}</h3>
@@ -496,31 +319,5 @@ function DepartmentGroup({
         ))}
       </div>
     </section>
-  );
-}
-
-function MenuButton({
-  icon: Icon,
-  label,
-  onClick,
-  tone = 'default',
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-  tone?: 'default' | 'danger';
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex w-full items-center gap-3 px-3 py-2.5 text-left text-xs font-black transition-colors',
-        tone === 'danger' ? 'text-[#B91C1C] hover:bg-[#FEF2F2]' : 'text-[#374151] hover:bg-[#F9FAFB] hover:text-[#111827]'
-      )}
-    >
-      <Icon className="h-4 w-4" />
-      {label}
-    </button>
   );
 }

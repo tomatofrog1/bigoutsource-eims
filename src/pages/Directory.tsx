@@ -1,10 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
-  ArrowUpDown,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
   Download,
   Loader2,
   Search,
@@ -12,7 +9,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
@@ -93,13 +90,6 @@ type DirectoryFieldKey =
   | 'windowsKey'
   | 'updatedAt'
   | 'updatedBy';
-
-type SortDirection = 'asc' | 'desc';
-
-type SortState = {
-  field: DirectoryFieldKey;
-  direction: SortDirection;
-};
 
 const defaultVisibleFieldKeys: DirectoryFieldKey[] = [
   'fullName',
@@ -286,37 +276,8 @@ function normalizeAccountList(value: any) {
   return asArray(value).map(normalizeAccount).filter((account: any): account is AccountOption => Boolean(account));
 }
 
-function sortValue(emp: EmployeeRecord, field: DirectoryFieldKey) {
-  switch (field) {
-    case 'fullName':
-      return emp.fullName || '';
-    case 'employeeId':
-      return emp.employeeId || '';
-    case 'employeeNumber':
-      return emp.employeeNumber || emp.employeeId || '';
-    case 'accountAssignment':
-      return emp.accountAssignment || '';
-    case 'site':
-      return emp.site || '';
-    case 'siteId':
-      return emp.siteId || '';
-    case 'rustDeskId':
-      return emp.rustDeskId || emp.rustdeskId || '';
-    default:
-      return String(emp[field as keyof EmployeeRecord] || '');
-  }
-}
-
-function compareEmployees(a: EmployeeRecord, b: EmployeeRecord, field: DirectoryFieldKey, direction: SortDirection) {
-  const first = sortValue(a, field);
-  const second = sortValue(b, field);
-  const result = first.localeCompare(second, undefined, { numeric: true, sensitivity: 'base' });
-  return direction === 'asc' ? result : -result;
-}
-
 export default function Directory() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const canManageRecords = user?.role !== 'viewer';
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -326,11 +287,9 @@ export default function Directory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [siteFilter, setSiteFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [accountFilter, setAccountFilter] = useState(searchParams.get('account') || 'All Account');
   const [accountFilter, setAccountFilter] = useState('All Account');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFields, setSelectedFields] = useState<DirectoryFieldKey[] | null>(null);
-  const [sortState, setSortState] = useState<SortState | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -389,49 +348,11 @@ export default function Directory() {
     };
   }, []);
 
-  useEffect(() => {
-    setAccountFilter(searchParams.get('account') || 'All Account');
-  }, [searchParams]);
-
   const siteFilterOptions = useMemo(
     () => ['All', ...Array.from(new Set([...sites.map((site) => site.name), ...employees.map((emp) => emp.site)]))],
     [employees, sites]
   );
 
-  const filteredEmployees = useMemo(() => {
-    const search = searchTerm.toLowerCase();
-    const matchingEmployees = employees
-      .filter((emp) => statusFilter === 'Archived' ? emp.isArchived : !emp.isArchived)
-      .filter((emp) => {
-        const matchesSearch =
-          emp.fullName.toLowerCase().includes(search) ||
-          emp.employeeId.toLowerCase().includes(search) ||
-          emp.pcName.toLowerCase().includes(search) ||
-          emp.accountAssignment.toLowerCase().includes(search);
-
-        const matchesSite = siteFilter === 'All' || emp.site === siteFilter;
-        const matchesStatus = statusFilter === 'All' || statusFilter === 'Archived' || emp.status === statusFilter.toLowerCase();
-        const matchesAccount = accountFilter === 'All Account' || emp.accountAssignment === accountFilter;
-
-        return matchesSearch && matchesSite && matchesStatus && matchesAccount;
-      });
-
-    if (!sortState) return matchingEmployees;
-
-    return [...matchingEmployees].sort((a, b) => compareEmployees(a, b, sortState.field, sortState.direction));
-  }, [accountFilter, employees, searchTerm, siteFilter, sortState, statusFilter]);
-
-  const handleSort = (field: DirectoryFieldKey) => {
-    setSortState((current) => {
-      if (current?.field !== field) {
-        return { field, direction: 'asc' };
-      }
-
-      if (current.direction === 'asc') {
-        return { field, direction: 'desc' };
-      }
-
-      return null;
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const hasSearchTerm = normalizedSearchTerm.length > 0;
 
@@ -479,7 +400,6 @@ export default function Directory() {
 
       return matchesSearch && matchesSite && matchesStatus && matchesAccount;
     });
-  };
 
   const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / recordsPerPage));
   const pageStartIndex = (currentPage - 1) * recordsPerPage;
@@ -844,24 +764,6 @@ export default function Directory() {
             <thead>
               <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                 {visibleFields.map((field) => (
-                  <th key={field.key} className="px-4 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">
-                    <button
-                      type="button"
-                      onClick={() => handleSort(field.key)}
-                      className="inline-flex items-center gap-1.5 uppercase tracking-widest transition-colors hover:text-[#111827]"
-                      aria-sort={sortState?.field === field.key ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-                    >
-                      <span>{field.label}</span>
-                      {sortState?.field === field.key ? (
-                        sortState.direction === 'asc' ? (
-                          <ChevronUp className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-60" />
-                      )}
-                    </button>
                   <th
                     key={field.key}
                     className={cn(

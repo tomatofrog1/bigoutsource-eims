@@ -93,45 +93,6 @@ export const AccountModel = {
     return normalize(rows[0]);
   },
 
-  async findById(id) {
-    const rows = await supabaseRequest('accounts', {
-      searchParams: {
-        select: '*',
-        id: `eq.${id}`,
-        limit: '1',
-      },
-    });
-    return normalize(rows[0]);
-  },
-
-  async update(id, data) {
-    const payload = {};
-    if (data.name !== undefined) payload.name = blankToNull(data.name);
-    if (data.accountType !== undefined || data.account_type !== undefined) {
-      payload.account_type = normalizeType(data.accountType || data.account_type);
-    }
-    payload.updated_at = new Date().toISOString();
-
-    const rows = await supabaseRequest('accounts', {
-      method: 'PATCH',
-      searchParams: {
-        id: `eq.${id}`,
-      },
-      body: payload,
-    });
-    return normalize(rows[0]);
-  },
-
-  async remove(id) {
-    const rows = await supabaseRequest('accounts', {
-      method: 'DELETE',
-      searchParams: {
-        id: `eq.${id}`,
-      },
-    });
-    return Array.isArray(rows) && rows.length > 0;
-  },
-
   async touch(id) {
     const rows = await supabaseRequest('accounts', {
       method: 'PATCH',
