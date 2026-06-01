@@ -118,4 +118,13 @@ export const EmployeeImportModel = {
 
     return normalize(rows[0]);
   },
+
+  async remove(id) {
+    const rows = await supabaseRequest(TABLE, {
+      method: 'DELETE',
+      searchParams: { id: `eq.${id}` },
+    });
+
+    return rows.map(normalize);
+  },
 };

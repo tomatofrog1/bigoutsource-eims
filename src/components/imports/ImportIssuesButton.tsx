@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { employeeImportService } from '@/src/services/employeeImportService';
 
 export function ImportIssuesButton() {
   const { user } = useAuth();
+  const location = useLocation();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function ImportIssuesButton() {
     };
   }, [user]);
 
-  if (!count) return null;
+  if (!count || location.pathname.startsWith('/employee-imports')) return null;
 
   return (
     <Link

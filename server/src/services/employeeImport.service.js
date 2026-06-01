@@ -215,7 +215,7 @@ export const EmployeeImportService = {
     return { unresolvedIssues: await EmployeeImportModel.countUnresolvedIssues() };
   },
 
-  async resolveDuplicate({ importBatchId, duplicateKey, action, keepRowId }, user) {
+  async resolveDuplicate({ importBatchId, duplicateKey, action, keepRowId, mergedData }, user) {
     if (!importBatchId || !duplicateKey || !action) {
       throw new AppError('importBatchId, duplicateKey, and action are required', 400);
     }
@@ -227,7 +227,7 @@ export const EmployeeImportService = {
     let normalizedData = selectedRow.normalizedData;
 
     if (action === 'merge') {
-      normalizedData = mergeRecords(rows);
+      normalizedData = coerceEditableData(mergedData || mergeRecords(rows));
       selectedRow = rows.sort((a, b) => completeness(b.normalizedData) - completeness(a.normalizedData))[0];
     } else if (action !== 'keep') {
       throw new AppError('Unsupported duplicate resolution action', 400);
@@ -308,6 +308,57 @@ export const EmployeeImportService = {
     });
 
     return updated;
+  },
+
+  async deleteRow(id, user) {
+    const row = await EmployeeImportModel.findById(id);
+    if (!row) throw new AppError('Import row not found', 404);
+    if (row.status === 'imported') throw new AppError('Imported rows cannot be deleted from import review', 400);
+
+    await EmployeeImportModel.remove(id);
+    await AuditLogModel.create({
+      userId: user?.id,
+      userEmail: user?.email,
+      action: 'employee_import.delete_row',
+      entityType: 'employee_import_staging',
+      entityId: id,
+      details: {
+        importBatchId: row.importBatchId,
+        sourceRow: row.sourceRow,
+        status: row.status,
+        duplicateKey: row.duplicateKey,
+      },
+    });
+
+    return { deleted: 1, importBatchId: row.importBatchId };
+  },
+
+  async deleteMany({ importBatchId, type }, user) {
+    if (!importBatchId) throw new AppError('importBatchId is required', 400);
+    if (!['issues', 'duplicates'].includes(type)) throw new AppError('type must be issues or duplicates', 400);
+
+    const rows = await EmployeeImportModel.findAll({ importBatchId, status: 'issue' });
+    const targets = rows.filter((row) => (
+      type === 'duplicates' ? Boolean(row.duplicateKey) : !row.duplicateKey
+    ));
+
+    for (const row of targets) {
+      await EmployeeImportModel.remove(row.id);
+    }
+
+    await AuditLogModel.create({
+      userId: user?.id,
+      userEmail: user?.email,
+      action: 'employee_import.delete_many',
+      entityType: 'employee_import_staging',
+      entityId: importBatchId,
+      details: {
+        type,
+        deleted: targets.length,
+      },
+    });
+
+    return { deleted: targets.length, importBatchId };
   },
 
   async importReady(importBatchId, user, meta = {}) {
