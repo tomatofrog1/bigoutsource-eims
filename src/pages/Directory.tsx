@@ -30,6 +30,7 @@ type AccountOption = {
   id: string;
   name: string;
   accountType: 'internal' | 'external';
+  departmentCode: string;
   lastUsedAt?: string;
 };
 
@@ -44,6 +45,7 @@ type EmployeeRecord = Employee & {
 type AddEmployeeForm = {
   employeeNumber: string;
   firstName: string;
+  middleName: string;
   lastName: string;
   accountAssignment: string;
   phone: string;
@@ -149,6 +151,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
 const initialForm: AddEmployeeForm = {
   employeeNumber: '',
   firstName: '',
+  middleName: '',
   lastName: '',
   accountAssignment: '',
   phone: '',
@@ -234,7 +237,37 @@ function normalizeAccount(account: any): AccountOption | null {
     id: account.id,
     name: account.name,
     accountType: account.accountType || account.account_type || 'external',
+    departmentCode: account.departmentCode || account.department_code || '',
     lastUsedAt: account.lastUsedAt || account.last_used_at || '',
+  };
+}
+
+function sanitizeNamePart(value = '') {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function suggestDepartmentCode(name = '') {
+  return name
+    .split(/\s+/)
+    .map((word) => word.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
+    .join('');
+}
+
+function generatedPreview(form: AddEmployeeForm, account?: AccountOption) {
+  const first = sanitizeNamePart(form.firstName);
+  const middleInitials = form.middleName
+    .split(/\s+/)
+    .map((part) => sanitizeNamePart(part).charAt(0))
+    .join('');
+  const last = sanitizeNamePart(form.lastName);
+  const code = account?.departmentCode || suggestDepartmentCode(account?.name || '');
+  const identifier = `${first.charAt(0)}${middleInitials}${last}`;
+  const domain = account?.accountType === 'internal' ? 'com' : ['hc', 'utd'].includes(code) ? 'team' : 'ph';
+
+  return {
+    lmsAccount: first && last ? `${first}.${last}` : '',
+    boEmail: identifier && code ? `${identifier}.${code}@bigoutsource.${domain}` : '',
+    pcName: identifier && code ? `${code}-${identifier}` : '',
   };
 }
 
@@ -388,6 +421,11 @@ export default function Directory() {
   };
 
   const selectedAccount = accounts.find((account) => account.name === form.accountAssignment);
+  const preview = generatedPreview(form, selectedAccount);
+  const selectedAccountMissingCode = Boolean(selectedAccount && !selectedAccount.departmentCode);
+  const accountBasedPreviewPlaceholder = selectedAccount
+    ? 'Generated after name is entered'
+    : 'Generated after name and account are entered';
   const internalAccounts = accounts.filter((account) => account.accountType === 'internal');
   const externalAccounts = accounts.filter((account) => account.accountType === 'external');
   const selectAccount = async (account: AccountOption) => {
@@ -541,16 +579,17 @@ export default function Directory() {
     try {
       const created = await employeeService.create({
         employeeNumber: form.employeeNumber.trim() || undefined,
-        fullName: `${form.firstName.trim()} ${form.lastName.trim()}`,
+        firstName: form.firstName.trim(),
+        middleName: form.middleName.trim() || undefined,
+        lastName: form.lastName.trim(),
+        fullName: [form.firstName.trim(), form.middleName.trim(), form.lastName.trim()].filter(Boolean).join(' '),
         accountAssignment: form.accountAssignment.trim(),
         phone: form.phone.trim() || undefined,
         address: form.address.trim() || undefined,
-        boEmail: form.boEmail.trim() || undefined,
         emailPassword: form.emailPassword.trim() || undefined,
         status: form.status,
         siteId: selectedSite && selectedSite.id !== selectedSite.name ? selectedSite.id : undefined,
         siteName: selectedSite?.name,
-        pcName: form.pcName.trim() || undefined,
         rustdeskId: form.rustdeskId.trim() || undefined,
         remoteId: form.remoteId.trim() || undefined,
         esetStatus: form.esetStatus,
@@ -831,7 +870,7 @@ export default function Directory() {
             <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
               <div>
                 <h2 className="text-lg font-black text-[#111827]">Add Employee Record</h2>
-                <p className="text-xs font-bold text-[#6B7280]">First name, last name, account, and site are required. LMS account is generated automatically.</p>
+                <p className="text-xs font-bold text-[#6B7280]">First name, last name, account, and site are required. LMS, email, and PC name are generated automatically.</p>
               </div>
               <button onClick={closeModal} className="p-2 rounded-xl text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#111827] transition-all">
                 <X className="w-5 h-5" />
@@ -845,6 +884,9 @@ export default function Directory() {
                 </Field>
                 <Field label="First Name" required>
                   <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="First name" />
+                </Field>
+                <Field label="Middle Name">
+                  <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="Middle name" />
                 </Field>
                 <Field label="Last Name" required>
                   <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="Last name" />
@@ -877,7 +919,10 @@ export default function Directory() {
                   <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="Phone number" />
                 </Field>
                 <Field label="Bigoutsource Email">
-                  <Input type="email" value={form.boEmail} onChange={(value) => updateForm('boEmail', value)} placeholder="name@bigoutsource.com" />
+                  <GeneratedValue value={preview.boEmail} placeholder={accountBasedPreviewPlaceholder} />
+                </Field>
+                <Field label="LMS Account">
+                  <GeneratedValue value={preview.lmsAccount} placeholder="Generated after name is entered" />
                 </Field>
                 <Field label="Email Password">
                   <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="Email password" />
@@ -899,8 +944,13 @@ export default function Directory() {
                   </Select>
                 </Field>
                 <Field label="PC Name">
-                  <Input value={form.pcName} onChange={(value) => updateForm('pcName', value)} placeholder="PC name" />
+                  <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} />
                 </Field>
+                {selectedAccountMissingCode && (
+                  <div className="md:col-span-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+                    This preview uses the suggested account code. Add a stored department code to this account before saving.
+                  </div>
+                )}
                 <Field label="RustDesk ID">
                   <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="RustDesk ID" />
                 </Field>
@@ -1018,6 +1068,14 @@ function Input({
       onChange={(event) => onChange(event.target.value)}
       className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all"
     />
+  );
+}
+
+function GeneratedValue({ value, placeholder }: { value: string; placeholder: string }) {
+  return (
+    <div className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm font-bold text-[#4B5563]">
+      {value || placeholder}
+    </div>
   );
 }
 

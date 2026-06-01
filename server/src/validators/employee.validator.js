@@ -1,6 +1,9 @@
 export const createEmployeeValidator = {
   employeeNumber: { required: true, type: 'string' },
-  fullName: { required: true, type: 'string' },
+  fullName: { required: false, type: 'string' },
+  firstName: { required: false, type: 'string' },
+  middleName: { required: false, type: 'string' },
+  lastName: { required: false, type: 'string' },
   boEmail: { required: false, type: 'string', email: true },
   emailPassword: { required: false, type: 'string' },
   phone: { required: false, type: 'string' },
@@ -23,6 +26,9 @@ export const createEmployeeValidator = {
 export const updateEmployeeValidator = {
   employeeNumber: { required: false, type: 'string' },
   fullName: { required: false, type: 'string' },
+  firstName: { required: false, type: 'string' },
+  middleName: { required: false, type: 'string' },
+  lastName: { required: false, type: 'string' },
   boEmail: { required: false, type: 'string', email: true },
   emailPassword: { required: false, type: 'string' },
   phone: { required: false, type: 'string' },

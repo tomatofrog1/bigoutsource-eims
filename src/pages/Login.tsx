@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AlertCircle, Building2, Eye, EyeOff, Lock, Mail, MapPin, ShieldCheck, User, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService';
+import { supabase } from '../lib/supabase';
 
 type AuthMode = 'login' | 'register';
 type RegistrationStep = 0 | 1 | 2;
@@ -107,29 +107,33 @@ export default function Login() {
       setIsLoadingDepartments(true);
       setDepartmentOptionsError('');
 
-      try {
-        const data = await authService.internalDepartments();
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('name')
+        .eq('account_type', 'internal')
+        .order('name', { ascending: true });
 
-        if (!isMounted) return;
+      if (!isMounted) return;
 
-        const options = Array.from(
-          new Set(
-            (Array.isArray(data) ? data : [])
-              .filter((name: unknown): name is string => typeof name === 'string' && name.trim().length > 0)
-              .map((name) => name.trim())
-          )
-        ).sort((first, second) => first.localeCompare(second));
-
-        setDepartmentOptions(options);
-        setDepartmentOptionsError('');
-      } catch (error) {
-        if (!isMounted) return;
-
+      if (error) {
         setDepartmentOptions([]);
-        setDepartmentOptionsError(error instanceof Error ? error.message : 'Unable to load departments.');
-      } finally {
-        if (isMounted) setIsLoadingDepartments(false);
+        setDepartmentOptionsError(error.message || 'Unable to load departments.');
+        setIsLoadingDepartments(false);
+        return;
       }
+
+      const options = Array.from(
+        new Set(
+          (data || [])
+            .map((item) => item.name)
+            .filter((name: unknown): name is string => typeof name === 'string' && name.trim().length > 0)
+            .map((name) => name.trim())
+        )
+      ).sort((first, second) => first.localeCompare(second));
+
+      setDepartmentOptions(options);
+      setDepartmentOptionsError('');
+      setIsLoadingDepartments(false);
     }
 
     loadDepartmentOptions();
@@ -222,7 +226,7 @@ export default function Login() {
               <ShieldCheck className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-[#111827] tracking-tight">System Login</h1>
-            <p className="text-[#6B7280] text-sm mt-2 text-center text-balance">
+            <p className="text-[#6B7280] text-sm mt-2 texts-center text-balance">
               Authorized Big Outsource personnel only.
             </p>
           </div>
@@ -433,7 +437,10 @@ export default function Login() {
 
           <div className="mt-8 pt-8 border-t border-[#F3F4F6] text-center">
             <p className="text-[10px] text-[#9CA3AF] uppercase tracking-widest font-bold">
-              Secure Access Layer v2.0
+              © 2026 BIG OUTSOURCE
+            </p>
+            <p className="mt-2 text-[10px] text-[#9CA3AF]">
+              Secure access for authorized users
             </p>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { supabaseRequest } from '../config/supabase.js';
+import { sanitizeDepartmentCode } from '../utils/employeeIdentity.js';
 
 const ACCOUNT_TYPES = ['internal', 'external'];
 
@@ -22,6 +23,8 @@ function normalize(row) {
     name: row.name || '',
     accountType: row.account_type || 'external',
     account_type: row.account_type || 'external',
+    departmentCode: row.department_code || '',
+    department_code: row.department_code || '',
     lastUsedAt: row.last_used_at || '',
     createdAt: row.created_at || '',
     updatedAt: row.updated_at || '',
@@ -42,6 +45,28 @@ export const AccountModel = {
     return rows.map(normalize);
   },
 
+  async findByName(name) {
+    const rows = await supabaseRequest('accounts', {
+      searchParams: {
+        select: '*',
+        name: `eq.${String(name || '').trim()}`,
+        limit: '1',
+      },
+    });
+    return normalize(rows[0]);
+  },
+
+  async findByDepartmentCode(code) {
+    const rows = await supabaseRequest('accounts', {
+      searchParams: {
+        select: '*',
+        department_code: `eq.${sanitizeDepartmentCode(code)}`,
+        limit: '1',
+      },
+    });
+    return normalize(rows[0]);
+  },
+
   async findRecent(limit = 4) {
     const rows = await supabaseRequest('accounts', {
       searchParams: {
@@ -57,6 +82,7 @@ export const AccountModel = {
     const payload = {
       name: blankToNull(data.name),
       account_type: normalizeType(data.accountType || data.account_type),
+      department_code: sanitizeDepartmentCode(data.departmentCode || data.department_code),
       last_used_at: new Date().toISOString(),
     };
 

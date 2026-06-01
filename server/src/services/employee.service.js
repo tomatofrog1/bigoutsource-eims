@@ -1,7 +1,17 @@
 import { EmployeeModel } from '../models/employee.model.js';
+import { AccountModel } from '../models/account.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { auditActor } from '../utils/auditActor.js';
+import {
+  buildCompanyEmail,
+  buildEmployeeIdentifierBase,
+  buildLmsUsernameBase,
+  buildPcName,
+  parseEmployeeName,
+  sanitizeDepartmentCode,
+  withNumericSuffix,
+} from '../utils/employeeIdentity.js';
 
 const trackedFields = [
   'employeeNumber',
@@ -23,6 +33,94 @@ const trackedFields = [
   'activityWatchStatus',
   'isArchived',
 ];
+
+function localEmailIdentifier(email = '') {
+  return String(email).split('@')[0]?.split('.')[0] || '';
+}
+
+function pcIdentifier(pcName = '') {
+  const parts = String(pcName).split('-');
+  return parts.length > 1 ? parts.slice(1).join('-') : '';
+}
+
+function generatedFieldsChanged(data = {}) {
+  return [
+    'firstName',
+    'first_name',
+    'middleName',
+    'middle_name',
+    'lastName',
+    'last_name',
+    'fullName',
+    'name',
+    'accountAssignment',
+    'account',
+    'internalDepartmentId',
+    'internal_department_id',
+    'externalDepartmentId',
+    'external_department_id',
+  ].some((field) => data[field] !== undefined);
+}
+
+async function resolveAccount(data, existing) {
+  const accountName = data.accountAssignment || data.account || existing?.accountAssignment || existing?.account;
+  if (!accountName) throw new AppError('accountAssignment is required', 400);
+
+  const account = await AccountModel.findByName(accountName);
+  if (!account) throw new AppError(`Department/account "${accountName}" was not found`, 400);
+
+  const departmentCode = sanitizeDepartmentCode(account.departmentCode || account.department_code);
+  if (!departmentCode) {
+    throw new AppError(`Department/account "${account.name}" needs a department code before employees can be saved`, 400);
+  }
+
+  return {
+    name: account.name,
+    type: account.accountType,
+    code: departmentCode,
+  };
+}
+
+function collectUsedValues(employees, currentId) {
+  return employees.reduce(
+    (sets, employee) => {
+      if (String(employee.id) === String(currentId)) return sets;
+      if (employee.lmsAccount) sets.lmsUsernames.add(employee.lmsAccount);
+
+      const emailIdentifier = localEmailIdentifier(employee.boEmail);
+      const pcNameIdentifier = pcIdentifier(employee.pcName);
+      if (emailIdentifier) sets.employeeIdentifiers.add(emailIdentifier);
+      if (pcNameIdentifier) sets.employeeIdentifiers.add(pcNameIdentifier);
+      return sets;
+    },
+    {
+      lmsUsernames: new Set(),
+      employeeIdentifiers: new Set(),
+    }
+  );
+}
+
+async function withGeneratedIdentity(data, existing = null) {
+  const merged = { ...(existing || {}), ...(data || {}) };
+  const name = parseEmployeeName(merged);
+  const account = await resolveAccount(merged, existing);
+  const allEmployees = await EmployeeModel.findAll();
+  const used = collectUsedValues(allEmployees, existing?.id);
+  const lmsAccount = withNumericSuffix(buildLmsUsernameBase(name), used.lmsUsernames);
+  const identifier = withNumericSuffix(buildEmployeeIdentifierBase(name), used.employeeIdentifiers);
+
+  if (!name.fullName || !name.lastName) throw new AppError('first name and last name are required', 400);
+  if (!lmsAccount || !identifier) throw new AppError('Unable to generate employee identity from the provided name', 400);
+
+  return {
+    ...data,
+    fullName: name.fullName,
+    accountAssignment: account.name,
+    lmsAccount,
+    boEmail: buildCompanyEmail(identifier, account.code, account.type),
+    pcName: buildPcName(identifier, account.code),
+  };
+}
 
 function comparable(value) {
   if (value === undefined || value === null) return '';
@@ -62,7 +160,7 @@ export const EmployeeService = {
       throw new AppError('site is required', 400);
     }
 
-    const employee = await EmployeeModel.create(data);
+    const employee = await EmployeeModel.create(await withGeneratedIdentity(data));
     await AuditLogModel.create({
       ...actor,
       action: 'employee.create',
@@ -86,7 +184,7 @@ export const EmployeeService = {
     const before = await EmployeeModel.findById(id);
     if (!before) throw new AppError('Employee not found', 404);
 
-    const employee = await EmployeeModel.update(id, data);
+    const employee = await EmployeeModel.update(id, generatedFieldsChanged(data) ? await withGeneratedIdentity(data, before) : data);
     if (!employee) throw new AppError('Employee not found', 404);
 
     const changes = diffEmployee(before, employee);

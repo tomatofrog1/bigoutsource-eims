@@ -13,8 +13,20 @@ type Department = {
   id: string;
   name: string;
   accountType: DepartmentType;
+  departmentCode: string;
   createdAt?: string;
 };
+
+function suggestDepartmentCode(name = '') {
+  return name
+    .split(/\s+/)
+    .map((word) => word.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
+    .join('');
+}
+
+function sanitizeDepartmentCode(value = '') {
+  return value.toLowerCase().replace(/[^a-z]/g, '');
+}
 
 function normalizeDepartment(account: any): Department | null {
   if (!account?.id || !account?.name) return null;
@@ -23,6 +35,7 @@ function normalizeDepartment(account: any): Department | null {
     id: account.id,
     name: account.name,
     accountType: account.accountType || account.account_type || 'external',
+    departmentCode: account.departmentCode || account.department_code || '',
     createdAt: account.createdAt || account.created_at || '',
   };
 }
@@ -40,6 +53,8 @@ export default function Departments() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [departmentName, setDepartmentName] = useState('');
+  const [departmentCode, setDepartmentCode] = useState('');
+  const [isDepartmentCodeEdited, setIsDepartmentCodeEdited] = useState(false);
   const [departmentType, setDepartmentType] = useState<DepartmentType>('internal');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -74,12 +89,22 @@ export default function Departments() {
   }, [departments, search]);
   const internalDepartments = filteredDepartments.filter((department) => department.accountType === 'internal');
   const externalDepartments = filteredDepartments.filter((department) => department.accountType === 'external');
+  const duplicateDepartmentCode = departmentCode
+    ? departments.some((department) => department.departmentCode === departmentCode)
+    : false;
 
   const closeModal = () => {
     if (isSaving) return;
     setIsModalOpen(false);
     setDepartmentName('');
+    setDepartmentCode('');
+    setIsDepartmentCodeEdited(false);
     setDepartmentType('internal');
+  };
+
+  const updateDepartmentName = (value: string) => {
+    setDepartmentName(value);
+    if (!isDepartmentCodeEdited) setDepartmentCode(suggestDepartmentCode(value));
   };
 
   const addDepartment = async (event: React.FormEvent) => {
@@ -90,11 +115,22 @@ export default function Departments() {
       return;
     }
 
+    if (!departmentCode) {
+      toast.error('Department code is required');
+      return;
+    }
+
+    if (duplicateDepartmentCode) {
+      toast.error('Department code already exists. Enter a unique code.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const created = await accountService.create({
         name: departmentName.trim(),
         accountType: departmentType,
+        departmentCode,
       });
       const department = normalizeDepartment(created);
       if (!department) throw new Error('The server did not return the created department.');
@@ -168,10 +204,29 @@ export default function Departments() {
                 <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Department Name</span>
                 <input
                   value={departmentName}
-                  onChange={(event) => setDepartmentName(event.target.value)}
+                  onChange={(event) => updateDepartmentName(event.target.value)}
                   placeholder="Department name"
                   className="w-full rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]"
                 />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Department Code</span>
+                <input
+                  value={departmentCode}
+                  onChange={(event) => {
+                    setIsDepartmentCodeEdited(true);
+                    setDepartmentCode(sanitizeDepartmentCode(event.target.value));
+                  }}
+                  placeholder="hc"
+                  className={cn(
+                    'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all focus:ring-2',
+                    duplicateDepartmentCode ? 'border-red-300 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-[#111827]'
+                  )}
+                />
+                <p className={cn('mt-2 text-xs font-bold', duplicateDepartmentCode ? 'text-red-600' : 'text-[#6B7280]')}>
+                  {duplicateDepartmentCode ? 'This code is already used. Enter a unique letters-only code.' : 'Recommended length: 2 to 8 lowercase letters.'}
+                </p>
               </label>
 
               <div>
@@ -204,7 +259,7 @@ export default function Departments() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={isSaving || duplicateDepartmentCode}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] disabled:opacity-60"
                 >
                   {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -252,12 +307,12 @@ function DepartmentGroup({
 
             <div className="grid grid-cols-2 gap-4 border-t border-[#F3F4F6] pt-4">
               <div>
-                <p className="mb-0.5 text-[10px] font-bold uppercase text-[#9CA3AF]">Employees</p>
-                <p className="text-sm font-bold text-[#111827]">{employeeCounts[department.name] || 0}</p>
+                <p className="mb-0.5 text-[10px] font-bold uppercase text-[#9CA3AF]">Code</p>
+                <p className="text-sm font-bold text-[#111827]">{department.departmentCode || '-'}</p>
               </div>
               <div>
-                <p className="mb-0.5 text-[10px] font-bold uppercase text-[#9CA3AF]">Source</p>
-                <p className="text-sm font-bold text-[#111827]">Accounts</p>
+                <p className="mb-0.5 text-[10px] font-bold uppercase text-[#9CA3AF]">Employees</p>
+                <p className="text-sm font-bold text-[#111827]">{employeeCounts[department.name] || 0}</p>
               </div>
             </div>
           </div>
