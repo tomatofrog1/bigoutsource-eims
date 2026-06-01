@@ -16,6 +16,7 @@ import { PageLayout } from '@/src/components/layout/PageLayout';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
 import { cn } from '@/src/lib/utils';
+import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/services/employeeService';
 import { siteService } from '@/src/services/siteService';
 import { accountService } from '@/src/services/accountService';
@@ -188,7 +189,7 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     accountAssignment: emp.accountAssignment || '',
     boEmail: emp.boEmail || '',
     emailPassword: emp.emailPassword || '',
-    lmsAccount: emp.lmsAccount || '',
+    lmsAccount: generateLmsAccount(emp.fullName || '') || emp.lmsAccount || '',
     pcName: emp.pcName || '',
     biosDate: emp.biosDate ? String(emp.biosDate).slice(0, 10) : '',
     windowsKey: emp.windowsKey || '',

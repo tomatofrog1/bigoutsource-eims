@@ -28,6 +28,7 @@ import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { cn } from '@/src/lib/utils';
+import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/services/employeeService';
 import { siteService } from '@/src/services/siteService';
 import { auditLogService } from '@/src/services/auditLogService';
@@ -40,6 +41,8 @@ type SiteOption = {
 type EmployeeForm = {
   employeeNumber: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   accountAssignment: string;
   phone: string;
   address: string;
@@ -62,6 +65,8 @@ type EmployeeForm = {
 const emptyEmployee: EmployeeForm = {
   employeeNumber: '',
   fullName: '',
+  firstName: '',
+  lastName: '',
   accountAssignment: '',
   phone: '',
   address: '',
@@ -83,7 +88,8 @@ const emptyEmployee: EmployeeForm = {
 
 const editableFields: Array<keyof EmployeeForm> = [
   'employeeNumber',
-  'fullName',
+  'firstName',
+  'lastName',
   'accountAssignment',
   'phone',
   'address',
@@ -112,18 +118,32 @@ function formatStatus(value: string) {
   return value === 'active' ? 'Active' : 'Inactive';
 }
 
-function generateLmsAccount(fullName = '') {
-  const parts = fullName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s'-]/g, '')
-    .split(/\s+/)
-    .filter(Boolean);
+function parseEmployeeName(fullName = '') {
+  const name = String(fullName || '').trim();
+  if (!name) return { firstName: '', lastName: '' };
 
-  if (!parts.length) return '';
-  if (parts.length === 1) return parts[0].replace(/['-]/g, '');
+  if (name.includes(',')) {
+    const [lastName, firstName] = name.split(',');
+    return {
+      firstName: String(firstName || '').trim(),
+      lastName: String(lastName || '').trim(),
+    };
+  }
 
-  return `${parts[0].replace(/['-]/g, '')}.${parts[parts.length - 1].replace(/['-]/g, '')}`;
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+
+  return {
+    firstName: parts.slice(0, -1).join(' '),
+    lastName: parts[parts.length - 1],
+  };
+}
+
+function formatEmployeeName(firstName = '', lastName = '') {
+  const first = String(firstName || '').trim();
+  const last = String(lastName || '').trim();
+  if (first && last) return `${last}, ${first}`;
+  return first || last;
 }
 
 function formatDate(value?: string) {
@@ -178,15 +198,20 @@ function actorLabel(log: any) {
 }
 
 function normalizeEmployee(emp: any): EmployeeForm {
+  const fullName = emp?.fullName || '';
+  const nameParts = parseEmployeeName(fullName);
+
   return {
     employeeNumber: emp?.employeeNumber || emp?.employeeId || '',
-    fullName: emp?.fullName || '',
+    fullName,
+    firstName: nameParts.firstName,
+    lastName: nameParts.lastName,
     accountAssignment: emp?.accountAssignment || '',
     phone: emp?.phone || '',
     address: emp?.address || '',
     boEmail: emp?.boEmail || '',
     emailPassword: emp?.emailPassword || '',
-    lmsAccount: emp?.lmsAccount || '',
+    lmsAccount: generateLmsAccount(fullName) || emp?.lmsAccount || '',
     status: emp?.status || 'active',
     siteId: emp?.siteId || '',
     site: emp?.site || '',
@@ -288,18 +313,19 @@ export default function EmployeeProfile() {
 
     if (!hasChanges) return;
 
-    if (!form.employeeNumber.trim() || !form.fullName.trim() || !form.accountAssignment.trim() || !form.siteId) {
-      toast.error('ID, name, account, and site are required');
+    if (!form.employeeNumber.trim() || !form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
+      toast.error('ID, first name, last name, account, and site are required');
       return;
     }
 
     const selectedSite = sites.find((site) => site.id === form.siteId);
+    const fullName = formatEmployeeName(form.firstName, form.lastName);
     setIsSaving(true);
 
     try {
       const updated = await employeeService.update(id, {
         employeeNumber: form.employeeNumber.trim(),
-        fullName: form.fullName.trim(),
+        fullName,
         accountAssignment: form.accountAssignment.trim(),
         phone: form.phone.trim() || undefined,
         address: form.address.trim() || undefined,
@@ -392,11 +418,12 @@ export default function EmployeeProfile() {
                   <Field label="ID" required>
                     <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} />
                   </Field>
-                  <div className="md:col-span-2">
-                    <Field label="Name" required>
-                      <Input value={form.fullName} onChange={(value) => updateForm('fullName', value)} />
-                    </Field>
-                  </div>
+                  <Field label="First Name" required>
+                    <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} />
+                  </Field>
+                  <Field label="Last Name" required>
+                    <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} />
+                  </Field>
                 </div>
               ) : (
                 <div>
@@ -503,7 +530,7 @@ export default function EmployeeProfile() {
                 <ProfileField label="LMS Account" icon={User} editing={isEditing}>
                   {isEditing ? (
                     <div className="px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563]">
-                      {generateLmsAccount(form.fullName) || 'Generated after name is entered'}
+                      {generateLmsAccount(formatEmployeeName(form.firstName, form.lastName)) || 'Generated after name is entered'}
                     </div>
                   ) : (
                     employee.lmsAccount || 'Not Assigned'

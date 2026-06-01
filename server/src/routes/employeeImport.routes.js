@@ -9,6 +9,7 @@ router.get('/summary', EmployeeImportController.summary);
 router.get('/', requireRole(importManagers), EmployeeImportController.list);
 router.post('/stage', requireRole(importManagers), EmployeeImportController.stage);
 router.post('/duplicates/resolve', requireRole(importManagers), EmployeeImportController.resolveDuplicate);
+router.delete('/rows', requireRole(importManagers), EmployeeImportController.deleteRows);
 router.put('/rows/:id', requireRole(importManagers), EmployeeImportController.updateRow);
 router.post('/:importBatchId/import-ready', requireRole(importManagers), EmployeeImportController.importReady);
 

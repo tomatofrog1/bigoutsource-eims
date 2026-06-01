@@ -3,6 +3,7 @@ import { EmployeeImportModel } from '../models/employeeImport.model.js';
 import { EmployeeModel } from '../models/employee.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
 import { AppError } from '../utils/apiResponse.js';
+import { generateLmsAccount } from '../utils/lmsAccount.js';
 
 const sourceSheet = 'IT Master Tracker';
 const mappedFields = [
@@ -61,16 +62,17 @@ function normalizeDate(value) {
 
 function normalizeRow(row) {
   const status = normalizeStatus(value(row, 'Status'));
+  const fullName = value(row, 'Name');
 
   return {
     employeeNumber: value(row, 'ID'),
-    fullName: value(row, 'Name'),
+    fullName,
     accountAssignment: value(row, 'Account'),
     phone: value(row, 'Phone Number'),
     address: value(row, 'Address'),
     boEmail: value(row, 'Bigoutsource Email'),
     emailPassword: value(row, 'Email Password'),
-    lmsAccount: value(row, 'LMS Account'),
+    lmsAccount: generateLmsAccount(fullName) || value(row, 'LMS Account'),
     status: status.status,
     siteName: value(row, 'Site'),
     pcName: value(row, 'PC Name'),
@@ -109,16 +111,17 @@ function validateRecord(record, duplicateKeys) {
 
 function coerceEditableData(data = {}) {
   const status = normalizeStatus(data.status);
+  const fullName = String(data.fullName || '').trim();
 
   return {
     employeeNumber: String(data.employeeNumber || '').trim(),
-    fullName: String(data.fullName || '').trim(),
+    fullName,
     accountAssignment: String(data.accountAssignment || '').trim(),
     phone: String(data.phone || '').trim(),
     address: String(data.address || '').trim(),
     boEmail: String(data.boEmail || '').trim(),
     emailPassword: String(data.emailPassword || '').trim(),
-    lmsAccount: String(data.lmsAccount || '').trim(),
+    lmsAccount: generateLmsAccount(fullName) || String(data.lmsAccount || '').trim(),
     status: status.status,
     siteName: String(data.siteName || '').trim(),
     pcName: String(data.pcName || '').trim(),
@@ -215,7 +218,7 @@ export const EmployeeImportService = {
     return { unresolvedIssues: await EmployeeImportModel.countUnresolvedIssues() };
   },
 
-  async resolveDuplicate({ importBatchId, duplicateKey, action, keepRowId }, user) {
+  async resolveDuplicate({ importBatchId, duplicateKey, action, keepRowId, normalizedData: overrideNormalizedData }, user) {
     if (!importBatchId || !duplicateKey || !action) {
       throw new AppError('importBatchId, duplicateKey, and action are required', 400);
     }
@@ -228,6 +231,9 @@ export const EmployeeImportService = {
 
     if (action === 'merge') {
       normalizedData = mergeRecords(rows);
+      if (overrideNormalizedData && typeof overrideNormalizedData === 'object') {
+        normalizedData = coerceEditableData({ ...normalizedData, ...overrideNormalizedData });
+      }
       selectedRow = rows.sort((a, b) => completeness(b.normalizedData) - completeness(a.normalizedData))[0];
     } else if (action !== 'keep') {
       throw new AppError('Unsupported duplicate resolution action', 400);
@@ -308,6 +314,27 @@ export const EmployeeImportService = {
     });
 
     return updated;
+  },
+
+  async deleteRows({ ids = [] }, user) {
+    if (!Array.isArray(ids) || !ids.length) {
+      throw new AppError('At least one import row id is required', 400);
+    }
+
+    const deleted = await EmployeeImportModel.removeByIds(ids);
+    await AuditLogModel.create({
+      userId: user?.id,
+      userEmail: user?.email,
+      action: 'employee_import.delete_rows',
+      entityType: 'employee_import_staging',
+      details: {
+        requested: ids.length,
+        deleted: deleted.length,
+        rowIds: deleted.map((row) => row.id),
+      },
+    });
+
+    return { deleted: deleted.length, rows: deleted };
   },
 
   async importReady(importBatchId, user, meta = {}) {

@@ -42,6 +42,14 @@ export const EmployeeImportController = {
     }
   },
 
+  async deleteRows(req, res, next) {
+    try {
+      return success(res, await EmployeeImportService.deleteRows(req.body, req.user), 'Import rows deleted');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async importReady(req, res, next) {
     try {
       return success(

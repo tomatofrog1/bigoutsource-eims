@@ -1,4 +1,5 @@
 import { supabaseRequest } from '../config/supabase.js';
+import { generateLmsAccount } from '../utils/lmsAccount.js';
 
 export const SITE_OPTIONS = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
 export const STATUS_OPTIONS = ['active', 'inactive'];
@@ -31,28 +32,13 @@ function normalizeEset(value) {
   return canonical(value, ESET_OPTIONS, value);
 }
 
-function generateLmsAccount(fullName = '') {
-  const parts = fullName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s'-]/g, '')
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!parts.length) return null;
-  if (parts.length === 1) return parts[0].replace(/['-]/g, '');
-
-  return `${parts[0].replace(/['-]/g, '')}.${parts[parts.length - 1].replace(/['-]/g, '')}`;
-}
-
 function toDatabasePayload(data, { includeId = false } = {}) {
   const payload = {};
   const id = blankToNull(valueFrom(data, 'id', 'employeeId', 'employeeNumber'));
   const name = blankToNull(valueFrom(data, 'name', 'fullName'));
   const account = blankToNull(valueFrom(data, 'account', 'accountAssignment'));
   const site = blankToNull(valueFrom(data, 'site', 'siteName', 'siteId'));
-  const rawLmsAccount = valueFrom(data, 'lmsAccount', 'lms_account');
-  const lmsAccount = rawLmsAccount !== undefined ? blankToNull(rawLmsAccount) : name !== undefined ? generateLmsAccount(name || '') : undefined;
+  const lmsAccount = name !== undefined ? generateLmsAccount(name || '') : blankToNull(valueFrom(data, 'lmsAccount', 'lms_account'));
 
   if (includeId || id !== undefined) payload.id = id;
   if (name !== undefined) payload.name = name;
@@ -80,7 +66,7 @@ function toDatabasePayload(data, { includeId = false } = {}) {
     payload.windows_license_key = blankToNull(valueFrom(data, 'windowsKey', 'windowsLicenseKey'));
   }
   if (data?.is_archived !== undefined) {
-  payload.is_archived = data.is_archived;
+    payload.is_archived = data.is_archived;
   }
   return payload;
 }

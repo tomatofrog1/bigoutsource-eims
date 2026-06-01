@@ -16,5 +16,6 @@ export const employeeImportService = {
     apiRequest('/employee-imports/duplicates/resolve', { method: 'POST', body: JSON.stringify(input) })
   ),
   updateRow: (id, input) => apiRequest(`/employee-imports/rows/${id}`, { method: 'PUT', body: JSON.stringify(input) }),
+  deleteRows: (ids) => apiRequest('/employee-imports/rows', { method: 'DELETE', body: JSON.stringify({ ids }) }),
   importReady: (importBatchId) => apiRequest(`/employee-imports/${importBatchId}/import-ready`, { method: 'POST' }),
 };
