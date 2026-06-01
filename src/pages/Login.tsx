@@ -223,7 +223,7 @@ export default function Login() {
             </div>
             <h1 className="text-2xl font-bold text-[#111827] tracking-tight">System Login</h1>
             <p className="text-[#6B7280] text-sm mt-2 text-center text-balance">
-              Authorized BigOutsource personnel only.
+              Authorized Big Outsource personnel only.
             </p>
           </div>
 

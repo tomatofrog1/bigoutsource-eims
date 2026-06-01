@@ -491,7 +491,7 @@ export default function EmployeeProfile() {
           <div className="lg:col-span-8 space-y-8">
             <ProfileSection icon={Globe} title="Work & Account Info">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                <ProfileField label="Account/Project" icon={Briefcase} editing={isEditing}>
+                <ProfileField label="Department/Account Type" icon={Briefcase} editing={isEditing}>
                   {isEditing ? <Input value={form.accountAssignment} onChange={(value) => updateForm('accountAssignment', value)} /> : employee.accountAssignment || 'Not Assigned'}
                 </ProfileField>
                 <ProfileField label="BigOutsource Email" icon={Mail} editing={isEditing}>

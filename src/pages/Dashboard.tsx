@@ -217,7 +217,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <div className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm">
           <h3 className="text-lg font-bold text-[#111827] mb-6 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-[#9CA3AF]" />
