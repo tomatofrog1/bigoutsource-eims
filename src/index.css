@@ -18,6 +18,13 @@
   body {
     @apply bg-[#F9FAFB] text-[#111827] font-sans;
   }
+
+  button,
+  a,
+  [role='button'],
+  [role='link'] {
+    cursor: pointer;
+  }
 }
 
 .data-grid-border {
