@@ -67,13 +67,21 @@ export default function Dashboard() {
     ];
   }, [employees, devices]);
 
-  // Static data for pie chart (will be connected to database later)
   const staffStatus = useMemo(() => {
+    const active = employees.filter((employee) => String(employee.status || '').toLowerCase() === 'active').length;
+    const inactive = employees.filter((employee) => {
+      const status = String(employee.status || '').toLowerCase();
+      return status === 'inactive' || status === 'offboarding';
+    }).length;
+
     return {
-      active: 32,
-      inactive: 8,
+      active,
+      inactive,
     };
-  }, []);
+  }, [employees]);
+
+  const staffStatusTotal = staffStatus.active + staffStatus.inactive;
+  const staffStatusChartTotal = Math.max(staffStatusTotal, 1);
 
   const securityAlerts = useMemo(
     () => [
@@ -148,7 +156,7 @@ export default function Dashboard() {
                 fill="none"
                 stroke="#3B82F6"
                 strokeWidth="8"
-                strokeDasharray={`${(staffStatus.active / (staffStatus.active + staffStatus.inactive)) * 502.65} 502.65`}
+                strokeDasharray={`${(staffStatus.active / staffStatusChartTotal) * 502.65} 502.65`}
                 strokeDashoffset="0"
                 transform="rotate(-90 100 100)"
               />
@@ -160,13 +168,13 @@ export default function Dashboard() {
                 fill="none"
                 stroke="#EF4444"
                 strokeWidth="8"
-                strokeDasharray={`${(staffStatus.inactive / (staffStatus.active + staffStatus.inactive)) * 502.65} 502.65`}
-                strokeDashoffset={`-${(staffStatus.active / (staffStatus.active + staffStatus.inactive)) * 502.65}`}
+                strokeDasharray={`${(staffStatus.inactive / staffStatusChartTotal) * 502.65} 502.65`}
+                strokeDashoffset={`-${(staffStatus.active / staffStatusChartTotal) * 502.65}`}
                 transform="rotate(-90 100 100)"
               />
               {/* Center text */}
               <text x="100" y="95" textAnchor="middle" className="text-sm font-black fill-[#111827]">
-                {staffStatus.active + staffStatus.inactive}
+                {staffStatusTotal}
               </text>
               <text x="100" y="110" textAnchor="middle" className="text-xs fill-[#6B7280] font-bold">
                 Total Staff
