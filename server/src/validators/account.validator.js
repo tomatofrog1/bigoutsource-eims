@@ -8,3 +8,8 @@ export const createAccountValidator = {
     message: 'departmentCode must contain letters only',
   },
 };
+
+export const updateAccountValidator = {
+  name: { required: true, type: 'string', min: 2 },
+  accountType: { required: false, type: 'string', enum: ['internal', 'external'] },
+};

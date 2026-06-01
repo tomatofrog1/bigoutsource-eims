@@ -161,4 +161,17 @@ export const EmployeeModel = {
     });
     return Array.isArray(rows) && rows.length > 0;
   },
+
+  async updateAccountAssignment(fromAccount, toAccount) {
+    const rows = await supabaseRequest('employees', {
+      method: 'PATCH',
+      searchParams: {
+        account: `eq.${fromAccount}`,
+      },
+      body: {
+        account: toAccount,
+      },
+    });
+    return rows.map(normalize);
+  },
 };

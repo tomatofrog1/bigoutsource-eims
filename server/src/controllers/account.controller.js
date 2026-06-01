@@ -26,6 +26,23 @@ export const AccountController = {
     }
   },
 
+  async update(req, res, next) {
+    try {
+      return success(res, await AccountService.update(req.params.id, req.body, req.user, { ipAddress: req.ip }), 'Account updated');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async remove(req, res, next) {
+    try {
+      await AccountService.remove(req.params.id, req.user, { ipAddress: req.ip });
+      return success(res, null, 'Account deleted');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async touch(req, res, next) {
     try {
       return success(res, await AccountService.touch(req.params.id), 'Account usage updated');
