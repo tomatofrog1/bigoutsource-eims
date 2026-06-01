@@ -215,6 +215,7 @@ export default function EmployeeProfile() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
+  const canManageEmployee = user?.role !== 'viewer';
 
   const hasChanges = useMemo(
     () => editableFields.some((field) => String(form[field] || '') !== String(employee[field] || '')),
@@ -268,6 +269,7 @@ export default function EmployeeProfile() {
   };
 
   const startEditing = () => {
+    if (!canManageEmployee) return;
     setForm(employee);
     setIsEditing(true);
   };
@@ -279,6 +281,8 @@ export default function EmployeeProfile() {
 
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
+
+    if (!canManageEmployee) return;
 
     if (!id) return;
 
@@ -328,6 +332,7 @@ export default function EmployeeProfile() {
   };
 
   const toggleArchiveEmployee = async () => {
+    if (!canManageEmployee) return;
     if (!id) return;
 
     setIsArchiving(true);
@@ -441,7 +446,7 @@ export default function EmployeeProfile() {
                     Save Changes
                   </button>
                 </>
-              ) : (
+              ) : canManageEmployee ? (
                 <div className="flex gap-3">
                   <button
                     type="button"
@@ -477,7 +482,7 @@ export default function EmployeeProfile() {
                     )}
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -674,7 +679,7 @@ export default function EmployeeProfile() {
         </div>
       </form>
 
-      {showArchiveModal && (
+      {canManageEmployee && showArchiveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-md bg-white rounded-3xl border border-[#E5E7EB] shadow-2xl p-6">
             <div className="flex items-start gap-4">

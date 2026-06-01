@@ -42,8 +42,10 @@ export default function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/logs" element={<AuditLogs />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/employee-imports/issues" element={<EmployeeImportReview />} />
-            <Route path="/employee-imports/:batchId" element={<EmployeeImportReview />} />
+            <Route element={<ProtectedRoute roles={['super_admin', 'admin', 'hr_admin']} />}>
+              <Route path="/employee-imports/issues" element={<EmployeeImportReview />} />
+              <Route path="/employee-imports/:batchId" element={<EmployeeImportReview />} />
+            </Route>
             <Route element={<ProtectedRoute roles={['super_admin']} />}>
               <Route path="/users" element={<UserManagement />} />
             </Route>

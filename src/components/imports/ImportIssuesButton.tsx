@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { employeeImportService } from '@/src/services/employeeImportService';
 
 export function ImportIssuesButton() {
+  const { user } = useAuth();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    if (!user || user.role === 'viewer' || user.role === 'it_admin') {
+      setCount(0);
+      return;
+    }
+
     let isMounted = true;
 
     async function loadSummary() {
@@ -25,7 +32,7 @@ export function ImportIssuesButton() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [user]);
 
   if (!count) return null;
 

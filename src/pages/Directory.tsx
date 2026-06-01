@@ -13,6 +13,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 import { employeeService } from '@/src/services/employeeService';
@@ -232,6 +233,8 @@ function normalizeAccountList(value: any) {
 
 export default function Directory() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canManageRecords = user?.role !== 'viewer';
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [sites, setSites] = useState<SiteOption[]>(mockSites);
@@ -331,6 +334,8 @@ export default function Directory() {
   const selectAccount = async (account: AccountOption) => {
     updateForm('accountAssignment', account.name);
     setIsAccountDropdownOpen(false);
+
+    if (!canManageRecords) return;
 
     const updated = await accountService.touch(account.id).catch(() => null);
     if (updated) {
@@ -612,35 +617,39 @@ export default function Directory() {
           </div>
 
           <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              className="hidden"
-              onChange={(event) => void handleImportFile(event.target.files?.[0])}
-            />
-            <button
-              onClick={handleImport}
-              disabled={isStagingImport}
-              className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-            >
-              {isStagingImport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {isStagingImport ? 'Staging' : 'Import'}
-            </button>
-            <button
-              onClick={exportToExcel}
-              className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-            >
-              <Upload className="w-4 h-4" />
-              Export
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-black hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
-            >
-              <UserPlus className="w-4 h-4" />
-              Add Record
-            </button>
+            {canManageRecords && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={(event) => void handleImportFile(event.target.files?.[0])}
+                />
+                <button
+                  onClick={handleImport}
+                  disabled={isStagingImport}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                >
+                  {isStagingImport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {isStagingImport ? 'Staging' : 'Import'}
+                </button>
+                <button
+                  onClick={exportToExcel}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                >
+                  <Upload className="w-4 h-4" />
+                  Export
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-black hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add Record
+                </button>
+              </>
+            )}
           </div>
         </div>
 

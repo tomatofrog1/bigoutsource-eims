@@ -6,7 +6,7 @@ const router = Router();
 const importManagers = ['super_admin', 'admin', 'hr_admin'];
 
 router.get('/summary', EmployeeImportController.summary);
-router.get('/', EmployeeImportController.list);
+router.get('/', requireRole(importManagers), EmployeeImportController.list);
 router.post('/stage', requireRole(importManagers), EmployeeImportController.stage);
 router.post('/duplicates/resolve', requireRole(importManagers), EmployeeImportController.resolveDuplicate);
 router.put('/rows/:id', requireRole(importManagers), EmployeeImportController.updateRow);

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Building2, Loader2, MoreVertical, Plus, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { cn } from '@/src/lib/utils';
 import { accountService } from '@/src/services/accountService';
 import { employeeService } from '@/src/services/employeeService';
@@ -31,6 +32,8 @@ function asArray(value: any) {
 }
 
 export default function Departments() {
+  const { user } = useAuth();
+  const canManageDepartments = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'hr_admin';
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState('');
@@ -120,14 +123,16 @@ export default function Departments() {
               className="w-full rounded-lg border border-[#E5E7EB] py-2 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-[#111827]"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 rounded-lg bg-[#111827] px-4 py-2 text-sm font-medium text-white shadow-sm transition-shadow hover:bg-[#374151]"
-          >
-            <Plus className="h-4 w-4" />
-            New Department
-          </button>
+          {canManageDepartments && (
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center justify-center gap-2 rounded-lg bg-[#111827] px-4 py-2 text-sm font-medium text-white shadow-sm transition-shadow hover:bg-[#374151]"
+            >
+              <Plus className="h-4 w-4" />
+              New Department
+            </button>
+          )}
         </div>
 
         <div className="space-y-8">
