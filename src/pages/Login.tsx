@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AlertCircle, Building2, Eye, EyeOff, Lock, Mail, MapPin, ShieldCheck, User, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { authService } from '../services/authService';
 
 type AuthMode = 'login' | 'register';
 type RegistrationStep = 0 | 1 | 2;
@@ -107,33 +107,28 @@ export default function Login() {
       setIsLoadingDepartments(true);
       setDepartmentOptionsError('');
 
-      const { data, error } = await supabase
-        .from('accounts')
-        .select('name')
-        .eq('account_type', 'internal')
-        .order('name', { ascending: true });
+      try {
+        const data = await authService.internalDepartments();
 
-      if (!isMounted) return;
+        if (!isMounted) return;
 
-      if (error) {
+        const options = Array.from(
+          new Set(
+            (Array.isArray(data) ? data : [])
+              .filter((name: unknown): name is string => typeof name === 'string' && name.trim().length > 0)
+              .map((name) => name.trim())
+          )
+        ).sort((first, second) => first.localeCompare(second));
+
+        setDepartmentOptions(options);
+        setDepartmentOptionsError('');
+      } catch (error) {
+        if (!isMounted) return;
         setDepartmentOptions([]);
-        setDepartmentOptionsError(error.message || 'Unable to load departments.');
-        setIsLoadingDepartments(false);
-        return;
+        setDepartmentOptionsError(error instanceof Error ? error.message : 'Unable to load departments.');
+      } finally {
+        if (isMounted) setIsLoadingDepartments(false);
       }
-
-      const options = Array.from(
-        new Set(
-          (data || [])
-            .map((item) => item.name)
-            .filter((name: unknown): name is string => typeof name === 'string' && name.trim().length > 0)
-            .map((name) => name.trim())
-        )
-      ).sort((first, second) => first.localeCompare(second));
-
-      setDepartmentOptions(options);
-      setDepartmentOptionsError('');
-      setIsLoadingDepartments(false);
     }
 
     loadDepartmentOptions();

@@ -131,6 +131,8 @@ export const EmployeeImportModel = {
     });
 
     return Array.isArray(rows) ? rows.map(normalize) : [];
+  },
+
   async remove(id) {
     const rows = await supabaseRequest(TABLE, {
       method: 'DELETE',

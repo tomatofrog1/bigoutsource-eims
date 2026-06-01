@@ -218,8 +218,7 @@ export const EmployeeImportService = {
     return { unresolvedIssues: await EmployeeImportModel.countUnresolvedIssues() };
   },
 
-  async resolveDuplicate({ importBatchId, duplicateKey, action, keepRowId, normalizedData: overrideNormalizedData }, user) {
-  async resolveDuplicate({ importBatchId, duplicateKey, action, keepRowId, mergedData }, user) {
+  async resolveDuplicate({ importBatchId, duplicateKey, action, keepRowId, normalizedData: overrideNormalizedData, mergedData }, user) {
     if (!importBatchId || !duplicateKey || !action) {
       throw new AppError('importBatchId, duplicateKey, and action are required', 400);
     }
@@ -232,10 +231,11 @@ export const EmployeeImportService = {
 
     if (action === 'merge') {
       normalizedData = mergeRecords(rows);
-      if (overrideNormalizedData && typeof overrideNormalizedData === 'object') {
-        normalizedData = coerceEditableData({ ...normalizedData, ...overrideNormalizedData });
+      const overrideData = mergedData || overrideNormalizedData;
+      if (overrideData && typeof overrideData === 'object') {
+        normalizedData = { ...normalizedData, ...overrideData };
       }
-      normalizedData = coerceEditableData(mergedData || mergeRecords(rows));
+      normalizedData = coerceEditableData(normalizedData);
       selectedRow = rows.sort((a, b) => completeness(b.normalizedData) - completeness(a.normalizedData))[0];
     } else if (action !== 'keep') {
       throw new AppError('Unsupported duplicate resolution action', 400);
@@ -337,6 +337,8 @@ export const EmployeeImportService = {
     });
 
     return { deleted: deleted.length, rows: deleted };
+  },
+
   async deleteRow(id, user) {
     const row = await EmployeeImportModel.findById(id);
     if (!row) throw new AppError('Import row not found', 404);
