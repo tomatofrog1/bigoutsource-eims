@@ -159,6 +159,7 @@ function NotificationBell() {
         {isOpen && (
           <motion.div
             className="fixed inset-0 z-50 flex items-start justify-end bg-[#111827]/30 px-4 py-20 sm:px-8"
+            onClick={() => setIsOpen(false)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -166,6 +167,7 @@ function NotificationBell() {
           >
           <motion.div
             className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
             initial={{ opacity: 0, x: 24, scale: 0.98 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 24, scale: 0.98 }}
