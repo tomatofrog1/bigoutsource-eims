@@ -6,6 +6,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { settingsService } from '@/src/services/settingsService';
 import { userService } from '@/src/services/userService';
 import { AppUser } from '@/src/types';
+import { ImportIssuesButton } from '@/src/components/imports/ImportIssuesButton';
 
 const SEEN_PENDING_REGISTRATIONS_KEY = 'eims_seen_pending_registration_ids';
 const NOTIFICATION_REFRESH_MS = 10000;
@@ -43,6 +44,7 @@ export function Header({ title }: { title: string }) {
         
         
         <div className="flex items-center gap-4">
+          <ImportIssuesButton />
           <NotificationBell />
           
           <div className="flex items-center gap-3 pl-4 border-l border-[#E5E7EB]">

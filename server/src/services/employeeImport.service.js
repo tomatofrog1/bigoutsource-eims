@@ -94,7 +94,7 @@ function completeness(record) {
   }, 0);
 }
 
-function validateRecord(record, duplicateKeys) {
+function validateRecord(record, duplicateKeys, existingIds = new Set()) {
   const issues = [];
 
   if (!record.employeeNumber) issues.push({ code: 'missing_id', message: 'Missing employee ID' });
@@ -104,6 +104,9 @@ function validateRecord(record, duplicateKeys) {
   if (!record.siteName) issues.push({ code: 'missing_site', message: 'Missing site' });
   if (record.employeeNumber && duplicateKeys.has(record.employeeNumber)) {
     issues.push({ code: 'duplicate_id', message: `Duplicate employee ID ${record.employeeNumber}` });
+  }
+  if (record.employeeNumber && existingIds.has(record.employeeNumber)) {
+    issues.push({ code: 'existing_id', message: `Employee ID ${record.employeeNumber} already exists in Employee Records` });
   }
 
   return issues;
@@ -161,6 +164,15 @@ function mergeRecords(records) {
   return merged;
 }
 
+async function loadExistingEmployeeIds() {
+  const employees = await EmployeeModel.findAll();
+  return new Set(
+    employees
+      .map((employee) => String(employee.employeeNumber ?? employee.id ?? '').trim())
+      .filter(Boolean)
+  );
+}
+
 export const EmployeeImportService = {
   async stage({ rows }, user) {
     if (!Array.isArray(rows) || rows.length === 0) {
@@ -181,8 +193,9 @@ export const EmployeeImportService = {
     });
 
     const duplicateKeys = new Set([...idCounts.entries()].filter(([, count]) => count > 1).map(([id]) => id));
+    const existingIds = await loadExistingEmployeeIds();
     const stagedRows = normalizedRows.map((row) => {
-      const issues = validateRecord(row.normalizedData, duplicateKeys);
+      const issues = validateRecord(row.normalizedData, duplicateKeys, existingIds);
       return {
         importBatchId,
         sourceSheet,
@@ -241,7 +254,8 @@ export const EmployeeImportService = {
       throw new AppError('Unsupported duplicate resolution action', 400);
     }
 
-    const remainingIssues = validateRecord(normalizedData, new Set()).filter((issue) => issue.code !== 'duplicate_id');
+    const existingIds = await loadExistingEmployeeIds();
+    const remainingIssues = validateRecord(normalizedData, new Set(), existingIds).filter((issue) => issue.code !== 'duplicate_id');
     const updated = [];
 
     for (const row of rows) {
@@ -286,7 +300,8 @@ export const EmployeeImportService = {
       if (matchingRows.length) duplicateKeys.add(candidate.employeeNumber);
     }
 
-    const issues = validateRecord(candidate, duplicateKeys);
+    const existingIds = await loadExistingEmployeeIds();
+    const issues = validateRecord(candidate, duplicateKeys, existingIds);
     const updated = await EmployeeImportModel.update(id, {
       ...row,
       normalizedData: candidate,

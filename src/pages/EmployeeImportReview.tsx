@@ -859,7 +859,8 @@ function ConfirmDeleteModal({
   onConfirm: () => void;
 }) {
   const [typedPhrase, setTypedPhrase] = useState('');
-  const canConfirm = typedPhrase === intent.phrase;
+  const requiresPhrase = intent.ids.length > 1;
+  const canConfirm = !requiresPhrase || typedPhrase === intent.phrase;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm">
@@ -880,16 +881,22 @@ function ConfirmDeleteModal({
         </div>
 
         <div className="space-y-4 px-6 py-5">
-          <p className="text-xs font-bold text-[#4B5563]">
-            Type <span className="font-black text-red-600">{intent.phrase}</span> to confirm.
-          </p>
-          <input
-            value={typedPhrase}
-            onChange={(event) => setTypedPhrase(event.target.value)}
-            disabled={isDeleting}
-            autoFocus
-            className="w-full rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-sm font-bold text-[#111827] outline-none transition-all focus:ring-2 focus:ring-red-500"
-          />
+          {requiresPhrase ? (
+            <>
+              <p className="text-xs font-bold text-[#4B5563]">
+                Type <span className="font-black text-red-600">{intent.phrase}</span> to confirm.
+              </p>
+              <input
+                value={typedPhrase}
+                onChange={(event) => setTypedPhrase(event.target.value)}
+                disabled={isDeleting}
+                autoFocus
+                className="w-full rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-sm font-bold text-[#111827] outline-none transition-all focus:ring-2 focus:ring-red-500"
+              />
+            </>
+          ) : (
+            <p className="text-xs font-bold text-[#4B5563]">This action cannot be undone.</p>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 border-t border-[#FEE2E2] bg-[#FFF7F7] px-6 py-4">

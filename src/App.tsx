@@ -18,13 +18,11 @@ import Reports from './pages/Reports';
 import AuditLogs from './pages/AuditLogs';
 import UserManagement from './pages/UserManagement';
 import EmployeeImportReview from './pages/EmployeeImportReview';
-import { ImportIssuesButton } from './components/imports/ImportIssuesButton';
 
 export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <ImportIssuesButton />
         <Routes>
           <Route path="/login" element={<Login />} />
           
