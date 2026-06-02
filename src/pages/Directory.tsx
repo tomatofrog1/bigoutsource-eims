@@ -4,10 +4,15 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  CheckCircle2,
   ChevronRight,
+  Circle,
+  Clipboard,
   Download,
   Loader2,
   Search,
+  Save,
+  Sparkles,
   Upload,
   UserPlus,
   X,
@@ -70,6 +75,8 @@ type AddEmployeeForm = {
   isArchived?: boolean;
 };
 
+type FormErrors = Partial<Record<keyof AddEmployeeForm, string>>;
+
 type DirectoryFieldKey =
   | 'id'
   | 'fullName'
@@ -130,7 +137,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
   { key: 'phone', label: 'Phone Number', render: (emp) => emp.phone || '-' },
   { key: 'address', label: 'Address', render: (emp) => emp.address || '-' },
   { key: 'boEmail', label: 'Bigoutsource Email', render: (emp) => emp.boEmail || '-' },
-  { key: 'emailPassword', label: 'Email Password', render: (emp) => emp.emailPassword || '-' },
+  { key: 'emailPassword', label: 'Password', render: (emp) => emp.emailPassword || '-' },
   { key: 'lmsAccount', label: 'LMS Account', render: (emp) => emp.lmsAccount || '-' },
   {
     key: 'status',
@@ -184,6 +191,16 @@ const initialForm: AddEmployeeForm = {
   windowsKey: '',
   isArchived: false,
 };
+
+const wizardSteps = [
+  { title: 'Employee Info' },
+  { title: 'Accounts' },
+  { title: 'Assignment' },
+  { title: 'IT Assets' },
+  { title: 'Review' },
+];
+
+const draftStorageKey = 'employee-onboarding-draft';
 
 function titleEsetStatus(value?: string) {
   return value === 'active' || value === 'Active' || value === 'installed' ? 'Active' : 'Inactive';
@@ -259,6 +276,37 @@ function sanitizeNamePart(value = '') {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function capitalizeNameInput(value = '') {
+  return value
+    .split(' ')
+    .map((part) => {
+      if (!part) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
+function hasDraftData(form: AddEmployeeForm) {
+  return Object.entries(form).some(([key, value]) => {
+    if (key === 'status') return value !== initialForm.status;
+    if (key === 'esetStatus') return value !== initialForm.esetStatus;
+    if (key === 'activityWatchStatus') return value !== initialForm.activityWatchStatus;
+    if (key === 'isArchived') return Boolean(value) !== Boolean(initialForm.isArchived);
+    return String(value || '').trim().length > 0;
+  });
+}
+
+function formatDraftTimestamp(value?: string | null) {
+  if (!value) return '';
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
 function suggestDepartmentCode(name = '') {
   return name
     .split(/\s+/)
@@ -321,11 +369,17 @@ export default function Directory() {
   const [selectedFields, setSelectedFields] = useState<DirectoryFieldKey[] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isStagingImport, setIsStagingImport] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [form, setForm] = useState<AddEmployeeForm>(initialForm);
+  const [activeStep, setActiveStep] = useState(0);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const [isReviewConfirmed, setIsReviewConfirmed] = useState(false);
 
   const loadAccounts = async () => {
     const allResult = await accountService.list().catch(() => null);
@@ -452,15 +506,71 @@ export default function Directory() {
   }, [totalPages]);
 
   const updateForm = (field: keyof AddEmployeeForm, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    const formattedValue =
+      field === 'employeeNumber'
+        ? value.toUpperCase()
+        : field === 'firstName' || field === 'middleName' || field === 'lastName'
+          ? capitalizeNameInput(value)
+          : value;
+
+    setForm((current) => ({ ...current, [field]: formattedValue }));
+    setIsReviewConfirmed(false);
+    setFormErrors((current) => {
+      if (!current[field]) return current;
+      const { [field]: _removed, ...nextErrors } = current;
+      return nextErrors;
+    });
   };
+
+  useEffect(() => {
+    const rawDraft = localStorage.getItem(draftStorageKey);
+    if (!rawDraft) return;
+
+    try {
+      const draft = JSON.parse(rawDraft) as { form?: AddEmployeeForm; savedAt?: string };
+      if (!draft.form) return;
+      setForm({ ...initialForm, ...draft.form });
+      setDraftSavedAt(draft.savedAt || null);
+      setIsDraftRestored(true);
+    } catch {
+      localStorage.removeItem(draftStorageKey);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const rawDraft = localStorage.getItem(draftStorageKey);
+    if (!rawDraft) return;
+
+    try {
+      const draft = JSON.parse(rawDraft) as { form?: AddEmployeeForm; savedAt?: string };
+      if (!draft.form) return;
+      setForm({ ...initialForm, ...draft.form });
+      setDraftSavedAt(draft.savedAt || null);
+      setIsDraftRestored(true);
+    } catch {
+      localStorage.removeItem(draftStorageKey);
+    }
+  }, [isModalOpen]);
+
+  useEffect(() => {
+    if (!isModalOpen || !hasDraftData(form)) return;
+
+    const timer = window.setTimeout(() => {
+      const savedAt = new Date().toISOString();
+      localStorage.setItem(draftStorageKey, JSON.stringify({ form, savedAt }));
+      setDraftSavedAt(savedAt);
+      setIsDraftRestored(false);
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [form, isModalOpen]);
 
   const selectedAccount = accounts.find((account) => account.name === form.accountAssignment);
   const preview = generatedPreview(form, selectedAccount);
   const selectedAccountMissingCode = Boolean(selectedAccount && !selectedAccount.departmentCode);
-  const accountBasedPreviewPlaceholder = selectedAccount
-    ? 'Generated after name is entered'
-    : 'Generated after name and account are entered';
+  const draftSavedLabel = draftSavedAt ? `Last saved ${formatDraftTimestamp(draftSavedAt)}` : 'Not saved yet';
   const internalAccounts = accounts.filter((account) => account.accountType === 'internal');
   const externalAccounts = accounts.filter((account) => account.accountType === 'external');
   const selectAccount = async (account: AccountOption) => {
@@ -533,7 +643,7 @@ export default function Directory() {
       'Phone Number': emp.phone,
       Address: emp.address,
       'Bigoutsource Email': emp.boEmail,
-      'Email Password': emp.emailPassword,
+      Password: emp.emailPassword,
       'LMS Account': emp.lmsAccount,
       Status: emp.status,
       Site: emp.site,
@@ -611,16 +721,100 @@ export default function Directory() {
 
   const closeModal = () => {
     if (isSaving) return;
+    if (hasDraftData(form)) {
+      const savedAt = new Date().toISOString();
+      localStorage.setItem(draftStorageKey, JSON.stringify({ form, savedAt }));
+      setDraftSavedAt(savedAt);
+    }
     setIsModalOpen(false);
     setIsAccountDropdownOpen(false);
     setForm(initialForm);
+    setActiveStep(0);
+    setFormErrors({});
+    setIsReviewConfirmed(false);
+  };
+
+  const validationForStep = (step: number, requireAll = false): FormErrors => {
+    const errors: FormErrors = {};
+
+    if ((requireAll || step === 0) && !form.employeeNumber.trim()) {
+      errors.employeeNumber = 'Employee ID is required for HR and payroll matching.';
+    }
+    if ((requireAll || step === 0) && !form.firstName.trim()) {
+      errors.firstName = 'Enter the employee first name.';
+    }
+    if ((requireAll || step === 0) && !form.lastName.trim()) {
+      errors.lastName = 'Enter the employee last name.';
+    }
+    if ((requireAll || step === 1) && !form.accountAssignment.trim()) {
+      errors.accountAssignment = 'Select an account or department before generating access.';
+    }
+    if ((requireAll || step === 2) && !form.siteId) {
+      errors.siteId = 'Select the employee work site.';
+    }
+
+    return errors;
+  };
+
+  const goToNextStep = () => {
+    const errors = validationForStep(activeStep);
+
+    if (Object.keys(errors).length) {
+      setFormErrors(errors);
+      toast.error('Please resolve the highlighted fields before continuing');
+      return;
+    }
+
+    setFormErrors({});
+    setActiveStep((step) => Math.min(step + 1, wizardSteps.length - 1));
+  };
+
+  const goToPreviousStep = () => {
+    setFormErrors({});
+    setActiveStep((step) => Math.max(step - 1, 0));
+  };
+
+  const saveDraft = () => {
+    const savedAt = new Date().toISOString();
+    localStorage.setItem(draftStorageKey, JSON.stringify({ form, savedAt }));
+    setDraftSavedAt(savedAt);
+    setIsDraftRestored(false);
+    toast.success('Draft saved locally');
+  };
+
+  const clearDraft = () => {
+    if (!draftSavedAt) return;
+
+    const confirmed = window.confirm('Clear the saved employee onboarding draft? This cannot be undone.');
+    if (!confirmed) return;
+
+    localStorage.removeItem(draftStorageKey);
+    setDraftSavedAt(null);
+    setIsDraftRestored(false);
+    setForm(initialForm);
+    setActiveStep(0);
+    setFormErrors({});
+    setIsReviewConfirmed(false);
+    toast.success('Draft cleared');
   };
 
   const handleAddEmployee = async (event: FormEvent) => {
     event.preventDefault();
 
-    if (!form.employeeNumber.trim() || !form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
-      toast.error('ID, first name, last name, account, and site are required');
+    const errors = validationForStep(activeStep, true);
+
+    if (Object.keys(errors).length) {
+      setFormErrors(errors);
+      const firstErrorField = Object.keys(errors)[0] as keyof AddEmployeeForm;
+      const errorStep = firstErrorField === 'accountAssignment' ? 1 : firstErrorField === 'siteId' ? 2 : 0;
+      setActiveStep(errorStep);
+      toast.error('Please resolve the highlighted fields before submitting');
+      return;
+    }
+
+    if (!isReviewConfirmed) {
+      setActiveStep(4);
+      toast.error('Confirm the reviewed onboarding details before submitting');
       return;
     }
 
@@ -659,8 +853,16 @@ export default function Directory() {
       if (selectedAccount) {
         await selectAccount(selectedAccount);
       }
+      localStorage.removeItem(draftStorageKey);
+      setDraftSavedAt(null);
+      setIsDraftRestored(false);
       toast.success('Employee record added');
-      closeModal();
+      setIsModalOpen(false);
+      setIsAccountDropdownOpen(false);
+      setForm(initialForm);
+      setActiveStep(0);
+      setFormErrors({});
+      setIsReviewConfirmed(false);
     } catch (error: any) {
       toast.error(error.message || 'Unable to add employee record');
     } finally {
@@ -938,138 +1140,371 @@ export default function Directory() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm">
-          <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
+          <div className="flex max-h-[94vh] w-full max-w-[1080px] flex-col overflow-hidden rounded-2xl border border-[#D1D5DB] bg-[#F8FAFC] shadow-2xl shadow-[#11182733]">
+            <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] bg-white px-6 py-5">
               <div>
-                <h2 className="text-lg font-black text-[#111827]">Add Employee Record</h2>
-                <p className="text-xs font-bold text-[#6B7280]">First name, last name, account, and site are required. LMS, email, and PC name are generated automatically.</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#2563EB]">HR Onboarding Workflow</p>
+                <h2 className="mt-1 text-xl font-black text-[#111827]">Add Employee Record</h2>
               </div>
-              <button onClick={closeModal} className="p-2 rounded-xl text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#111827] transition-all">
-                <X className="w-5 h-5" />
+              <button type="button" onClick={closeModal} className="rounded-xl p-2 text-[#9CA3AF] transition-all hover:bg-[#F3F4F6] hover:text-[#111827]">
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAddEmployee} className="overflow-y-auto max-h-[calc(92vh-81px)]">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-                <Field label="Last Name" required>
-                  <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="Last name" />
-                </Field>
-                <Field label="First Name" required>
-                  <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="First name" />
-                </Field>
-                <Field label="Middle Name">
-                  <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="Middle name" />
-                </Field>
-                <Field label="ID" required>
-                  <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="BOSS00045" />
-                </Field>
-                <Field label="Account" required>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsAccountDropdownOpen((current) => !current)}
-                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#D1D5DB] focus:ring-2 focus:ring-[#111827]"
-                    >
-                      <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
-                      <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
-                    </button>
-                    {isAccountDropdownOpen && (
-                      <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                        {accounts.length ? (
-                          <div className="max-h-64 overflow-y-auto">
-                            <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
-                            <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
-                          </div>
-                        ) : (
-                          <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+            <form onSubmit={handleAddEmployee} className="flex min-h-0 flex-1 flex-col">
+              <div className="border-b border-[#E5E7EB] bg-white px-6 py-4">
+                <div className="mx-auto grid w-full max-w-[1000px] grid-cols-1 gap-3 md:grid-cols-5">
+                  {wizardSteps.map((step, index) => {
+                    const isCurrent = index === activeStep;
+                    const isComplete = index < activeStep;
+                    const StepIcon = isComplete ? CheckCircle2 : Circle;
+
+                    return (
+                      <button
+                        key={step.title}
+                        type="button"
+                        onClick={() => {
+                          if (index <= activeStep) setActiveStep(index);
+                        }}
+                        disabled={index > activeStep}
+                        className={cn(
+                          'group flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all',
+                          isCurrent
+                            ? 'border-[#2563EB] bg-[#EFF6FF] shadow-sm'
+                            : isComplete
+                              ? 'border-[#BBF7D0] bg-[#F0FDF4]'
+                              : 'border-[#E5E7EB] bg-white',
+                          index > activeStep ? 'cursor-not-allowed opacity-70' : 'hover:border-[#CBD5E1]'
                         )}
-                      </div>
-                    )}
-                  </div>
-                </Field>
-                <Field label="Phone Number">
-                  <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="Phone number" />
-                </Field>
-                <Field label="Bigoutsource Email">
-                  <GeneratedValue value={preview.boEmail} placeholder={accountBasedPreviewPlaceholder} />
-                </Field>
-                <Field label="LMS Account">
-                  <GeneratedValue value={preview.lmsAccount} placeholder="Generated after name is entered" />
-                </Field>
-                <Field label="Email Password">
-                  <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="Email password" />
-                </Field>
-                <Field label="Status">
-                  <Select value={form.status} onChange={(value) => updateForm('status', value)}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </Select>
-                </Field>
-                <Field label="Site" required>
-                  <Select value={form.siteId} onChange={(value) => updateForm('siteId', value)}>
-                    <option value="">Select site</option>
-                    {sites.map((site) => (
-                      <option key={site.id} value={site.id}>
-                        {site.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label="PC Name">
-                  <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} />
-                </Field>
-                {selectedAccountMissingCode && (
-                  <div className="md:col-span-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
-                    This preview uses the suggested account code. Add a stored department code to this account before saving.
-                  </div>
-                )}
-                <Field label="RustDesk ID">
-                  <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="RustDesk ID" />
-                </Field>
-                <Field label="Remote ID">
-                  <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} placeholder="Remote ID" />
-                </Field>
-                <Field label="ESET">
-                  <Select value={form.esetStatus} onChange={(value) => updateForm('esetStatus', value)}>
-                    <option value="inactive">Inactive</option>
-                    <option value="active">Active</option>
-                  </Select>
-                </Field>
-                <Field label="BIOS Date">
-                  <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
-                </Field>
-                <Field label="ActivityWatch">
-                  <Select value={form.activityWatchStatus} onChange={(value) => updateForm('activityWatchStatus', value)}>
-                    <option value="missing">Missing</option>
-                    <option value="installed">Installed</option>
-                  </Select>
-                </Field>
-                <Field label="Windows License Key">
-                  <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                </Field>
-                <div className="md:col-span-2">
-                  <Field label="Address">
-                    <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="Employee address" />
-                  </Field>
+                      >
+                        <StepIcon className={cn('h-5 w-5 shrink-0', isCurrent ? 'text-[#2563EB]' : isComplete ? 'text-[#16A34A]' : 'text-[#CBD5E1]')} />
+                        <span className="min-w-0">
+                          <span className={cn('block text-[10px] font-black uppercase tracking-widest', isCurrent ? 'text-[#2563EB]' : 'text-[#6B7280]')}>
+                            Step {index + 1}
+                          </span>
+                          <span className="block truncate text-sm font-black text-[#111827]">{step.title}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-black hover:bg-[#374151] disabled:opacity-60 transition-all shadow-lg shadow-[#11182720]"
-                >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Add Record
-                </button>
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                <div className="mx-auto min-h-[540px] w-full max-w-[1000px] transition-opacity duration-200">
+                {activeStep === 0 && (
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <SectionCard title="Employee Information" eyebrow="Manual">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                          <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                        </Field>
+                        <Field label="First Name" required error={formErrors.firstName}>
+                          <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} error={Boolean(formErrors.firstName)} />
+                        </Field>
+                        <Field label="Middle Name">
+                          <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} />
+                        </Field>
+                        <Field label="Last Name" required error={formErrors.lastName}>
+                          <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} error={Boolean(formErrors.lastName)} />
+                        </Field>
+                      </div>
+                    </SectionCard>
+
+                    <SectionCard title="Contact Details" eyebrow="Optional">
+                      <div className="grid grid-cols-1 gap-4">
+                        <Field label="Phone Number">
+                          <Input value={form.phone} onChange={(value) => updateForm('phone', value)} />
+                        </Field>
+                        <Field label="Address">
+                          <Input value={form.address} onChange={(value) => updateForm('address', value)} />
+                        </Field>
+                      </div>
+                    </SectionCard>
+                  </div>
+                )}
+
+                {activeStep === 1 && (
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <SectionCard title="Accounts" eyebrow="Manual">
+                      <div className="grid grid-cols-1 gap-4">
+                        <Field label="Account / Department" required error={formErrors.accountAssignment}>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setIsAccountDropdownOpen((current) => !current)}
+                              className={cn(
+                                'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
+                                formErrors.accountAssignment ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+                              )}
+                            >
+                              <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
+                              <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
+                            </button>
+                            {isAccountDropdownOpen && (
+                              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                {accounts.length ? (
+                                  <div className="max-h-64 overflow-y-auto">
+                                    <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
+                                    <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
+                                  </div>
+                                ) : (
+                                  <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </Field>
+                        <Field label="Password">
+                          <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} />
+                        </Field>
+                      </div>
+                    </SectionCard>
+
+                    <SectionCard title="Generated Access" eyebrow="Auto">
+                      <div className="flex flex-col gap-4">
+                        <GeneratedValue
+                          label="Bigoutsource Email"
+                          value={preview.boEmail}
+                        />
+
+                        <GeneratedValue
+                          label="LMS Account"
+                          value={preview.lmsAccount}
+                        />
+                      </div>
+                      {selectedAccountMissingCode && (
+                        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+                          This preview uses the suggested account code. Add a stored department code to this account before saving.
+                        </div>
+                      )}
+                    </SectionCard>
+                  </div>
+                )}
+
+                {activeStep === 2 && (
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <SectionCard title="Assignment" eyebrow="Manual">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Field label="Site" required error={formErrors.siteId}>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setIsSiteDropdownOpen((current) => !current)}
+                              className={cn(
+                                'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
+                                formErrors.siteId ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+                              )}
+                            >
+                              <span className="truncate">
+                                {sites.find((site) => site.id === form.siteId)?.name || 'Select site'}
+                              </span>
+
+                              <ChevronRight
+                                className={cn(
+                                  'h-4 w-4 shrink-0 transition-transform',
+                                  isSiteDropdownOpen && 'rotate-90'
+                                )}
+                              />
+                            </button>
+
+                            {isSiteDropdownOpen && (
+                              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                <div className="max-h-64 overflow-y-auto">
+                                  {sites.map((site) => (
+                                    <button
+                                      key={site.id}
+                                      type="button"
+                                      onClick={() => {
+                                        updateForm('siteId', site.id);
+                                        updateForm('status', 'active');
+                                        setIsSiteDropdownOpen(false);
+                                      }}
+                                      className="w-full px-3 py-2 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                    >
+                                      {site.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </Field>
+                        <Field label="Status">
+                          <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
+                            Active
+                          </div>
+                        </Field>
+                      </div>
+                    </SectionCard>
+
+                    <SectionCard title="Snapshot" eyebrow="Status">
+                      <ReviewGrid
+                        items={[
+                          ['Employee', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Not entered'],
+                          ['Employee ID', form.employeeNumber || 'Not entered'],
+                          ['Account', form.accountAssignment || 'Not selected'],
+                          ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Not selected'],
+                        ]}
+                      />
+                    </SectionCard>
+                  </div>
+                )}
+
+                {activeStep === 3 && (
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <SectionCard title="Device Identity" eyebrow="Auto">
+                      <GeneratedValue label="PC Name" value={preview.pcName} />
+                    </SectionCard>
+
+                    <SectionCard title="IT Assets" eyebrow="Manual">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Field label="RustDesk ID">
+                          <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="RustDesk ID" />
+                        </Field>
+                        <Field label="Remote ID">
+                          <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} placeholder="Remote ID" />
+                        </Field>
+                        <Field label="ESET">
+                          <Select value={form.esetStatus} onChange={(value) => updateForm('esetStatus', value)}>
+                            <option value="inactive">Inactive</option>
+                            <option value="active">Active</option>
+                          </Select>
+                        </Field>
+                        <Field label="BIOS Date">
+                          <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
+                        </Field>
+                        <Field label="ActivityWatch">
+                          <Select value={form.activityWatchStatus} onChange={(value) => updateForm('activityWatchStatus', value)}>
+                            <option value="missing">Missing</option>
+                            <option value="installed">Installed</option>
+                          </Select>
+                        </Field>
+                        <Field label="Windows License Key">
+                          <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                        </Field>
+                      </div>
+                    </SectionCard>
+                  </div>
+                )}
+
+                {activeStep === 4 && (
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <SectionCard title="Employee Information" eyebrow="Review" onEdit={() => setActiveStep(0)} status={!validationForStep(0).employeeNumber && !validationForStep(0).firstName && !validationForStep(0).lastName ? 'complete' : 'missing'}>
+                      <ReviewGrid
+                        items={[
+                          ['Employee ID', form.employeeNumber || 'Missing'],
+                          ['Name', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Missing'],
+                          ['Phone', form.phone || 'Not provided'],
+                          ['Address', form.address || 'Not provided'],
+                        ]}
+                      />
+                    </SectionCard>
+                    <SectionCard title="Accounts" eyebrow="Review" onEdit={() => setActiveStep(1)} status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
+                      <ReviewGrid
+                        items={[
+                          ['Account', form.accountAssignment || 'Missing'],
+                          ['Email', preview.boEmail || 'Pending generation'],
+                          ['LMS Account', preview.lmsAccount || 'Pending generation'],
+                          ['Password', form.emailPassword ? 'Provided' : 'Not provided'],
+                        ]}
+                      />
+                    </SectionCard>
+                    <SectionCard title="Assignment" eyebrow="Review" onEdit={() => setActiveStep(2)} status={!validationForStep(2).siteId ? 'complete' : 'missing'}>
+                      <ReviewGrid
+                        items={[
+                          ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Missing'],
+                          ['Status', form.status === 'active' ? 'Active' : 'Inactive'],
+                        ]}
+                      />
+                    </SectionCard>
+                    <SectionCard title="IT Assets" eyebrow="Review" onEdit={() => setActiveStep(3)} status="complete">
+                      <ReviewGrid
+                        items={[
+                          ['PC Name', preview.pcName || 'Pending generation'],
+                          ['RustDesk ID', form.rustdeskId || 'Not provided'],
+                          ['Remote ID', form.remoteId || 'Not provided'],
+                          ['ESET', form.esetStatus === 'active' ? 'Active' : 'Inactive'],
+                          ['ActivityWatch', form.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'],
+                          ['BIOS Date', form.biosDate || 'Not provided'],
+                        ]}
+                      />
+                    </SectionCard>
+                    <div className="md:col-span-2 rounded-2xl border border-[#D1D5DB] bg-white p-5 shadow-lg shadow-[#1118270D]">
+                      <label className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isReviewConfirmed}
+                          onChange={(event) => setIsReviewConfirmed(event.target.checked)}
+                          className="mt-1 h-4 w-4 rounded border-[#D1D5DB] text-[#2563EB] focus:ring-2 focus:ring-[#2563EB]"
+                        />
+                        <span>
+                          <span className="block text-sm font-black text-[#111827]">Confirm onboarding details</span>
+                          <span className="mt-1 block text-xs font-semibold text-[#6B7280]">Submit will create the employee record and clear the saved draft.</span>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+              </div>
+
+              <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-[#E5E7EB] bg-white/95 px-6 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    type="button"
+                    onClick={saveDraft}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D1D5DB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  >
+                    <Save className="h-4 w-4" />
+                    Save Draft
+                  </button>
+                  <div className="text-xs font-bold text-[#6B7280]">
+                    <span className={cn('mr-2', draftSavedAt ? 'text-green-700' : 'text-[#9CA3AF]')}>
+                      {draftSavedAt ? 'Draft Saved' : 'No Draft'}
+                    </span>
+                    <span>{isDraftRestored ? `Restored - ${draftSavedLabel}` : draftSavedLabel}</span>
+                    {draftSavedAt && (
+                      <button
+                        type="button"
+                        onClick={clearDraft}
+                        className="ml-3 font-black text-[#4B5563] underline-offset-4 hover:text-[#111827] hover:underline focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 md:flex-row md:items-center">
+                  <button
+                    type="button"
+                    onClick={activeStep === 0 ? closeModal : goToPreviousStep}
+                    disabled={isSaving}
+                    className="rounded-xl border border-[#D1D5DB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#2563EB] disabled:opacity-60"
+                  >
+                    {activeStep === 0 ? 'Cancel' : 'Back'}
+                  </button>
+                  {activeStep < wizardSteps.length - 1 ? (
+                    <button
+                      type="button"
+                      onClick={goToNextStep}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={isSaving || !isReviewConfirmed}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#9CA3AF] disabled:shadow-none"
+                    >
+                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                      Submit Record
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
           </div>
@@ -1080,13 +1515,75 @@ export default function Directory() {
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
+function SectionCard({
+  title,
+  eyebrow,
+  description,
+  onEdit,
+  status,
+  children,
+}: {
+  title: string;
+  eyebrow: string;
+  description?: string;
+  onEdit?: () => void;
+  status?: 'complete' | 'missing';
+  children: ReactNode;
+}) {
+  return (
+    <section className="h-full rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-lg shadow-[#1118270D]">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#2563EB]">{eyebrow}</p>
+          <h3 className="mt-1 text-lg font-black text-[#111827]">{title}</h3>
+          {description && <p className="mt-1 text-sm font-semibold leading-6 text-[#6B7280]">{description}</p>}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {status && (
+            <span
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider',
+                status === 'complete' ? 'bg-green-50 text-green-700 ring-1 ring-green-100' : 'bg-red-50 text-red-700 ring-1 ring-red-100'
+              )}
+            >
+              {status === 'complete' ? 'Complete' : 'Missing'}
+            </span>
+          )}
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="rounded-lg border border-[#D1D5DB] bg-white px-3 py-1.5 text-xs font-black text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Field({
+  label,
+  required,
+  error,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
-        {label} {required && <span className="text-red-500">*</span>}
+      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#6B7280]">
+        {label}
+        {required && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[9px] text-red-600 ring-1 ring-red-100">Required</span>}
       </span>
       {children}
+      {error && <span className="text-xs font-bold text-red-600">{error}</span>}
     </label>
   );
 }
@@ -1126,11 +1623,13 @@ function Input({
   onChange,
   placeholder,
   type = 'text',
+  error = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  error?: boolean;
 }) {
   return (
     <input
@@ -1138,15 +1637,42 @@ function Input({
       value={value}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all"
+      className={cn(
+        'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all placeholder:text-[#9CA3AF] focus:ring-2 focus:ring-[#2563EB]',
+        error ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+      )}
     />
   );
 }
 
-function GeneratedValue({ value, placeholder }: { value: string; placeholder: string }) {
+function GeneratedValue({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  const isReady = Boolean(value);
+
   return (
-    <div className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm font-bold text-[#4B5563]">
-      {value || placeholder}
+    <div className={cn('rounded-2xl border p-4', isReady ? 'border-[#BFDBFE] bg-[#F8FAFF]' : 'border-[#E5E7EB] bg-[#F9FAFB]')}>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Sparkles className={cn('h-3.5 w-3.5 shrink-0', isReady ? 'text-[#2563EB]' : 'text-[#9CA3AF]')} />
+          <p className="truncate text-[10px] font-black uppercase tracking-widest text-[#6B7280]">{label}</p>
+        </div>
+        {isReady && <span className="rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase tracking-widest text-[#2563EB]">Generated</span>}
+      </div>
+      <p
+        className={cn(
+          'flex min-h-11 items-center rounded-xl border px-3 py-2.5 text-sm font-black',
+          isReady
+            ? 'border-[#DBEAFE] bg-white text-[#111827]'
+            : 'border-[#E5E7EB] bg-white text-[#9CA3AF]'
+        )}
+      >
+        {value || '-'}
+      </p>
     </div>
   );
 }
@@ -1155,18 +1681,36 @@ function Select({
   value,
   onChange,
   children,
+  error = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   children: ReactNode;
+  error?: boolean;
 }) {
   return (
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#111827]"
+      className={cn(
+        'w-full rounded-xl border bg-white px-3 py-2.5 text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#2563EB]',
+        error ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+      )}
     >
       {children}
     </select>
+  );
+}
+
+function ReviewGrid({ items }: { items: Array<[string, string]> }) {
+  return (
+    <dl className="grid grid-cols-1 gap-3">
+      {items.map(([label, value]) => (
+        <div key={label} className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3">
+          <dt className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">{label}</dt>
+          <dd className="mt-1 break-words text-sm font-black text-[#111827]">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
