@@ -3,7 +3,8 @@ import { AuditLogModel } from '../models/auditLog.model.js';
 import { EmployeeModel } from '../models/employee.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { auditActor } from '../utils/auditActor.js';
-import { sanitizeDepartmentCode, suggestDepartmentCode } from '../utils/employeeIdentity.js';
+import { sanitizeDepartmentCode, suggestDepartmentCode, isValidDepartmentCode } from '../utils/employeeIdentity.js';
+import { EmployeeService } from './employee.service.js';
 
 const ACCOUNT_TYPES = ['internal', 'external'];
 
@@ -33,6 +34,9 @@ export const AccountService = {
     const departmentCode = sanitizeDepartmentCode(data.departmentCode || data.department_code || suggestDepartmentCode(name));
 
     if (!departmentCode) throw new AppError('departmentCode is required', 400);
+    if (!isValidDepartmentCode(departmentCode)) {
+      throw new AppError('Department code must be 2–3 lowercase letters only', 400);
+    }
 
     const existingCode = await AccountModel.findByDepartmentCode(departmentCode);
     if (existingCode) {
@@ -75,6 +79,9 @@ export const AccountService = {
       : before.departmentCode;
 
     if (!departmentCode) throw new AppError('departmentCode is required', 400);
+    if (!isValidDepartmentCode(departmentCode)) {
+      throw new AppError('Department code must be 2–3 lowercase letters only', 400);
+    }
 
     const existingCode = await AccountModel.findByDepartmentCode(departmentCode);
     if (existingCode && existingCode.id !== id) {
@@ -84,10 +91,10 @@ export const AccountService = {
     const account = await AccountModel.update(id, { name, departmentCode });
     if (!account) throw new AppError('Account not found', 404);
 
-    if (before.name !== account.name) {
+    if (before.name !== account.name || before.departmentCode !== account.departmentCode) {
       const employees = await EmployeeModel.findAll();
       const assignedEmployees = employees.filter((employee) => employee.accountAssignment === before.name);
-      await Promise.all(assignedEmployees.map((employee) => EmployeeModel.update(employee.id, { accountAssignment: account.name })));
+      await Promise.all(assignedEmployees.map((employee) => EmployeeService.update(employee.id, { accountAssignment: account.name }, user, meta)));
     }
 
     await AuditLogModel.create({
@@ -110,9 +117,12 @@ export const AccountService = {
     if (!account) throw new AppError('Account not found', 404);
 
     const employees = await EmployeeModel.findAll();
-    const assignedEmployees = employees.filter((employee) => employee.accountAssignment === account.name);
-    if (assignedEmployees.length > 0) {
-      throw new AppError('Move or delete employees assigned to this department before deleting it.', 400);
+    // Only block deletion if there are active (non-archived) employees assigned
+    const activeAssignedEmployees = employees.filter(
+      (employee) => employee.accountAssignment === account.name && !employee.isArchived
+    );
+    if (activeAssignedEmployees.length > 0) {
+      throw new AppError('Move or delete active employees assigned to this department before deleting it.', 400);
     }
 
     const removed = await AccountModel.remove(id);

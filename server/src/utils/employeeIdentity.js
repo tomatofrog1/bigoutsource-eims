@@ -15,12 +15,29 @@ export function sanitizeDepartmentCode(value = '') {
 }
 
 export function suggestDepartmentCode(name = '') {
-  return String(name)
+  const words = String(name)
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
+    .trim()
     .split(/\s+/)
-    .map((word) => word.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
+    .filter(Boolean);
+
+  if (!words.length) return '';
+
+  // Try initials (capped at 4)
+  const initials = words
+    .map((w) => w.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
     .join('');
+
+  if (initials.length >= 2) return initials.slice(0, 4);
+
+  // Fallback: first 2-4 letters of first word
+  const base = words[0].replace(/[^a-zA-Z]/g, '').toLowerCase();
+  return base.slice(0, Math.max(2, Math.min(4, base.length)));
+}
+
+export function isValidDepartmentCode(code = '') {
+  return /^[a-z]{2,3}$/.test(String(code));
 }
 
 export function parseEmployeeName(data = {}) {

@@ -250,7 +250,7 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
 const mockSites: SiteOption[] = [];
 
 function normalizeEmployeeList(value: any) {
-  const records = asArray(value).map(normalizeEmployee).filter((emp:any): emp is EmployeeRecord => Boolean(emp));
+  const records = asArray(value).map(normalizeEmployee).filter((emp: any): emp is EmployeeRecord => Boolean(emp));
   return records;
 }
 
@@ -919,228 +919,216 @@ export default function Directory() {
         </aside>
 
         <div className="flex min-w-0 flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 min-w-[300px]">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search by name, ID, PC, or account..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={siteFilter}
-                onChange={(e) => setSiteFilter(e.target.value)}
-                className="px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#111827]"
-              >
-                {siteFilterOptions.map((site) => (
-                  <option key={site} value={site}>
-                    {site === 'All' ? 'All Sites' : site}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#111827]"
-              >
-                <option value="All">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Archived">Archived</option>
-              </select>
-              <select
-                value={accountFilter}
-                onChange={(e) => setAccountFilter(e.target.value)}
-                className="px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#111827]"
-              >
-                <option value="All Account">All Accounts</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.name}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {canManageRecords && (
-              <>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-[300px]">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  className="hidden"
-                  onChange={(event) => void handleImportFile(event.target.files?.[0])}
+                  type="text"
+                  placeholder="Search by name, ID, PC, or account..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
                 />
-                <button
-                  onClick={handleImport}
-                  disabled={isStagingImport}
-                  className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                >
-                  {isStagingImport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  {isStagingImport ? 'Staging' : 'Import'}
-                </button>
-                <button
-                  onClick={exportToExcel}
-                  className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                >
-                  <Upload className="w-4 h-4" />
-                  Export
-                </button>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-black hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Add Record
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <FilterDropdown
+                  value={siteFilter}
+                  onChange={setSiteFilter}
+                  options={siteFilterOptions.map((site) => ({ value: site, label: site === 'All' ? 'All Sites' : site }))}
+                />
+                <FilterDropdown
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={[
+                    { value: 'All', label: 'All Status' },
+                    { value: 'Active', label: 'Active' },
+                    { value: 'Inactive', label: 'Inactive' },
+                    { value: 'Archived', label: 'Archived' },
+                  ]}
+                />
+                <AccountFilterDropdown
+                  value={accountFilter}
+                  onChange={setAccountFilter}
+                  internalAccounts={internalAccounts}
+                  externalAccounts={externalAccounts}
+                />
+              </div>
+            </div>
 
-        <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
-            <colgroup>
-              {visibleFields.map((field) => (
-                <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
-              ))}
-              <col style={{ width: actionColumnWidth }} />
-            </colgroup>
-            <thead>
-              <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                {visibleFields.map((field) => {
-                  const isSortable = sortableFieldKeys.includes(field.key);
-                  const isActiveSort = sortConfig?.key === field.key;
-                  const SortIcon = isActiveSort ? (sortConfig.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
-
-                  return (
-                    <th
-                      key={field.key}
-                      className={cn(
-                        'h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle',
-                        field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
-                      )}
-                    >
-                      {isSortable ? (
-                        <button
-                          type="button"
-                          onClick={() => toggleSort(field.key)}
-                          aria-sort={isActiveSort ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-                          className={cn(
-                            'flex max-w-full items-center gap-1.5 rounded-lg py-2 text-left uppercase tracking-widest transition-colors hover:text-[#111827]',
-                            isActiveSort && 'text-[#111827]'
-                          )}
-                        >
-                          <span className="truncate">{field.label}</span>
-                          <SortIcon className="h-3.5 w-3.5 shrink-0" />
-                        </button>
-                      ) : (
-                        <div className="truncate">{field.label}</div>
-                      )}
-                    </th>
-                  );
-                })}
-                <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F3F4F6]">
-              {paginatedEmployees.map((emp) => (
-                <tr key={emp.id} className={cn(tableRowHeightClass, 'hover:bg-[#F9FAFB] transition-colors group')}>
-                  {visibleFields.map((field) => (
-                    <td
-                      key={field.key}
-                      className={cn(
-                        'py-0 align-middle text-sm font-bold text-[#111827]',
-                        field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
-                      )}
-                    >
-                      <div className="truncate">{field.render(emp)}</div>
-                    </td>
-                  ))}
-                  <td className="px-4 py-0 text-right align-middle">
-                    <Link
-                      to={`/employee/${emp.id}`}
-                      className="inline-flex h-9 items-center gap-2 rounded-xl p-2 text-xs font-bold text-[#9CA3AF] transition-all hover:bg-white hover:text-[#111827]"
-                    >
-                      <span className="truncate">View Profile</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-              {Array.from({ length: placeholderRowCount }).map((_, index) => (
-                <tr key={`placeholder-${index}`} className={cn(tableRowHeightClass, 'pointer-events-none')}>
-                  <td colSpan={visibleFields.length + 1} className="px-4 py-0 align-middle" />
-                </tr>
-              ))}
-              {showTableEmptyState && (
-                <tr className="h-[40rem]">
-                  <td colSpan={visibleFields.length + 1} className="px-4 py-0 text-center align-middle">
-                    <div className="mx-auto flex max-w-md flex-col items-center justify-center">
-                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
-                        {isLoading ? <Loader2 className="h-8 w-8 animate-spin text-[#9CA3AF]" /> : <Search className="h-8 w-8 text-[#D1D5DB]" />}
-                      </div>
-                      <h3 className="text-lg font-bold text-[#111827]">{isLoading ? 'Loading records' : 'No records found'}</h3>
-                      <p className="text-sm text-[#6B7280]">{isLoading ? 'Fetching personnel data from the database.' : 'Try adjusting your filters or search keywords.'}</p>
-                    </div>
-                  </td>
-                </tr>
+            <div className="flex items-center gap-2">
+              {canManageRecords && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    className="hidden"
+                    onChange={(event) => void handleImportFile(event.target.files?.[0])}
+                  />
+                  <button
+                    onClick={handleImport}
+                    disabled={isStagingImport}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                  >
+                    {isStagingImport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    {isStagingImport ? 'Staging' : 'Import'}
+                  </button>
+                  <button
+                    onClick={exportToExcel}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Export
+                  </button>
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-black hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Add Record
+                  </button>
+                </>
               )}
-            </tbody>
-          </table>
-
-          <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
-                Total Personnel: {filteredEmployees.length}
-              </p>
-              <p className="mt-1 text-xs font-black text-[#111827]">
-                Page {currentPage} of {totalPages}
-              </p>
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!hasPreviousPage}
-                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                className={cn(
-                  'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
-                  hasPreviousPage
-                    ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
-                    : 'text-[#9CA3AF] cursor-not-allowed'
+          </div>
+
+          <div className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+            <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
+              <colgroup>
+                {visibleFields.map((field) => (
+                  <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
+                ))}
+                <col style={{ width: actionColumnWidth }} />
+              </colgroup>
+              <thead>
+                <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                  {visibleFields.map((field) => {
+                    const isSortable = sortableFieldKeys.includes(field.key);
+                    const isActiveSort = sortConfig?.key === field.key;
+                    const SortIcon = isActiveSort ? (sortConfig.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+
+                    return (
+                      <th
+                        key={field.key}
+                        className={cn(
+                          'h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle',
+                          field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
+                        )}
+                      >
+                        {isSortable ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleSort(field.key)}
+                            aria-sort={isActiveSort ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                            className={cn(
+                              'flex max-w-full items-center gap-1.5 rounded-lg py-2 text-left uppercase tracking-widest transition-colors hover:text-[#111827]',
+                              isActiveSort && 'text-[#111827]'
+                            )}
+                          >
+                            <span className="truncate">{field.label}</span>
+                            <SortIcon className="h-3.5 w-3.5 shrink-0" />
+                          </button>
+                        ) : (
+                          <div className="truncate">{field.label}</div>
+                        )}
+                      </th>
+                    );
+                  })}
+                  <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F3F4F6]">
+                {paginatedEmployees.map((emp) => (
+                  <tr key={emp.id} className={cn(tableRowHeightClass, 'hover:bg-[#F9FAFB] transition-colors group')}>
+                    {visibleFields.map((field) => (
+                      <td
+                        key={field.key}
+                        className={cn(
+                          'py-0 align-middle text-sm font-bold text-[#111827]',
+                          field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
+                        )}
+                      >
+                        <div className="truncate">{field.render(emp)}</div>
+                      </td>
+                    ))}
+                    <td className="px-4 py-0 text-right align-middle">
+                      <Link
+                        to={`/employee/${emp.id}`}
+                        className="inline-flex h-9 items-center gap-2 rounded-xl p-2 text-xs font-bold text-[#9CA3AF] transition-all hover:bg-white hover:text-[#111827]"
+                      >
+                        <span className="truncate">View Profile</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+                {Array.from({ length: placeholderRowCount }).map((_, index) => (
+                  <tr key={`placeholder-${index}`} className={cn(tableRowHeightClass, 'pointer-events-none')}>
+                    <td colSpan={visibleFields.length + 1} className="px-4 py-0 align-middle" />
+                  </tr>
+                ))}
+                {showTableEmptyState && (
+                  <tr className="h-[40rem]">
+                    <td colSpan={visibleFields.length + 1} className="px-4 py-0 text-center align-middle">
+                      <div className="mx-auto flex max-w-md flex-col items-center justify-center">
+                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
+                          {isLoading ? <Loader2 className="h-8 w-8 animate-spin text-[#9CA3AF]" /> : <Search className="h-8 w-8 text-[#D1D5DB]" />}
+                        </div>
+                        <h3 className="text-lg font-bold text-[#111827]">{isLoading ? 'Loading records' : 'No records found'}</h3>
+                        <p className="text-sm text-[#6B7280]">{isLoading ? 'Fetching personnel data from the database.' : 'Try adjusting your filters or search keywords.'}</p>
+                      </div>
+                    </td>
+                  </tr>
                 )}
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={!hasNextPage}
-                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                className={cn(
-                  'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
-                  hasNextPage
-                    ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
-                    : 'text-[#9CA3AF] cursor-not-allowed'
-                )}
-              >
-                Next
-              </button>
+              </tbody>
+            </table>
+
+            <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+                  Total Personnel: {filteredEmployees.length}
+                </p>
+                <p className="mt-1 text-xs font-black text-[#111827]">
+                  Page {currentPage} of {totalPages}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={!hasPreviousPage}
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  className={cn(
+                    'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
+                    hasPreviousPage
+                      ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
+                      : 'text-[#9CA3AF] cursor-not-allowed'
+                  )}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={!hasNextPage}
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  className={cn(
+                    'px-4 py-1.5 border border-[#E5E7EB] rounded-xl text-xs font-bold transition-all',
+                    hasNextPage
+                      ? 'bg-white text-[#111827] hover:bg-[#F3F4F6]'
+                      : 'text-[#9CA3AF] cursor-not-allowed'
+                  )}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm">
-          <div className="flex max-h-[94vh] w-full max-w-[1080px] flex-col overflow-hidden rounded-2xl border border-[#D1D5DB] bg-[#F8FAFC] shadow-2xl shadow-[#11182733]">
+          <div className="flex h-[800px] max-h-[94vh] w-full max-w-[1080px] flex-col overflow-hidden rounded-2xl border border-[#D1D5DB] bg-[#F8FAFC] shadow-2xl shadow-[#11182733]">
             <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] bg-white px-6 py-5">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-[#2563EB]">HR Onboarding Workflow</p>
@@ -1192,261 +1180,261 @@ export default function Directory() {
 
               <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                 <div className="mx-auto min-h-[540px] w-full max-w-[1000px] transition-opacity duration-200">
-                {activeStep === 0 && (
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <SectionCard title="Employee Information" eyebrow="Manual">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Field label="Employee ID" required error={formErrors.employeeNumber}>
-                          <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="BOSS00045" error={Boolean(formErrors.employeeNumber)} />
-                        </Field>
-                        <Field label="First Name" required error={formErrors.firstName}>
-                          <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} error={Boolean(formErrors.firstName)} />
-                        </Field>
-                        <Field label="Middle Name">
-                          <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} />
-                        </Field>
-                        <Field label="Last Name" required error={formErrors.lastName}>
-                          <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} error={Boolean(formErrors.lastName)} />
-                        </Field>
-                      </div>
-                    </SectionCard>
-
-                    <SectionCard title="Contact Details" eyebrow="Optional">
-                      <div className="grid grid-cols-1 gap-4">
-                        <Field label="Phone Number">
-                          <Input value={form.phone} onChange={(value) => updateForm('phone', value)} />
-                        </Field>
-                        <Field label="Address">
-                          <Input value={form.address} onChange={(value) => updateForm('address', value)} />
-                        </Field>
-                      </div>
-                    </SectionCard>
-                  </div>
-                )}
-
-                {activeStep === 1 && (
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <SectionCard title="Accounts" eyebrow="Manual">
-                      <div className="grid grid-cols-1 gap-4">
-                        <Field label="Account / Department" required error={formErrors.accountAssignment}>
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={() => setIsAccountDropdownOpen((current) => !current)}
-                              className={cn(
-                                'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
-                                formErrors.accountAssignment ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
-                              )}
-                            >
-                              <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
-                              <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
-                            </button>
-                            {isAccountDropdownOpen && (
-                              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                                {accounts.length ? (
-                                  <div className="max-h-64 overflow-y-auto">
-                                    <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
-                                    <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
-                                  </div>
-                                ) : (
-                                  <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </Field>
-                        <Field label="Password">
-                          <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} />
-                        </Field>
-                      </div>
-                    </SectionCard>
-
-                    <SectionCard title="Generated Access" eyebrow="Auto">
-                      <div className="flex flex-col gap-4">
-                        <GeneratedValue
-                          label="Bigoutsource Email"
-                          value={preview.boEmail}
-                        />
-
-                        <GeneratedValue
-                          label="LMS Account"
-                          value={preview.lmsAccount}
-                        />
-                      </div>
-                      {selectedAccountMissingCode && (
-                        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
-                          This preview uses the suggested account code. Add a stored department code to this account before saving.
+                  {activeStep === 0 && (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <SectionCard title="Employee Information" eyebrow="Manual">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                            <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                          </Field>
+                          <Field label="First Name" required error={formErrors.firstName}>
+                            <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
+                          </Field>
+                          <Field label="Middle Name">
+                            <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Robert" />
+                          </Field>
+                          <Field label="Last Name" required error={formErrors.lastName}>
+                            <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
+                          </Field>
                         </div>
-                      )}
-                    </SectionCard>
-                  </div>
-                )}
+                      </SectionCard>
 
-                {activeStep === 2 && (
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <SectionCard title="Assignment" eyebrow="Manual">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Field label="Site" required error={formErrors.siteId}>
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={() => setIsSiteDropdownOpen((current) => !current)}
-                              className={cn(
-                                'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
-                                formErrors.siteId ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
-                              )}
-                            >
-                              <span className="truncate">
-                                {sites.find((site) => site.id === form.siteId)?.name || 'Select site'}
-                              </span>
-
-                              <ChevronRight
-                                className={cn(
-                                  'h-4 w-4 shrink-0 transition-transform',
-                                  isSiteDropdownOpen && 'rotate-90'
-                                )}
-                              />
-                            </button>
-
-                            {isSiteDropdownOpen && (
-                              <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
-                                <div className="max-h-64 overflow-y-auto">
-                                  {sites.map((site) => (
-                                    <button
-                                      key={site.id}
-                                      type="button"
-                                      onClick={() => {
-                                        updateForm('siteId', site.id);
-                                        updateForm('status', 'active');
-                                        setIsSiteDropdownOpen(false);
-                                      }}
-                                      className="w-full px-3 py-2 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
-                                    >
-                                      {site.name}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </Field>
-                        <Field label="Status">
-                          <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
-                            Active
-                          </div>
-                        </Field>
-                      </div>
-                    </SectionCard>
-
-                    <SectionCard title="Snapshot" eyebrow="Status">
-                      <ReviewGrid
-                        items={[
-                          ['Employee', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Not entered'],
-                          ['Employee ID', form.employeeNumber || 'Not entered'],
-                          ['Account', form.accountAssignment || 'Not selected'],
-                          ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Not selected'],
-                        ]}
-                      />
-                    </SectionCard>
-                  </div>
-                )}
-
-                {activeStep === 3 && (
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <SectionCard title="Device Identity" eyebrow="Auto">
-                      <GeneratedValue label="PC Name" value={preview.pcName} />
-                    </SectionCard>
-
-                    <SectionCard title="IT Assets" eyebrow="Manual">
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Field label="RustDesk ID">
-                          <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="RustDesk ID" />
-                        </Field>
-                        <Field label="Remote ID">
-                          <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} placeholder="Remote ID" />
-                        </Field>
-                        <Field label="ESET">
-                          <Select value={form.esetStatus} onChange={(value) => updateForm('esetStatus', value)}>
-                            <option value="inactive">Inactive</option>
-                            <option value="active">Active</option>
-                          </Select>
-                        </Field>
-                        <Field label="BIOS Date">
-                          <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
-                        </Field>
-                        <Field label="ActivityWatch">
-                          <Select value={form.activityWatchStatus} onChange={(value) => updateForm('activityWatchStatus', value)}>
-                            <option value="missing">Missing</option>
-                            <option value="installed">Installed</option>
-                          </Select>
-                        </Field>
-                        <Field label="Windows License Key">
-                          <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                        </Field>
-                      </div>
-                    </SectionCard>
-                  </div>
-                )}
-
-                {activeStep === 4 && (
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <SectionCard title="Employee Information" eyebrow="Review" onEdit={() => setActiveStep(0)} status={!validationForStep(0).employeeNumber && !validationForStep(0).firstName && !validationForStep(0).lastName ? 'complete' : 'missing'}>
-                      <ReviewGrid
-                        items={[
-                          ['Employee ID', form.employeeNumber || 'Missing'],
-                          ['Name', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Missing'],
-                          ['Phone', form.phone || 'Not provided'],
-                          ['Address', form.address || 'Not provided'],
-                        ]}
-                      />
-                    </SectionCard>
-                    <SectionCard title="Accounts" eyebrow="Review" onEdit={() => setActiveStep(1)} status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
-                      <ReviewGrid
-                        items={[
-                          ['Account', form.accountAssignment || 'Missing'],
-                          ['Email', preview.boEmail || 'Pending generation'],
-                          ['LMS Account', preview.lmsAccount || 'Pending generation'],
-                          ['Password', form.emailPassword ? 'Provided' : 'Not provided'],
-                        ]}
-                      />
-                    </SectionCard>
-                    <SectionCard title="Assignment" eyebrow="Review" onEdit={() => setActiveStep(2)} status={!validationForStep(2).siteId ? 'complete' : 'missing'}>
-                      <ReviewGrid
-                        items={[
-                          ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Missing'],
-                          ['Status', form.status === 'active' ? 'Active' : 'Inactive'],
-                        ]}
-                      />
-                    </SectionCard>
-                    <SectionCard title="IT Assets" eyebrow="Review" onEdit={() => setActiveStep(3)} status="complete">
-                      <ReviewGrid
-                        items={[
-                          ['PC Name', preview.pcName || 'Pending generation'],
-                          ['RustDesk ID', form.rustdeskId || 'Not provided'],
-                          ['Remote ID', form.remoteId || 'Not provided'],
-                          ['ESET', form.esetStatus === 'active' ? 'Active' : 'Inactive'],
-                          ['ActivityWatch', form.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'],
-                          ['BIOS Date', form.biosDate || 'Not provided'],
-                        ]}
-                      />
-                    </SectionCard>
-                    <div className="md:col-span-2 rounded-2xl border border-[#D1D5DB] bg-white p-5 shadow-lg shadow-[#1118270D]">
-                      <label className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={isReviewConfirmed}
-                          onChange={(event) => setIsReviewConfirmed(event.target.checked)}
-                          className="mt-1 h-4 w-4 rounded border-[#D1D5DB] text-[#2563EB] focus:ring-2 focus:ring-[#2563EB]"
-                        />
-                        <span>
-                          <span className="block text-sm font-black text-[#111827]">Confirm onboarding details</span>
-                          <span className="mt-1 block text-xs font-semibold text-[#6B7280]">Submit will create the employee record and clear the saved draft.</span>
-                        </span>
-                      </label>
+                      <SectionCard title="Contact Details" eyebrow="Optional">
+                        <div className="grid grid-cols-1 gap-4">
+                          <Field label="Phone Number">
+                            <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="e.g. 09123456789" />
+                          </Field>
+                          <Field label="Address">
+                            <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
+                          </Field>
+                        </div>
+                      </SectionCard>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+
+                  {activeStep === 1 && (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <SectionCard title="Accounts" eyebrow="Manual">
+                        <div className="grid grid-cols-1 gap-4">
+                          <Field label="Account / Department" required error={formErrors.accountAssignment}>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setIsAccountDropdownOpen((current) => !current)}
+                                className={cn(
+                                  'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
+                                  formErrors.accountAssignment ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+                                )}
+                              >
+                                <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
+                                <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isAccountDropdownOpen && 'rotate-90')} />
+                              </button>
+                              {isAccountDropdownOpen && (
+                                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                  {accounts.length ? (
+                                    <div className="max-h-64 overflow-y-auto">
+                                      <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={selectAccount} />
+                                      <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={selectAccount} />
+                                    </div>
+                                  ) : (
+                                    <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </Field>
+                          <Field label="Password">
+                            <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
+                          </Field>
+                        </div>
+                      </SectionCard>
+
+                      <SectionCard title="Generated Access" eyebrow="Auto">
+                        <div className="flex flex-col gap-4">
+                          <GeneratedValue
+                            label="Bigoutsource Email"
+                            value={preview.boEmail}
+                          />
+
+                          <GeneratedValue
+                            label="LMS Account"
+                            value={preview.lmsAccount}
+                          />
+                        </div>
+                        {selectedAccountMissingCode && (
+                          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+                            This preview uses the suggested account code. Add a stored department code to this account before saving.
+                          </div>
+                        )}
+                      </SectionCard>
+                    </div>
+                  )}
+
+                  {activeStep === 2 && (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <SectionCard title="Assignment" eyebrow="Manual">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <Field label="Site" required error={formErrors.siteId}>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setIsSiteDropdownOpen((current) => !current)}
+                                className={cn(
+                                  'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
+                                  formErrors.siteId ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+                                )}
+                              >
+                                <span className="truncate">
+                                  {sites.find((site) => site.id === form.siteId)?.name || 'Select site'}
+                                </span>
+
+                                <ChevronRight
+                                  className={cn(
+                                    'h-4 w-4 shrink-0 transition-transform',
+                                    isSiteDropdownOpen && 'rotate-90'
+                                  )}
+                                />
+                              </button>
+
+                              {isSiteDropdownOpen && (
+                                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+                                  <div className="max-h-64 overflow-y-auto">
+                                    {sites.map((site) => (
+                                      <button
+                                        key={site.id}
+                                        type="button"
+                                        onClick={() => {
+                                          updateForm('siteId', site.id);
+                                          updateForm('status', 'active');
+                                          setIsSiteDropdownOpen(false);
+                                        }}
+                                        className="w-full px-3 py-2 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                      >
+                                        {site.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </Field>
+                          <Field label="Status">
+                            <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
+                              Active
+                            </div>
+                          </Field>
+                        </div>
+                      </SectionCard>
+
+                      <SectionCard title="Snapshot" eyebrow="Status">
+                        <ReviewGrid
+                          items={[
+                            ['Employee', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Not entered'],
+                            ['Employee ID', form.employeeNumber || 'Not entered'],
+                            ['Account', form.accountAssignment || 'Not selected'],
+                            ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Not selected'],
+                          ]}
+                        />
+                      </SectionCard>
+                    </div>
+                  )}
+
+                  {activeStep === 3 && (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <SectionCard title="Device Identity" eyebrow="Auto">
+                        <GeneratedValue label="PC Name" value={preview.pcName} />
+                      </SectionCard>
+
+                      <SectionCard title="IT Assets" eyebrow="Manual">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <Field label="RustDesk ID">
+                            <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="RustDesk ID" />
+                          </Field>
+                          <Field label="Remote ID">
+                            <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} placeholder="Remote ID" />
+                          </Field>
+                          <Field label="ESET">
+                            <Select value={form.esetStatus} onChange={(value) => updateForm('esetStatus', value)}>
+                              <option value="inactive">Inactive</option>
+                              <option value="active">Active</option>
+                            </Select>
+                          </Field>
+                          <Field label="BIOS Date">
+                            <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
+                          </Field>
+                          <Field label="ActivityWatch">
+                            <Select value={form.activityWatchStatus} onChange={(value) => updateForm('activityWatchStatus', value)}>
+                              <option value="missing">Missing</option>
+                              <option value="installed">Installed</option>
+                            </Select>
+                          </Field>
+                          <Field label="Windows License Key">
+                            <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                          </Field>
+                        </div>
+                      </SectionCard>
+                    </div>
+                  )}
+
+                  {activeStep === 4 && (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      <SectionCard title="Employee Information" eyebrow="Review" onEdit={() => setActiveStep(0)} status={!validationForStep(0).employeeNumber && !validationForStep(0).firstName && !validationForStep(0).lastName ? 'complete' : 'missing'}>
+                        <ReviewGrid
+                          items={[
+                            ['Employee ID', form.employeeNumber || 'Missing'],
+                            ['Name', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Missing'],
+                            ['Phone', form.phone || 'Not provided'],
+                            ['Address', form.address || 'Not provided'],
+                          ]}
+                        />
+                      </SectionCard>
+                      <SectionCard title="Accounts" eyebrow="Review" onEdit={() => setActiveStep(1)} status={!validationForStep(1).accountAssignment ? 'complete' : 'missing'}>
+                        <ReviewGrid
+                          items={[
+                            ['Account', form.accountAssignment || 'Missing'],
+                            ['Email', preview.boEmail || 'Pending generation'],
+                            ['LMS Account', preview.lmsAccount || 'Pending generation'],
+                            ['Password', form.emailPassword ? 'Provided' : 'Not provided'],
+                          ]}
+                        />
+                      </SectionCard>
+                      <SectionCard title="Assignment" eyebrow="Review" onEdit={() => setActiveStep(2)} status={!validationForStep(2).siteId ? 'complete' : 'missing'}>
+                        <ReviewGrid
+                          items={[
+                            ['Site', sites.find((site) => site.id === form.siteId)?.name || 'Missing'],
+                            ['Status', form.status === 'active' ? 'Active' : 'Inactive'],
+                          ]}
+                        />
+                      </SectionCard>
+                      <SectionCard title="IT Assets" eyebrow="Review" onEdit={() => setActiveStep(3)} status="complete">
+                        <ReviewGrid
+                          items={[
+                            ['PC Name', preview.pcName || 'Pending generation'],
+                            ['RustDesk ID', form.rustdeskId || 'Not provided'],
+                            ['Remote ID', form.remoteId || 'Not provided'],
+                            ['ESET', form.esetStatus === 'active' ? 'Active' : 'Inactive'],
+                            ['ActivityWatch', form.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'],
+                            ['BIOS Date', form.biosDate || 'Not provided'],
+                          ]}
+                        />
+                      </SectionCard>
+                      <div className="md:col-span-2 rounded-2xl border border-[#D1D5DB] bg-white p-5 shadow-lg shadow-[#1118270D]">
+                        <label className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isReviewConfirmed}
+                            onChange={(event) => setIsReviewConfirmed(event.target.checked)}
+                            className="mt-1 h-4 w-4 rounded border-[#D1D5DB] text-[#2563EB] focus:ring-2 focus:ring-[#2563EB]"
+                          />
+                          <span>
+                            <span className="block text-sm font-black text-[#111827]">Confirm onboarding details</span>
+                            <span className="mt-1 block text-xs font-semibold text-[#6B7280]">Submit will create the employee record and clear the saved draft.</span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-[#E5E7EB] bg-white/95 px-6 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
@@ -1614,6 +1602,159 @@ function AccountDropdownGroup({
           <span className="truncate">{account.name}</span>
         </button>
       ))}
+    </div>
+  );
+}
+function FilterDropdown({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="flex min-w-[150px] items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
+      >
+        <span className="truncate">{options.find((o) => o.value === value)?.label || placeholder || value}</span>
+        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-90')} />
+      </button>
+      {isOpen && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-full w-max overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+          <div className="max-h-64 overflow-y-auto py-1">
+            {options.map((option) => {
+              const isSelected = value === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={cn(
+                    'flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[#F3F4F6]',
+                    isSelected ? 'bg-[#EFF6FF]' : ''
+                  )}
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                >
+                  <span className={cn('truncate text-sm font-bold', isSelected ? 'text-[#2563EB]' : 'text-[#4B5563]')}>
+                    {option.label}
+                  </span>
+                  {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AccountFilterDropdown({
+  value,
+  onChange,
+  internalAccounts,
+  externalAccounts,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  internalAccounts: AccountOption[];
+  externalAccounts: AccountOption[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const renderOption = (optionValue: string, label: string) => {
+    const isSelected = value === optionValue;
+    return (
+      <button
+        key={optionValue}
+        type="button"
+        className={cn(
+          'flex w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[#F3F4F6]',
+          isSelected ? 'bg-[#EFF6FF]' : ''
+        )}
+        onClick={() => {
+          onChange(optionValue);
+          setIsOpen(false);
+        }}
+      >
+        <span className={cn('truncate text-sm font-bold', isSelected ? 'text-[#2563EB]' : 'text-[#4B5563]')}>
+          {label}
+        </span>
+        {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
+      </button>
+    );
+  };
+
+  const selectedLabel = value === 'All Account' ? 'All Accounts' : value;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="flex min-w-[200px] items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-90')} />
+      </button>
+      {isOpen && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-full w-max overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]">
+          <div className="max-h-64 overflow-y-auto">
+            <div className="py-1 border-b border-[#F3F4F6]">
+              {renderOption('All Account', 'All Accounts')}
+            </div>
+            {internalAccounts.length > 0 && (
+              <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
+                <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                  Internal
+                </div>
+                {internalAccounts.map((account) => renderOption(account.name, account.name))}
+              </div>
+            )}
+            {externalAccounts.length > 0 && (
+              <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
+                <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                  External
+                </div>
+                {externalAccounts.map((account) => renderOption(account.name, account.name))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
