@@ -74,6 +74,8 @@ function safeFilePart(value = '') {
   return value.trim().replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'Department';
 }
 
+const DELETE_CONFIRMATION_PHRASE = 'Confirm Delete';
+
 export default function Departments() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -87,8 +89,12 @@ export default function Departments() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [renameDepartmentCode, setRenameDepartmentCode] = useState('');
+  const [isRenameDepartmentCodeEdited, setIsRenameDepartmentCodeEdited] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [hasDeleteConfirmationError, setHasDeleteConfirmationError] = useState(false);
   const [departmentName, setDepartmentName] = useState('');
   const [departmentCode, setDepartmentCode] = useState('');
   const [isDepartmentCodeEdited, setIsDepartmentCodeEdited] = useState(false);
@@ -134,6 +140,10 @@ export default function Departments() {
   const duplicateRename = renameValue.trim()
     ? departments.some((department) => department.id !== selectedDepartment?.id && department.name.toLowerCase() === renameValue.trim().toLowerCase())
     : false;
+  const duplicateRenameDepartmentCode = renameDepartmentCode
+    ? departments.some((department) => department.id !== selectedDepartment?.id && department.departmentCode === renameDepartmentCode)
+    : false;
+  const isDeleteConfirmed = deleteConfirmation === DELETE_CONFIRMATION_PHRASE;
 
   const closeModal = () => {
     if (isSaving) return;
@@ -148,6 +158,10 @@ export default function Departments() {
     if (isActionSaving && !force) return;
     setSelectedDepartment(null);
     setRenameValue('');
+    setRenameDepartmentCode('');
+    setIsRenameDepartmentCodeEdited(false);
+    setDeleteConfirmation('');
+    setHasDeleteConfirmationError(false);
     setIsRenameModalOpen(false);
     setIsDeleteModalOpen(false);
   };
@@ -156,12 +170,16 @@ export default function Departments() {
     setOpenMenuId(null);
     setSelectedDepartment(department);
     setRenameValue(department.name);
+    setRenameDepartmentCode(department.departmentCode || suggestDepartmentCode(department.name));
+    setIsRenameDepartmentCodeEdited(false);
     setIsRenameModalOpen(true);
   };
 
   const openDeleteModal = (department: Department) => {
     setOpenMenuId(null);
     setSelectedDepartment(department);
+    setDeleteConfirmation('');
+    setHasDeleteConfirmationError(false);
     setIsDeleteModalOpen(true);
   };
 
@@ -218,14 +236,24 @@ export default function Departments() {
       return;
     }
 
+    if (!renameDepartmentCode) {
+      toast.error('Department code is required');
+      return;
+    }
+
     if (duplicateRename) {
       toast.error('Department name already exists. Enter a unique name.');
       return;
     }
 
+    if (duplicateRenameDepartmentCode) {
+      toast.error('Department code already exists. Enter a unique code.');
+      return;
+    }
+
     setIsActionSaving(true);
     try {
-      const updated = await accountService.update(selectedDepartment.id, { name });
+      const updated = await accountService.update(selectedDepartment.id, { name, departmentCode: renameDepartmentCode });
       const department = normalizeDepartment(updated);
       if (!department) throw new Error('The server did not return the updated department.');
 
@@ -245,7 +273,7 @@ export default function Departments() {
         }
         return next;
       });
-      toast.success('Department renamed');
+      toast.success('Department updated');
       closeActionModals(true);
     } catch (error: any) {
       toast.error(error.message || 'Unable to rename department');
@@ -256,6 +284,11 @@ export default function Departments() {
 
   const deleteDepartment = async () => {
     if (!selectedDepartment) return;
+    if (!isDeleteConfirmed) {
+      setHasDeleteConfirmationError(true);
+      toast.error(`Type "${DELETE_CONFIRMATION_PHRASE}" to confirm deletion.`);
+      return;
+    }
 
     setIsActionSaving(true);
     try {
@@ -278,6 +311,11 @@ export default function Departments() {
   const updateDepartmentName = (value: string) => {
     setDepartmentName(value);
     if (!isDepartmentCodeEdited) setDepartmentCode(suggestDepartmentCode(value));
+  };
+
+  const updateRenameDepartmentName = (value: string) => {
+    setRenameValue(value);
+    if (!isRenameDepartmentCodeEdited) setRenameDepartmentCode(suggestDepartmentCode(value));
   };
 
   const addDepartment = async (event: React.FormEvent) => {
@@ -468,11 +506,11 @@ export default function Departments() {
 
       {isRenameModalOpen && selectedDepartment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl">
+          <div className="w-full max-w-xl rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
               <div>
                 <h2 className="text-lg font-black text-[#111827]">Rename Department</h2>
-                <p className="text-xs font-bold text-[#6B7280]">Employee assignments will follow the new department name.</p>
+                <p className="text-xs font-bold text-[#6B7280]">Update the department name and code used for employee records.</p>
               </div>
               <button type="button" onClick={() => closeActionModals()} className="rounded-xl p-2 text-[#9CA3AF] transition-all hover:bg-[#F3F4F6] hover:text-[#111827]">
                 <X className="h-5 w-5" />
@@ -484,13 +522,32 @@ export default function Departments() {
                 <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Department Name</span>
                 <input
                   value={renameValue}
-                  onChange={(event) => setRenameValue(event.target.value)}
+                  onChange={(event) => updateRenameDepartmentName(event.target.value)}
                   className={cn(
                     'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all focus:ring-2',
                     duplicateRename ? 'border-red-300 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-[#111827]'
                   )}
                 />
                 {duplicateRename && <p className="mt-2 text-xs font-bold text-red-600">This department name already exists.</p>}
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Department Code</span>
+                <input
+                  value={renameDepartmentCode}
+                  onChange={(event) => {
+                    setIsRenameDepartmentCodeEdited(true);
+                    setRenameDepartmentCode(sanitizeDepartmentCode(event.target.value));
+                  }}
+                  placeholder="hc"
+                  className={cn(
+                    'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all focus:ring-2',
+                    duplicateRenameDepartmentCode ? 'border-red-300 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-[#111827]'
+                  )}
+                />
+                <p className={cn('mt-2 text-xs font-bold', duplicateRenameDepartmentCode ? 'text-red-600' : 'text-[#6B7280]')}>
+                  {duplicateRenameDepartmentCode ? 'This code is already used. Enter a unique letters-only code.' : 'Recommended length: 2 to 8 lowercase letters.'}
+                </p>
               </label>
 
               <div className="flex items-center justify-end gap-3 border-t border-[#F3F4F6] pt-5">
@@ -504,11 +561,11 @@ export default function Departments() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isActionSaving || duplicateRename}
+                  disabled={isActionSaving || duplicateRename || duplicateRenameDepartmentCode}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] disabled:opacity-60"
                 >
                   {isActionSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Rename
+                  Save Changes
                 </button>
               </div>
             </form>
@@ -521,13 +578,34 @@ export default function Departments() {
           <div className="w-full max-w-md rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl">
             <div className="border-b border-[#E5E7EB] px-6 py-4">
               <h2 className="text-lg font-black text-[#111827]">Delete Department</h2>
-              <p className="mt-1 text-xs font-bold text-[#6B7280]">This can only delete departments with no assigned employees.</p>
+              <p className="mt-1 text-xs font-bold text-[#6B7280]">This action is irreversible and can only delete departments with no assigned employees.</p>
             </div>
 
             <div className="space-y-5 p-6">
               <p className="text-sm font-bold text-[#4B5563]">
-                Delete <span className="text-[#111827]">{selectedDepartment.name}</span>?
+                Permanently delete <span className="text-[#111827]">{selectedDepartment.name}</span>?
               </p>
+
+              <label className="block">
+                <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Confirmation Phrase</span>
+                <input
+                  value={deleteConfirmation}
+                  onChange={(event) => {
+                    setDeleteConfirmation(event.target.value);
+                    setHasDeleteConfirmationError(event.target.value.length > 0 && event.target.value !== DELETE_CONFIRMATION_PHRASE);
+                  }}
+                  placeholder={DELETE_CONFIRMATION_PHRASE}
+                  className={cn(
+                    'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all focus:ring-2',
+                    hasDeleteConfirmationError ? 'border-red-300 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-[#111827]'
+                  )}
+                />
+                <p className={cn('mt-2 text-xs font-bold', hasDeleteConfirmationError ? 'text-red-600' : 'text-[#6B7280]')}>
+                  {hasDeleteConfirmationError
+                    ? `Enter the exact phrase "${DELETE_CONFIRMATION_PHRASE}" to continue.`
+                    : `Type "${DELETE_CONFIRMATION_PHRASE}" to enable deletion.`}
+                </p>
+              </label>
 
               <div className="flex items-center justify-end gap-3 border-t border-[#F3F4F6] pt-5">
                 <button
@@ -541,7 +619,7 @@ export default function Departments() {
                 <button
                   type="button"
                   onClick={deleteDepartment}
-                  disabled={isActionSaving}
+                  disabled={isActionSaving || !isDeleteConfirmed}
                   className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 disabled:opacity-60"
                 >
                   {isActionSaving && <Loader2 className="h-4 w-4 animate-spin" />}

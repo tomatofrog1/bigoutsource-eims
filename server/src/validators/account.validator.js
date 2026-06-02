@@ -11,4 +11,10 @@ export const createAccountValidator = {
 
 export const updateAccountValidator = {
   name: { required: true, type: 'string', min: 2 },
+  departmentCode: {
+    required: false,
+    type: 'string',
+    pattern: /^[A-Za-z]+$/,
+    message: 'departmentCode must contain letters only',
+  },
 };

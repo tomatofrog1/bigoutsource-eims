@@ -109,6 +109,8 @@ export const AccountModel = {
       name: blankToNull(data.name),
       updated_at: new Date().toISOString(),
     };
+    const departmentCode = data.departmentCode ?? data.department_code;
+    if (departmentCode !== undefined) payload.department_code = sanitizeDepartmentCode(departmentCode);
 
     const rows = await supabaseRequest('accounts', {
       method: 'PATCH',

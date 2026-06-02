@@ -69,7 +69,19 @@ export const AccountService = {
       throw new AppError('Department name already exists. Enter a unique name.', 409);
     }
 
-    const account = await AccountModel.update(id, { name });
+    const hasDepartmentCodeInput = data.departmentCode !== undefined || data.department_code !== undefined;
+    const departmentCode = hasDepartmentCodeInput
+      ? sanitizeDepartmentCode(data.departmentCode ?? data.department_code)
+      : before.departmentCode;
+
+    if (!departmentCode) throw new AppError('departmentCode is required', 400);
+
+    const existingCode = await AccountModel.findByDepartmentCode(departmentCode);
+    if (existingCode && existingCode.id !== id) {
+      throw new AppError('Department code already exists. Enter a unique letters-only code.', 409);
+    }
+
+    const account = await AccountModel.update(id, { name, departmentCode });
     if (!account) throw new AppError('Account not found', 404);
 
     if (before.name !== account.name) {
@@ -84,8 +96,8 @@ export const AccountService = {
       entityType: 'accounts',
       entityId: account.id,
       details: {
-        from: { name: before.name },
-        to: { name: account.name },
+        from: { name: before.name, departmentCode: before.departmentCode },
+        to: { name: account.name, departmentCode: account.departmentCode },
       },
       ipAddress: meta.ipAddress,
     });
