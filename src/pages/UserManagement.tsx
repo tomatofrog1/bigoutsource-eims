@@ -3,6 +3,7 @@ import type React from 'react';
 import { Check, CheckCircle2, Loader2, Pencil, Search, ShieldAlert, ShieldCheck, Trash2, UserX, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
+import { USER_ACCOUNTS_REFRESHED_EVENT } from '@/src/components/layout/Header';
 import { AppUser, UserRole } from '@/src/types';
 import { userService } from '@/src/services/userService';
 import { authService } from '@/src/services/authService';
@@ -94,6 +95,19 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers();
+  }, []);
+
+  useEffect(() => {
+    function syncRefreshedAccounts(event: Event) {
+      const accountList = (event as CustomEvent<{ users?: AppUser[] }>).detail?.users;
+      if (Array.isArray(accountList)) {
+        setUsers(accountList);
+        setIsLoading(false);
+      }
+    }
+
+    window.addEventListener(USER_ACCOUNTS_REFRESHED_EVENT, syncRefreshedAccounts);
+    return () => window.removeEventListener(USER_ACCOUNTS_REFRESHED_EVENT, syncRefreshedAccounts);
   }, []);
 
   useEffect(() => {
