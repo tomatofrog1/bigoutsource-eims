@@ -673,7 +673,7 @@ export default function Directory() {
 
     try {
       const workbook = XLSX.read(await file.arrayBuffer(), { cellDates: true });
-      const worksheet = workbook.Sheets['IT Master Tracker'];
+      const worksheet = workbook.Sheets['Employee Records'];
 
       if (!worksheet) {
         throw new Error('The workbook does not contain an IT Master Tracker sheet.');

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { employeeImportService } from '@/src/services/employeeImportService';
 
 export function ImportIssuesButton() {
   const { user } = useAuth();
-  const location = useLocation();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -35,15 +34,20 @@ export function ImportIssuesButton() {
     };
   }, [user]);
 
-  if (!count || location.pathname.startsWith('/employee-imports')) return null;
+  if (!count) return null;
 
   return (
     <Link
       to="/employee-imports/issues"
-      className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-2xl shadow-red-600/30 transition-all hover:bg-red-700"
+      title={`Import Issues (${count})`}
+      aria-label={`Import Issues (${count})`}
+      className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-[#DC2626] transition-colors hover:bg-red-100"
     >
-      <AlertTriangle className="h-4 w-4" />
-      Import Issues ({count})
+      <AlertTriangle className="h-4 w-4 shrink-0" />
+      <span className="whitespace-nowrap">Import Issues</span>
+      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white">
+        {count > 99 ? '99+' : count}
+      </span>
     </Link>
   );
 }
