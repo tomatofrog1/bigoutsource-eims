@@ -9,6 +9,7 @@ import { AppUser } from '@/src/types';
 
 const SEEN_PENDING_REGISTRATIONS_KEY = 'eims_seen_pending_registration_ids';
 const NOTIFICATION_REFRESH_MS = 10000;
+export const USER_ACCOUNTS_REFRESHED_EVENT = 'eims:user-accounts-refreshed';
 
 function readSeenPendingRegistrationIds() {
   try {
@@ -115,8 +116,10 @@ function NotificationBell() {
         const [settings, accountList] = await Promise.all([settingsService.get(), userService.list()]);
         if (!isMounted) return;
 
+        const nextUsers = Array.isArray(accountList) ? accountList : [];
         setNotifyRegistrationAttempts(Boolean(settings.notifyRegistrationAttempts));
-        setUsers(Array.isArray(accountList) ? accountList : []);
+        setUsers(nextUsers);
+        window.dispatchEvent(new CustomEvent(USER_ACCOUNTS_REFRESHED_EVENT, { detail: { users: nextUsers } }));
       } catch (error) {
         if (!isMounted) return;
 
