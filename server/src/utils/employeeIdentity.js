@@ -40,17 +40,21 @@ export function isValidDepartmentCode(code = '') {
   return /^[a-z]{2,3}$/.test(String(code));
 }
 
+const KNOWN_SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v', 'md', 'm.d.', 'phd', 'ph.d.', 'esq', 'esq.']);
+
 export function parseEmployeeName(data = {}) {
   const firstNameRaw = String(data.firstName || data.first_name || '').trim();
   const middleNameRaw = String(data.middleName || data.middle_name || '').trim();
   const lastNameRaw = String(data.lastName || data.last_name || '').trim();
+  const suffixRaw = String(data.suffix || '').trim();
 
   if (firstNameRaw || middleNameRaw || lastNameRaw) {
     return {
       firstName: firstNameRaw.replace(/\u00A0/g, ' '),
       middleName: middleNameRaw.replace(/\u00A0/g, ' '),
       lastName: lastNameRaw.replace(/\u00A0/g, ' '),
-      fullName: [firstNameRaw, middleNameRaw, lastNameRaw].filter(Boolean).join(' ').trim(),
+      suffix: suffixRaw,
+      fullName: [firstNameRaw, middleNameRaw, lastNameRaw, suffixRaw].filter(Boolean).join(' ').trim(),
     };
   }
 
@@ -59,29 +63,59 @@ export function parseEmployeeName(data = {}) {
   if (fullNameRaw.includes(',')) {
     const [lastName, rest] = fullNameRaw.split(',').map(s => s.trim());
     const restParts = rest.split(/ +/).filter(Boolean);
+    
+    // Check if the rest is just a suffix
+    if (restParts.length === 1 && KNOWN_SUFFIXES.has(restParts[0].toLowerCase())) {
+      const suffix = restParts[0];
+      const previousParts = lastName.split(/ +/).filter(Boolean);
+      return {
+        firstName: (previousParts[0] || '').replace(/\u00A0/g, ' '),
+        middleName: previousParts.slice(1, -1).join(' ').replace(/\u00A0/g, ' '),
+        lastName: (previousParts[previousParts.length - 1] || '').replace(/\u00A0/g, ' '),
+        suffix: suffix,
+        fullName: fullNameRaw
+      };
+    }
+
     if (restParts.length === 1) {
       return { 
         firstName: restParts[0].replace(/\u00A0/g, ' '), 
         middleName: '', 
         lastName: lastName.replace(/\u00A0/g, ' '),
+        suffix: '',
         fullName: fullNameRaw
       };
     }
+    
+    let suffix = '';
+    const possibleSuffix = restParts[restParts.length - 1];
+    if (possibleSuffix && KNOWN_SUFFIXES.has(possibleSuffix.toLowerCase())) {
+      suffix = restParts.pop();
+    }
+
     return {
       firstName: restParts[0].replace(/\u00A0/g, ' '),
       middleName: restParts.slice(1).join(' ').replace(/\u00A0/g, ' '),
       lastName: lastName.replace(/\u00A0/g, ' '),
+      suffix: suffix,
       fullName: fullNameRaw
     };
   }
 
   const parts = fullNameRaw.split(/ +/).filter(Boolean);
 
+  let suffix = '';
+  const lastPart = parts[parts.length - 1];
+  if (lastPart && KNOWN_SUFFIXES.has(lastPart.toLowerCase())) {
+    suffix = parts.pop();
+  }
+
   if (parts.length <= 1) {
     return {
       firstName: (parts[0] || '').replace(/\u00A0/g, ' '),
       middleName: '',
       lastName: '',
+      suffix,
       fullName: fullNameRaw,
     };
   }
@@ -90,6 +124,7 @@ export function parseEmployeeName(data = {}) {
     firstName: parts[0].replace(/\u00A0/g, ' '),
     middleName: parts.slice(1, -1).join(' ').replace(/\u00A0/g, ' '),
     lastName: parts[parts.length - 1].replace(/\u00A0/g, ' '),
+    suffix,
     fullName: fullNameRaw,
   };
 }

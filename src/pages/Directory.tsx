@@ -60,6 +60,7 @@ type AddEmployeeForm = {
   firstName: string;
   middleName: string;
   lastName: string;
+  suffix?: string;
   accountAssignment: string;
   phone: string;
   address: string;
@@ -177,6 +178,7 @@ const initialForm: AddEmployeeForm = {
   firstName: '',
   middleName: '',
   lastName: '',
+  suffix: '',
   accountAssignment: '',
   phone: '',
   address: '',
@@ -512,6 +514,12 @@ export default function Directory() {
   }, [totalPages]);
 
   const updateForm = (field: keyof AddEmployeeForm, value: string) => {
+    if (field === 'firstName' || field === 'middleName' || field === 'lastName') {
+      if (/[^a-zA-Z\-\'\s]/.test(value)) {
+        return;
+      }
+    }
+
     const formattedValue =
       field === 'employeeNumber'
         ? value.toUpperCase()
@@ -809,10 +817,12 @@ export default function Directory() {
         firstName: form.firstName.trim(),
         middleName: form.middleName.trim() || undefined,
         lastName: form.lastName.trim(),
+        suffix: form.suffix?.trim() || undefined,
         fullName: [
           form.firstName.trim().replace(/ /g, '\u00A0'),
           form.middleName.trim().replace(/ /g, '\u00A0'),
-          form.lastName.trim().replace(/ /g, '\u00A0')
+          form.lastName.trim().replace(/ /g, '\u00A0'),
+          form.suffix?.trim()
         ].filter(Boolean).join(' '),
         accountAssignment: form.accountAssignment.trim(),
         phone: form.phone.trim() || undefined,
@@ -1193,19 +1203,36 @@ export default function Directory() {
                   {activeStep === 0 && (
                     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                       <SectionCard title="Employee Information" eyebrow="Manual">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <Field label="Employee ID" required error={formErrors.employeeNumber}>
-                            <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
-                          </Field>
-                          <Field label="First Name" required error={formErrors.firstName}>
-                            <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
-                          </Field>
-                          <Field label="Middle Name">
-                            <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Robert" />
-                          </Field>
-                          <Field label="Last Name" required error={formErrors.lastName}>
-                            <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
-                          </Field>
+                        <div className="flex flex-col gap-4">
+                          <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                            <div className="md:w-[48%]">
+                              <Field label="Employee ID" required error={formErrors.employeeNumber}>
+                                <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                              </Field>
+                            </div>
+                            <div className="md:w-[48%]">
+                              <Field label="First Name" required error={formErrors.firstName}>
+                                <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
+                              </Field>
+                            </div>
+                          </div>
+                          <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                            <div className="md:w-[38%] mt-[1px]">
+                              <Field label="Middle Name" error={formErrors.middleName}>
+                                <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Robert" error={Boolean(formErrors.middleName)} />
+                              </Field>
+                            </div>
+                            <div className="md:w-[38%]">
+                              <Field label="Last Name" required error={formErrors.lastName}>
+                                <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.lastName)} />
+                              </Field>
+                            </div>
+                            <div className="md:w-[18%] mt-[1px]">
+                              <Field label="Suffix">
+                                <Input value={form.suffix || ''} onChange={(value) => updateForm('suffix', value)} placeholder="e.g. Jr." />
+                              </Field>
+                            </div>
+                          </div>
                         </div>
                       </SectionCard>
 
@@ -1408,7 +1435,7 @@ export default function Directory() {
                         <ReviewGrid
                           items={[
                             ['Employee ID', form.employeeNumber || 'Missing'],
-                            ['Name', [form.firstName, form.middleName, form.lastName].filter(Boolean).join(' ') || 'Missing'],
+                            ['Name', [form.firstName, form.middleName, form.lastName, form.suffix].filter(Boolean).join(' ') || 'Missing'],
                             ['Phone', form.phone || 'Not provided'],
                             ['Address', form.address || 'Not provided'],
                           ]}

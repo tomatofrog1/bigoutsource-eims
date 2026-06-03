@@ -57,6 +57,7 @@ type EmployeeForm = {
   firstName: string;
   middleName: string;
   lastName: string;
+  suffix?: string;
   accountAssignment: string;
   phone: string;
   address: string;
@@ -82,6 +83,7 @@ const emptyEmployee: EmployeeForm = {
   firstName: '',
   middleName: '',
   lastName: '',
+  suffix: '',
   accountAssignment: '',
   phone: '',
   address: '',
@@ -134,56 +136,87 @@ function formatStatus(value: string) {
   return value === 'active' ? 'Active' : 'Inactive';
 }
 
+const KNOWN_SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v', 'md', 'm.d.', 'phd', 'ph.d.', 'esq', 'esq.']);
+
 function parseEmployeeName(fullName = '') {
   const name = String(fullName || '').trim();
-  if (!name) return { firstName: '', middleName: '', lastName: '' };
+  if (!name) return { firstName: '', middleName: '', lastName: '', suffix: '' };
 
   if (name.includes(',')) {
     const [lastName, rest] = name.split(',').map(s => s.trim());
     const restParts = rest.split(/ +/).filter(Boolean);
-    if (restParts.length === 1) {
-      return { 
-        firstName: restParts[0].replace(/\u00A0/g, ' '), 
-        middleName: '', 
-        lastName: lastName.replace(/\u00A0/g, ' ') 
+
+    if (restParts.length === 1 && KNOWN_SUFFIXES.has(restParts[0].toLowerCase())) {
+      const suffix = restParts[0];
+      const previousParts = lastName.split(/ +/).filter(Boolean);
+      return {
+        firstName: (previousParts[0] || '').replace(/\u00A0/g, ' '),
+        middleName: previousParts.slice(1, -1).join(' ').replace(/\u00A0/g, ' '),
+        lastName: (previousParts[previousParts.length - 1] || '').replace(/\u00A0/g, ' '),
+        suffix: suffix
       };
     }
+
+    if (restParts.length === 1) {
+      return {
+        firstName: restParts[0].replace(/\u00A0/g, ' '),
+        middleName: '',
+        lastName: lastName.replace(/\u00A0/g, ' '),
+        suffix: ''
+      };
+    }
+
+    let suffix = '';
+    const possibleSuffix = restParts[restParts.length - 1];
+    if (possibleSuffix && KNOWN_SUFFIXES.has(possibleSuffix.toLowerCase())) {
+      suffix = restParts.pop() || '';
+    }
+
     return {
       firstName: restParts[0].replace(/\u00A0/g, ' '),
       middleName: restParts.slice(1).join(' ').replace(/\u00A0/g, ' '),
-      lastName: lastName.replace(/\u00A0/g, ' ')
+      lastName: lastName.replace(/\u00A0/g, ' '),
+      suffix: suffix
     };
   }
 
   const parts = name.split(/ +/).filter(Boolean);
-  
+
+  let suffix = '';
+  const lastPart = parts[parts.length - 1];
+  if (lastPart && KNOWN_SUFFIXES.has(lastPart.toLowerCase())) {
+    suffix = parts.pop() || '';
+  }
+
   let firstName = '';
   let middleName = '';
   let lastName = '';
 
   if (parts.length === 1) {
-    firstName = parts[0];
+    firstName = parts[0] || '';
   } else if (parts.length === 2) {
-    firstName = parts[0];
-    lastName = parts[1];
-  } else {
-    firstName = parts[0];
+    firstName = parts[0] || '';
+    lastName = parts[1] || '';
+  } else if (parts.length > 2) {
+    firstName = parts[0] || '';
     middleName = parts.slice(1, -1).join(' ');
-    lastName = parts[parts.length - 1];
+    lastName = parts[parts.length - 1] || '';
   }
 
   return {
     firstName: firstName.replace(/\u00A0/g, ' '),
     middleName: middleName.replace(/\u00A0/g, ' '),
     lastName: lastName.replace(/\u00A0/g, ' '),
+    suffix: suffix,
   };
 }
 
-function formatEmployeeName(firstName = '', middleName = '', lastName = '') {
+function formatEmployeeName(firstName = '', middleName = '', lastName = '', suffix = '') {
   const first = String(firstName || '').trim().replace(/ /g, '\u00A0');
   const middle = String(middleName || '').trim().replace(/ /g, '\u00A0');
   const last = String(lastName || '').trim().replace(/ /g, '\u00A0');
-  return [first, middle, last].filter(Boolean).join(' ');
+  const suff = String(suffix || '').trim();
+  return [first, middle, last, suff].filter(Boolean).join(' ');
 }
 
 function sanitizeNamePart(value = '') {
@@ -193,7 +226,7 @@ function sanitizeNamePart(value = '') {
 function generatedPreview(fullName = '', account?: AccountOption) {
   const nameParts = parseEmployeeName(fullName);
   const firstRaw = String(nameParts.firstName || '');
-  
+
   const firstInitials = firstRaw
     .split(/\s+/)
     .filter(Boolean)
@@ -332,7 +365,7 @@ export default function EmployeeProfile() {
     if (!employee.employeeNumber) criticalCount++;
     if (!employee.accountAssignment) criticalCount++;
     if (!employee.siteId && !employee.site) criticalCount++;
-    
+
     if (!employee.phone) mildCount++;
     if (!employee.address) mildCount++;
     if (!employee.pcName) mildCount++;
@@ -415,6 +448,20 @@ export default function EmployeeProfile() {
   };
 
   const updateForm = (field: keyof EmployeeForm, value: string) => {
+    if (field === 'firstName' || field === 'middleName' || field === 'lastName') {
+      if (/[^a-zA-Z\-\'\s]/.test(value)) {
+        return;
+      }
+    } else if (field === 'phone') {
+      if (/[^0-9\-\+\s]/.test(value)) {
+        setFormErrors((current) => ({
+          ...current,
+          phone: 'Please enter a valid phone number (numbers only).',
+        }));
+        return;
+      }
+    }
+
     setForm((current) => ({ ...current, [field]: value }));
     setFormErrors((current) => {
       if (!current[field]) return current;
@@ -453,7 +500,7 @@ export default function EmployeeProfile() {
     if (!hasChanges) return;
 
     if (!form.employeeNumber.trim() || !form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
-      toast.error('ID, first name, last name, account, and site are required');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -533,7 +580,7 @@ export default function EmployeeProfile() {
 
   const pageTitle = employee.fullName ? `Profile: ${employee.fullName}` : 'Employee Profile';
   const selectedAccount = accounts.find((account) => account.name === form.accountAssignment);
-  const preview = generatedPreview(formatEmployeeName(form.firstName, form.middleName, form.lastName), selectedAccount);
+  const preview = generatedPreview(formatEmployeeName(form.firstName, form.middleName, form.lastName, form.suffix), selectedAccount);
   const accountBasedPreviewPlaceholder = selectedAccount
     ? 'Generated after name is entered'
     : 'Generated after name and department are entered';
@@ -572,7 +619,7 @@ export default function EmployeeProfile() {
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-8 flex flex-col gap-8">
                 <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-8 animate-pulse">
@@ -605,145 +652,103 @@ export default function EmployeeProfile() {
           </motion.div>
         ) : (
           <motion.form key="content-profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 30 }} onSubmit={saveProfile} className="flex flex-col gap-8 pb-12 w-full">
-        <Link to="/directory" className="flex items-center gap-2 text-sm font-bold text-[#6B7280] hover:text-[#111827] transition-colors w-fit uppercase tracking-tighter">
-          <ArrowLeft className="w-4 h-4" />
-          Employee Directory
-        </Link>
+            <Link to="/directory" className="flex items-center gap-2 text-sm font-bold text-[#6B7280] hover:text-[#111827] transition-colors w-fit uppercase tracking-tighter">
+              <ArrowLeft className="w-4 h-4" />
+              Employee Directory
+            </Link>
 
-        <div className="relative bg-white rounded-3xl border border-[#E5E7EB] overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
-          <div className="h-32 bg-gradient-to-br from-[#111827] via-[#1F2937] to-[#111827]"></div>
-          
-          <div className="px-8 pb-8 pt-4 flex flex-col md:flex-row md:items-end gap-6 relative">
-            <div className="absolute -top-16 left-8">
-              <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter">
-                {employee.fullName?.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('') || 'EP'}
-              </div>
-            </div>
-            
-            <div className="flex-1 min-w-0 mt-14 md:mt-0 md:ml-32">
-              <AnimatePresence mode="popLayout" initial={false}>
-                {isEditing ? (
-                  <motion.div 
-                    key="edit-mode"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    className="grid grid-cols-1 md:grid-cols-4 gap-4"
-                  >
-                    <Field label="ID" required>
-                      <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. 1004" />
-                    </Field>
-                    <Field label="First Name" required>
-                      <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" />
-                    </Field>
-                    <Field label="Middle Name">
-                      <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Doe" />
-                    </Field>
-                    <Field label="Last Name" required>
-                      <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Smith" />
-                    </Field>
-                  </motion.div>
-                ) : (
-                  <motion.div 
-                    key="view-mode"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  >
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-3xl font-black text-[#111827] tracking-tight">
-                        {employee.fullName || 'Unnamed Employee'}
-                      </h2>
+            <div className="relative bg-white rounded-3xl border border-[#E5E7EB] overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+              <div className="h-32 bg-gradient-to-br from-[#111827] via-[#1F2937] to-[#111827]"></div>
 
-                      {employee.isArchived && (
-                        <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-black uppercase tracking-wider ring-1 ring-red-200/60 shadow-sm">
-                          Archived
-                        </span>
-                      )}
-
-                      {missingDataStatus && (
-                        <div className={cn(
-                          'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 shadow-sm',
-                          missingDataStatus.type === 'critical' ? 'bg-red-50 text-red-700 ring-red-200/60' : 'bg-amber-50 text-amber-700 ring-amber-200/60'
-                        )}>
-                          <ShieldAlert className="w-3.5 h-3.5" />
-                          {missingDataStatus.text}
-                        </div>
-                      )}
-                    </div>
-
-                    <p className="text-[#6B7280] font-bold mt-1 uppercase text-xs tracking-widest">
-                      {employee.employeeNumber || 'No ID'} | {employee.site || 'Unassigned'}
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div className="flex gap-3">
-              {isEditing ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={cancelEditing}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 px-5 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSaving || !hasChanges}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] disabled:bg-[#D1D5DB] disabled:shadow-none disabled:cursor-not-allowed transition-all shadow-lg shadow-[#11182720]"
-                  >
-                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    Save Changes
-                  </button>
-                </>
-              ) : canManageEmployee ? (
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={startEditing}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Update Record
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
-                      setShowArchiveModal(true);
-                    }}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg ${
-                      employee.isArchived
-                        ? "bg-green-600 text-white hover:bg-green-700 shadow-green-500/20"
-                        : "bg-red-600 text-white hover:bg-red-700 shadow-red-500/20"
-                    }`}
-                  >
-                    {employee.isArchived ? (
-                      <>
-                        <RotateCcw className="w-4 h-4" />
-                        Unarchive
-                      </>
-                    ) : (
-                      <>
-                        <Archive className="w-4 h-4" />
-                        Archive
-                      </>
-                    )}
-                  </button>
+              <div className="px-8 pb-8 pt-4 flex flex-col md:flex-row md:items-end gap-6 relative">
+                <div className="absolute -top-16 left-8">
+                  <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter">
+                    {employee.fullName?.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('') || 'EP'}
+                  </div>
                 </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
 
+                <div className="flex-1 min-w-0 mt-14 md:mt-0 md:ml-32">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {isEditing ? (
+                      <motion.div
+                        key="edit-mode"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                        className="flex flex-col gap-4"
+                      >
+                        <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                          <div className="md:w-[48%]">
+                            <Field label="ID" required>
+                              <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. 1004" />
+                            </Field>
+                          </div>
+                          <div className="md:w-[48%]">
+                            <Field label="First Name" required error={formErrors.firstName}>
+                              <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" error={Boolean(formErrors.firstName)} />
+                            </Field>
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
+                          <div className="md:w-[38%] mt-[1px]">
+                            <Field label="Middle Name" error={formErrors.middleName}>
+                              <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Doe" error={Boolean(formErrors.middleName)} />
+                            </Field>
+                          </div>
+                          <div className="md:w-[38%]">
+                            <Field label="Last Name" required error={formErrors.lastName}>
+                              <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Smith" error={Boolean(formErrors.lastName)} />
+                            </Field>
+                          </div>
+                          <div className="md:w-[18%] mt-[1px]">
+                            <Field label="Suffix">
+                              <Input value={form.suffix || ''} onChange={(value) => updateForm('suffix', value)} placeholder="e.g. Jr." />
+                            </Field>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="view-mode"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      >
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h2 className="text-3xl font-black text-[#111827] tracking-tight">
+                            {employee.fullName || 'Unnamed Employee'}
+                          </h2>
+
+                          {employee.isArchived && (
+                            <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-black uppercase tracking-wider ring-1 ring-red-200/60 shadow-sm">
+                              Archived
+                            </span>
+                          )}
+
+                          {missingDataStatus && (
+                            <div className={cn(
+                              'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 shadow-sm',
+                              missingDataStatus.type === 'critical' ? 'bg-red-50 text-red-700 ring-red-200/60' : 'bg-amber-50 text-amber-700 ring-amber-200/60'
+                            )}>
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                              {missingDataStatus.text}
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-[#6B7280] font-bold mt-1 uppercase text-xs tracking-widest">
+                          {employee.employeeNumber || 'No ID'} | {employee.site || 'Unassigned'}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex gap-3">
+                  {isEditing ? (
+                    <>
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8 relative z-50">
             <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50" className="relative z-50">
@@ -753,14 +758,12 @@ export default function EmployeeProfile() {
                     <div className={cn("relative transition-all", isAccountDropdownOpen ? "z-50" : "z-10")}>
                       <button
                         type="button"
-                        onClick={() => setIsAccountDropdownOpen((current) => !current)}
-                        className={cn(
-                          'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
-                          !form.accountAssignment ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
-                        )}
+                        onClick={cancelEditing}
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-5 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
                       >
-                        <span className="truncate">{form.accountAssignment || 'Select department'}</span>
-                        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isAccountDropdownOpen && 'rotate-90')} />
+                        <X className="w-4 h-4" />
+                        Cancel
                       </button>
                       <AnimatePresence>
                         {isAccountDropdownOpen && (
@@ -809,16 +812,16 @@ export default function EmployeeProfile() {
                   {isEditing ? (
                     <div className={cn("relative transition-all", isStatusDropdownOpen ? "z-50" : "z-10")}>
                       <button
-                        type="button"
-                        onClick={() => setIsStatusDropdownOpen((current) => !current)}
-                        className={cn(
-                          'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
-                          'border-[#E5E7EB]'
-                        )}
+                        type="submit"
+                        disabled={isSaving || !hasChanges}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] disabled:bg-[#D1D5DB] disabled:shadow-none disabled:cursor-not-allowed transition-all shadow-lg shadow-[#11182720]"
                       >
-                        <span className="truncate">{formatStatus(form.status)}</span>
-                        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isStatusDropdownOpen && 'rotate-90')} />
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Save Changes
                       </button>
+                    </>
+                  ) : canManageEmployee ? (
+                    <div className="flex gap-3">
                       <AnimatePresence>
                         {isStatusDropdownOpen && (
                           <>
@@ -866,20 +869,33 @@ export default function EmployeeProfile() {
                     <div className={cn("relative transition-all", isSiteDropdownOpen ? "z-50" : "z-10")}>
                       <button
                         type="button"
-                        onClick={() => setIsSiteDropdownOpen((current) => !current)}
-                        className={cn(
-                          'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
-                          !form.siteId ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
-                        )}
+                        onClick={startEditing}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
                       >
-                        <span className="truncate">
-                          {sites.find((site) => site.id === form.siteId)?.name || 'Select site'}
-                        </span>
-                        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isSiteDropdownOpen && 'rotate-90')} />
+                        <Edit className="w-4 h-4" />
+                        Update Record
                       </button>
-                      <AnimatePresence>
-                        {isSiteDropdownOpen && (
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setArchiveIntent(employee.isArchived ? 'unarchive' : 'archive');
+                          setShowArchiveModal(true);
+                        }}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg ${employee.isArchived
+                            ? "bg-green-600 text-white hover:bg-green-700 shadow-green-500/20"
+                            : "bg-red-600 text-white hover:bg-red-700 shadow-red-500/20"
+                          }`}
+                      >
+                        {employee.isArchived ? (
                           <>
+                            <RotateCcw className="w-4 h-4" />
+                            Unarchive
+                          </>
+                        ) : (
+                          <>
+                            <Archive className="w-4 h-4" />
+                            Archive
                             <div className="fixed inset-0 z-10" onClick={() => setIsSiteDropdownOpen(false)} />
                             <motion.div
                               initial={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -913,56 +929,72 @@ export default function EmployeeProfile() {
                             </motion.div>
                           </>
                         )}
-                      </AnimatePresence>
+                      </button>
                     </div>
-                  ) : (
-                    employee.site || 'Unassigned'
-                  )}
-                </ProfileField>
-              </div>
-            </ProfileSection>
-
-            <ProfileSection icon={Laptop} title="Device Assets" iconColorClass="text-purple-600 bg-purple-50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                <ProfileField label="PC Name" icon={Laptop} editing={isEditing}>
-                  {isEditing ? <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} /> : employee.pcName || 'Not Assigned'}
-                </ProfileField>
-                <ProfileField label="BIOS Date" icon={Calendar} editing={isEditing}>
-                  {isEditing ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : 'Not Set'}
-                </ProfileField>
-                <ProfileField label="RustDesk ID" icon={Globe} editing={isEditing}>
-                  {isEditing ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" /> : employee.rustdeskId || 'Not Assigned'}
-                </ProfileField>
-                <ProfileField label="Remote ID" icon={Globe} editing={isEditing}>
-                  {isEditing ? <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} placeholder="e.g. 123 456 789" /> : employee.remoteId || 'Not Assigned'}
-                </ProfileField>
-              </div>
-
-              <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex-1">
-                  <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
-                  {isEditing ? (
-                    <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
-                  ) : (
-                    <p className="text-sm font-mono font-black text-[#111827] bg-[#F3F4F6] px-2 py-0.5 rounded w-fit">
-                      {showSensitive ? employee.windowsKey || 'Not Assigned' : '*****-*****-*****-*****-*****'}
-                    </p>
-                  )}
+                  ) : null}
                 </div>
-                {!isEditing && (
-                  <button
-                    type="button"
-                    onClick={handleReveal}
-                    className="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] bg-white rounded-xl text-xs font-bold text-[#4B5563] hover:text-[#111827] transition-all"
-                  >
-                    {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    {showSensitive ? 'Hide' : 'Reveal Key'}
-                  </button>
-                )}
               </div>
-            </ProfileSection>
-          </motion.div>
+            </div>
 
+            <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8">
+                <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    <ProfileField label="Department/Account Type" icon={Briefcase} editing={isEditing}>
+                      {isEditing ? (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsAccountDropdownOpen((current) => !current)}
+                            className={cn(
+                              'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                              !form.accountAssignment ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
+                            )}
+                          >
+                            <span className="truncate">{form.accountAssignment || 'Select department'}</span>
+                            <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isAccountDropdownOpen && 'rotate-90')} />
+                          </button>
+                          <AnimatePresence>
+                            {isAccountDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsAccountDropdownOpen(false)} />
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                                >
+                                  {accounts.length ? (
+                                    <div className="max-h-64 overflow-y-auto">
+                                      <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={(acc) => { updateForm('accountAssignment', acc.name); setIsAccountDropdownOpen(false); }} />
+                                      <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={(acc) => { updateForm('accountAssignment', acc.name); setIsAccountDropdownOpen(false); }} />
+                                    </div>
+                                  ) : (
+                                    <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                                  )}
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      ) : (
+                        employee.accountAssignment || 'Not Assigned'
+                      )}
+                    </ProfileField>
+                    <ProfileField label="BigOutsource Email" icon={Mail} editing={isEditing}>
+                      {isEditing ? <GeneratedValue value={preview.boEmail} placeholder={accountBasedPreviewPlaceholder} /> : employee.boEmail || 'Not Assigned'}
+                    </ProfileField>
+                    <ProfileField label="Email Password" icon={Key} editing={isEditing}>
+                      {isEditing ? <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" /> : employee.emailPassword || 'Not Assigned'}
+                    </ProfileField>
+                    <ProfileField label="LMS Account" icon={User} editing={isEditing}>
+                      {isEditing ? (
+                        <div className="px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563]">
+                          {generateLmsAccount(formatEmployeeName(form.firstName, form.lastName, '', form.suffix)) || 'Generated after name is entered'}
+                        </div>
+                      ) : (
+                        employee.lmsAccount || 'Not Assigned'
           <motion.div variants={itemVariants} className="lg:col-span-4 space-y-8 relative z-50">
             <ProfileSection icon={ShieldAlert} title="Security Compliance" compact iconColorClass="text-amber-600 bg-amber-50" className="relative z-50">
               <div className="space-y-4">
@@ -1037,21 +1069,105 @@ export default function EmployeeProfile() {
                         'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
                         'border-[#E5E7EB]'
                       )}
-                    >
-                      <span className="truncate">{form.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'}</span>
-                      <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isActivityWatchDropdownOpen && 'rotate-90')} />
-                    </button>
-                    <AnimatePresence>
-                      {isActivityWatchDropdownOpen && (
-                        <>
-                          <div className="fixed inset-0 z-10" onClick={() => setIsActivityWatchDropdownOpen(false)} />
-                          <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            transition={{ duration: 0.15, ease: 'easeOut' }}
-                            className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                    </ProfileField>
+                    <ProfileField label="Status" icon={ShieldCheck} editing={isEditing}>
+                      {isEditing ? (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsStatusDropdownOpen((current) => !current)}
+                            className={cn(
+                              'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                              'border-[#E5E7EB]'
+                            )}
                           >
+                            <span className="truncate">{formatStatus(form.status)}</span>
+                            <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isStatusDropdownOpen && 'rotate-90')} />
+                          </button>
+                          <AnimatePresence>
+                            {isStatusDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                                >
+                                  <div className="max-h-64 overflow-y-auto py-1">
+                                    {[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }].map((opt) => (
+                                      <button
+                                        key={opt.id}
+                                        type="button"
+                                        onClick={() => {
+                                          updateForm('status', opt.id as any);
+                                          setIsStatusDropdownOpen(false);
+                                        }}
+                                        className="w-full px-3 py-2.5 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                      >
+                                        {opt.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      ) : (
+                        formatStatus(employee.status)
+                      )}
+                    </ProfileField>
+                    <ProfileField label="Site" icon={MapPin} editing={isEditing}>
+                      {isEditing ? (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsSiteDropdownOpen((current) => !current)}
+                            className={cn(
+                              'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                              !form.siteId ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
+                            )}
+                          >
+                            <span className="truncate">
+                              {sites.find((site) => site.id === form.siteId)?.name || 'Select site'}
+                            </span>
+                            <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isSiteDropdownOpen && 'rotate-90')} />
+                          </button>
+                          <AnimatePresence>
+                            {isSiteDropdownOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsSiteDropdownOpen(false)} />
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                                >
+                                  <div className="max-h-64 overflow-y-auto py-1">
+                                    {sites.map((site) => (
+                                      <button
+                                        key={site.id}
+                                        type="button"
+                                        onClick={() => {
+                                          updateForm('siteId', site.id);
+                                          setIsSiteDropdownOpen(false);
+                                        }}
+                                        className="w-full px-3 py-2.5 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                      >
+                                        {site.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      ) : (
+                        employee.site || 'Unassigned'
                             <div className="max-h-64 overflow-y-auto py-1">
                               {[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }].map((opt) => {
                                 const isSelected = form.activityWatchStatus === opt.id;
@@ -1077,249 +1193,397 @@ export default function EmployeeProfile() {
                           </motion.div>
                         </>
                       )}
-                    </AnimatePresence>
+                    </ProfileField>
                   </div>
-                </ComplianceField>
-              </div>
-            </ProfileSection>
+                </ProfileSection>
 
-            <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
-              <div className="space-y-6">
-                <ProfileField label="Phone Number" editing={isEditing} error={formErrors.phone}>
-                  {isEditing ? (
-                    <Input 
-                      value={form.phone} 
-                      onChange={(value) => {
-                        if (!/^\d*$/.test(value)) {
-                          setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' }));
-                          setForm((current) => ({ ...current, phone: value.replace(/\D/g, '') }));
-                        } else {
-                          updateForm('phone', value);
-                        }
-                      }} 
-                      placeholder="e.g. 09123456789" 
-                      error={Boolean(formErrors.phone)}
-                    />
-                  ) : employee.phone || 'Not Assigned'}
-                </ProfileField>
-                <ProfileField label="Address" editing={isEditing}>
-                  {isEditing ? <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" /> : employee.address || 'Not Assigned'}
-                </ProfileField>
-              </div>
-            </ProfileSection>
-          </motion.div>
+                <ProfileSection icon={Laptop} title="Device Assets" iconColorClass="text-purple-600 bg-purple-50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    <ProfileField label="PC Name" icon={Laptop} editing={isEditing}>
+                      {isEditing ? <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} /> : employee.pcName || 'Not Assigned'}
+                    </ProfileField>
+                    <ProfileField label="BIOS Date" icon={Calendar} editing={isEditing}>
+                      {isEditing ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : 'Not Set'}
+                    </ProfileField>
+                    <ProfileField label="RustDesk ID" icon={Globe} editing={isEditing}>
+                      {isEditing ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" /> : employee.rustdeskId || 'Not Assigned'}
+                    </ProfileField>
+                    <ProfileField label="Remote ID" icon={Globe} editing={isEditing}>
+                      {isEditing ? <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} placeholder="e.g. 123 456 789" /> : employee.remoteId || 'Not Assigned'}
+                    </ProfileField>
+                  </div>
 
-          <motion.div variants={itemVariants} className="lg:col-span-12">
-            <ProfileSection icon={Clock} title="Audit History" iconColorClass="text-indigo-600 bg-indigo-50">
-              <div className="relative pl-4 md:pl-0">
-                {auditLogs.length ? (
-                  <>
-                  <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[#E5E7EB] before:via-[#E5E7EB] before:to-transparent">
-                    <AnimatePresence initial={false}>
-                      {auditLogs.slice(0, visibleLogsCount).map((log) => (
-                        <motion.div
-                          key={log.id}
-                          initial={{ opacity: 0, height: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, height: 'auto', scale: 1 }}
-                          exit={{ opacity: 0, height: 0, scale: 0.95 }}
-                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                          className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
+                  <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
+                      {isEditing ? (
+                        <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
+                      ) : (
+                        <p className="text-sm font-mono font-black text-[#111827] bg-[#F3F4F6] px-2 py-0.5 rounded w-fit">
+                          {showSensitive ? employee.windowsKey || 'Not Assigned' : '*****-*****-*****-*****-*****'}
+                        </p>
+                      )}
+                    </div>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        onClick={handleReveal}
+                        className="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] bg-white rounded-xl text-xs font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                      >
+                        {showSensitive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showSensitive ? 'Hide' : 'Reveal Key'}
+                      </button>
+                    )}
+                  </div>
+                </ProfileSection>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="lg:col-span-4 space-y-8">
+                <ProfileSection icon={ShieldAlert} title="Security Compliance" compact iconColorClass="text-amber-600 bg-amber-50">
+                  <div className="space-y-4">
+                    <ComplianceField
+                      label="ESET Status"
+                      value={formatStatus(employee.esetStatus)}
+                      editing={isEditing}
+                      status={employee.esetStatus === 'active'}
+                    >
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsEsetDropdownOpen((current) => !current)}
+                          className={cn(
+                            'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                            'border-[#E5E7EB]'
+                          )}
                         >
-                          {/* Timeline node */}
-                          <div className="flex flex-col items-center gap-2 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-indigo-100 text-indigo-600 shadow">
-                              <Clock className="w-4 h-4" />
-                            </div>
-                            {log.action.endsWith('.update') && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUndo(log);
-                                }}
-                                className="p-1.5 text-[#9CA3AF] hover:text-[#2563EB] hover:bg-[#EFF6FF] rounded-full transition-colors bg-white shadow-sm border border-[#E5E7EB] group/undo"
-                                title="Undo Action"
+                          <span className="truncate">{formatStatus(form.esetStatus)}</span>
+                          <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isEsetDropdownOpen && 'rotate-90')} />
+                        </button>
+                        <AnimatePresence>
+                          {isEsetDropdownOpen && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setIsEsetDropdownOpen(false)} />
+                              <motion.div
+                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                transition={{ duration: 0.15, ease: 'easeOut' }}
+                                className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
                               >
-                                <Undo2 className="w-3.5 h-3.5 transition-transform group-hover/undo:-rotate-45" />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Card */}
-                        <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-                          <div className="flex flex-col gap-1 mb-3">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-black text-[#111827]">{actionLabel(log.action)}</p>
-                              <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-wider">{formatDate(log.createdAt)}</p>
-                            </div>
-                            <p className="text-xs font-bold text-[#6B7280]">by {actorLabel(log)}</p>
-                          </div>
-                          <div className="space-y-2">
-                            {detailsText(log.details).map((item: any, index: number) => (
-                              <div
-                                key={index}
-                                className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] px-4 py-3"
+                                <div className="max-h-64 overflow-y-auto py-1">
+                                  {[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }].map((opt) => (
+                                    <button
+                                      key={opt.id}
+                                      type="button"
+                                      onClick={() => {
+                                        updateForm('esetStatus', opt.id as any);
+                                        setIsEsetDropdownOpen(false);
+                                      }}
+                                      className="w-full px-3 py-2.5 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                    >
+                                      {opt.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </ComplianceField>
+                    <ComplianceField
+                      label="ActivityWatch"
+                      value={employee.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'}
+                      editing={isEditing}
+                      status={employee.activityWatchStatus === 'installed'}
+                    >
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsActivityWatchDropdownOpen((current) => !current)}
+                          className={cn(
+                            'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                            'border-[#E5E7EB]'
+                          )}
+                        >
+                          <span className="truncate">{form.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'}</span>
+                          <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isActivityWatchDropdownOpen && 'rotate-90')} />
+                        </button>
+                        <AnimatePresence>
+                          {isActivityWatchDropdownOpen && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setIsActivityWatchDropdownOpen(false)} />
+                              <motion.div
+                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                transition={{ duration: 0.15, ease: 'easeOut' }}
+                                className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
                               >
-                                {'to' in item ? (
-                                  <div className="flex flex-col gap-1 text-sm">
-                                    <span className="font-black text-[#111827]">
-                                      {item.field}
-                                    </span>
+                                <div className="max-h-64 overflow-y-auto py-1">
+                                  {[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }].map((opt) => (
+                                    <button
+                                      key={opt.id}
+                                      type="button"
+                                      onClick={() => {
+                                        updateForm('activityWatchStatus', opt.id as any);
+                                        setIsActivityWatchDropdownOpen(false);
+                                      }}
+                                      className="w-full px-3 py-2.5 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                    >
+                                      {opt.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </ComplianceField>
+                  </div>
+                </ProfileSection>
 
-                                    <div className="flex items-center gap-2 text-[#6B7280]">
-                                      <span className="line-through text-red-500">
-                                        {item.from}
-                                      </span>
+                <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
+                  <div className="space-y-6">
+                    <ProfileField label="Phone Number" editing={isEditing} error={formErrors.phone}>
+                      {isEditing ? (
+                        <Input
+                          value={form.phone}
+                          onChange={(value) => {
+                            if (!/^\d*$/.test(value)) {
+                              setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' }));
+                              setForm((current) => ({ ...current, phone: value.replace(/\D/g, '') }));
+                            } else {
+                              updateForm('phone', value);
+                            }
+                          }}
+                          placeholder="e.g. 09123456789"
+                          error={Boolean(formErrors.phone)}
+                        />
+                      ) : employee.phone || 'Not Assigned'}
+                    </ProfileField>
+                    <ProfileField label="Address" editing={isEditing}>
+                      {isEditing ? <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" /> : employee.address || 'Not Assigned'}
+                    </ProfileField>
+                  </div>
+                </ProfileSection>
+              </motion.div>
 
-                                      <span className="font-bold text-[#9CA3AF]">→</span>
+              <motion.div variants={itemVariants} className="lg:col-span-12">
+                <ProfileSection icon={Clock} title="Audit History" iconColorClass="text-indigo-600 bg-indigo-50">
+                  <div className="relative pl-4 md:pl-0">
+                    {auditLogs.length ? (
+                      <>
+                        <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[#E5E7EB] before:via-[#E5E7EB] before:to-transparent">
+                          <AnimatePresence initial={false}>
+                            {auditLogs.slice(0, visibleLogsCount).map((log) => (
+                              <motion.div
+                                key={log.id}
+                                initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                                exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
+                              >
+                                {/* Timeline node */}
+                                <div className="flex flex-col items-center gap-2 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-indigo-100 text-indigo-600 shadow">
+                                    <Clock className="w-4 h-4" />
+                                  </div>
+                                </div>
 
-                                      <span className="font-bold text-green-600">
-                                        {item.to}
-                                      </span>
+                                {/* Card */}
+                                <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                                  <div className="flex flex-col gap-1 mb-3">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <p className="text-sm font-black text-[#111827]">{actionLabel(log.action)}</p>
+                                          {log.action.endsWith('.update') && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleUndo(log);
+                                              }}
+                                              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300 hover:text-indigo-700 rounded-lg transition-all uppercase tracking-widest shadow-sm group/undo"
+                                              title="Undo Action"
+                                            >
+                                              <Undo2 className="w-3 h-3 transition-transform group-hover/undo:-rotate-45" />
+                                              Undo
+                                            </button>
+                                          )}
+                                        </div>
+                                        <p className="text-xs font-bold text-[#6B7280]">by {actorLabel(log)}</p>
+                                      </div>
+                                      <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-wider shrink-0 mt-0.5">{formatDate(log.createdAt)}</p>
                                     </div>
                                   </div>
-                                ) : (
-                                  <div className="flex justify-between text-sm">
-                                    <span className="font-black text-[#111827]">
-                                      {item.field}
-                                    </span>
+                                  <div className="space-y-2">
+                                    {detailsText(log.details).map((item: any, index: number) => (
+                                      <div
+                                        key={index}
+                                        className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] px-4 py-3"
+                                      >
+                                        {'to' in item ? (
+                                          <div className="flex flex-col gap-1 text-sm">
+                                            <span className="font-black text-[#111827]">
+                                              {item.field}
+                                            </span>
 
-                                    <span className="text-[#4B5563] font-medium">
-                                      {item.value}
-                                    </span>
+                                            <div className="flex items-center gap-2 text-[#6B7280]">
+                                              <span className="line-through text-red-500">
+                                                {item.from}
+                                              </span>
+
+                                              <span className="font-bold text-[#9CA3AF]">→</span>
+
+                                              <span className="font-bold text-green-600">
+                                                {item.to}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="flex justify-between text-sm">
+                                            <span className="font-black text-[#111827]">
+                                              {item.field}
+                                            </span>
+
+                                            <span className="text-[#4B5563] font-medium">
+                                              {item.value}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
                                   </div>
-                                )}
-                              </div>
+                                </div>
+                              </motion.div>
                             ))}
-                          </div>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                  <div className="mt-8 flex justify-center gap-4">
-                    {visibleLogsCount > 3 && (
-                      <button
-                        type="button"
-                        onClick={() => setVisibleLogsCount(prev => Math.max(3, prev - 3))}
-                        className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
-                      >
-                        View less
-                      </button>
+                          </AnimatePresence>
+                        </div>
+                        <div className="mt-8 flex justify-center gap-4">
+                          {visibleLogsCount > 3 && (
+                            <button
+                              type="button"
+                              onClick={() => setVisibleLogsCount(prev => Math.max(3, prev - 3))}
+                              className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
+                            >
+                              View less
+                            </button>
+                          )}
+                          {visibleLogsCount < auditLogs.length && (
+                            <button
+                              type="button"
+                              onClick={() => setVisibleLogsCount(prev => Math.min(prev + 3, auditLogs.length))}
+                              className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
+                            >
+                              View {Math.min(3, auditLogs.length - visibleLogsCount)} more {auditLogs.length - visibleLogsCount === 1 ? 'record' : 'records'}
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm font-bold text-[#9CA3AF]">No audit history for this employee yet.</p>
                     )}
-                    {visibleLogsCount < auditLogs.length && (
-                      <button
-                        type="button"
-                        onClick={() => setVisibleLogsCount(prev => Math.min(prev + 3, auditLogs.length))}
-                        className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
-                      >
-                        View {Math.min(3, auditLogs.length - visibleLogsCount)} more {auditLogs.length - visibleLogsCount === 1 ? 'record' : 'records'}
-                      </button>
-                    )}
                   </div>
-                  </>
-                ) : (
-                  <p className="text-sm font-bold text-[#9CA3AF]">No audit history for this employee yet.</p>
-                )}
-              </div>
-            </ProfileSection>
-          </motion.div>
-        </motion.div>
+                </ProfileSection>
+              </motion.div>
+            </motion.div>
           </motion.form>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {canManageEmployee && showArchiveModal && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
           >
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               className="w-full max-w-md bg-white rounded-3xl border border-[#E5E7EB] shadow-2xl p-6"
             >
-            <div className="flex items-start gap-4">
-              <div
-                className={`p-3 rounded-2xl ${
-                  employee.isArchived
-                    ? 'bg-green-100 text-green-600'
-                    : 'bg-red-100 text-red-600'
-                }`}
-              >
-                {employee.isArchived ? (
-                  <RotateCcw className="w-6 h-6" />
-                ) : (
-                  <Archive className="w-6 h-6" />
-                )}
-              </div>
+              <div className="flex items-start gap-4">
+                <div
+                  className={`p-3 rounded-2xl ${employee.isArchived
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-red-100 text-red-600'
+                    }`}
+                >
+                  {employee.isArchived ? (
+                    <RotateCcw className="w-6 h-6" />
+                  ) : (
+                    <Archive className="w-6 h-6" />
+                  )}
+                </div>
 
-              <div className="flex-1">
-                <h3 className="text-lg font-black text-[#111827]">
-                  {archiveIntent === 'unarchive'
-                    ? 'Unarchive Employee'
-                    : 'Archive Employee'}
-                </h3>
-
-                <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
-                  Are you sure you want to{' '}
-                  <span className="font-bold text-[#111827]">
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-[#111827]">
                     {archiveIntent === 'unarchive'
-                      ? `unarchive ${employee.fullName}`
-                      : `archive ${employee.fullName}`}
-                  </span>
-                  ?
-                </p>
+                      ? 'Unarchive Employee'
+                      : 'Archive Employee'}
+                  </h3>
 
-                <p className="mt-2 text-sm text-[#6B7280]">
-                  {archiveIntent === 'unarchive'
-                    ? 'This employee will be restored to the active directory.'
-                    : 'This employee will be removed from the active directory.'}
-                </p>
+                  <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
+                    Are you sure you want to{' '}
+                    <span className="font-bold text-[#111827]">
+                      {archiveIntent === 'unarchive'
+                        ? `unarchive ${employee.fullName}`
+                        : `archive ${employee.fullName}`}
+                    </span>
+                    ?
+                  </p>
+
+                  <p className="mt-2 text-sm text-[#6B7280]">
+                    {archiveIntent === 'unarchive'
+                      ? 'This employee will be restored to the active directory.'
+                      : 'This employee will be removed from the active directory.'}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowArchiveModal(false);
-                  setArchiveIntent(null);
-                }}
-                disabled={isArchiving}
-                className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827]"
-              >
-                Cancel
-              </button>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowArchiveModal(false);
+                    setArchiveIntent(null);
+                  }}
+                  disabled={isArchiving}
+                  className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827]"
+                >
+                  Cancel
+                </button>
 
-              <button
-                type="button"
-                onClick={toggleArchiveEmployee}
-                disabled={isArchiving}
-                className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${
-                  archiveIntent === 'unarchive'
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-red-600 hover:bg-red-700'
-                }`}
-              >
-                {isArchiving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : archiveIntent === 'unarchive' ? (
-                  <RotateCcw className="w-4 h-4" />
-                ) : (
-                  <Archive className="w-4 h-4" />
-                )}
+                <button
+                  type="button"
+                  onClick={toggleArchiveEmployee}
+                  disabled={isArchiving}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-50 ${archiveIntent === 'unarchive'
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                >
+                  {isArchiving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : archiveIntent === 'unarchive' ? (
+                    <RotateCcw className="w-4 h-4" />
+                  ) : (
+                    <Archive className="w-4 h-4" />
+                  )}
 
-                {archiveIntent === 'unarchive'
-                  ? 'Confirm Unarchive'
-                  : 'Confirm Archive'}
-              </button>
-            </div>
+                  {archiveIntent === 'unarchive'
+                    ? 'Confirm Unarchive'
+                    : 'Confirm Archive'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -1327,13 +1591,13 @@ export default function EmployeeProfile() {
 
       <AnimatePresence>
         {undoTargetLog && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-xs"
           >
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -1408,7 +1672,7 @@ function ProfileSection({
   className?: string;
 }) {
   return (
-    <motion.section 
+    <motion.section
       whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
       className={cn('bg-white rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-xl transition-shadow duration-300', compact ? 'p-6' : 'p-8', className)}
     >
@@ -1437,11 +1701,11 @@ function ProfileField({
   error?: string;
 }) {
   const isMissing = !editing && (
-    children === 'Not Assigned' || 
-    children === 'Not Set' || 
-    children === 'Unassigned' || 
-    children === '' || 
-    children === null || 
+    children === 'Not Assigned' ||
+    children === 'Not Set' ||
+    children === 'Unassigned' ||
+    children === '' ||
+    children === null ||
     children === undefined
   );
 
@@ -1526,13 +1790,14 @@ function ComplianceField({
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
+function Field({ label, required, children, error }: { label: string; required?: boolean; children: ReactNode; error?: string }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
         {label} {required && <span className="text-red-500">*</span>}
       </span>
       {children}
+      {error && <span className="text-xs font-bold text-red-600">{error}</span>}
     </label>
   );
 }
