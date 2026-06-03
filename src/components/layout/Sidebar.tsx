@@ -245,19 +245,20 @@ export function Sidebar() {
             >
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FEF2F2]">
-                    <LogOut className="h-5 w-5 text-[#DC2626]" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: 'rgba(220, 38, 38, 0.15)', color: '#DC2626' }}>
+                    <LogOut className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-[#111827]">Confirm logout</h2>
-                    <p className="mt-1 text-sm text-[#6B7280]">Are you sure you want to log out and end your current session?</p>
+                    <h2 className="text-base font-black" style={{ color: 'var(--color-text-primary)' }}>Confirm logout</h2>
+                    <p className="mt-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>Are you sure you want to log out and end your current session?</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowLogoutModal(false)}
                   disabled={isLoggingOut}
-                  className="rounded-lg p-1 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#111827] disabled:opacity-50"
+                  className="rounded-lg p-1 transition-colors"
+                  style={{ color: 'var(--color-text-faint)' }}
                   aria-label="Close logout confirmation"
                 >
                   <X className="h-4 w-4" />
@@ -268,7 +269,8 @@ export function Sidebar() {
                   type="button"
                   onClick={() => setShowLogoutModal(false)}
                   disabled={isLoggingOut}
-                  className="rounded-xl bg-[#F3F4F6] py-3 text-sm font-bold text-[#374151] transition-all hover:bg-[#E5E7EB] disabled:opacity-50"
+                  className="rounded-xl py-3 text-sm font-bold transition-all disabled:opacity-50"
+                  style={{ backgroundColor: 'var(--color-surface-secondary)', color: 'var(--color-text-primary)' }}
                 >
                   Cancel
                 </button>

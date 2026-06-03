@@ -257,20 +257,20 @@ export default function Dashboard() {
       {
         label: 'Inactive ESET',
         value: devices.filter((device) => device.esetStatus === 'inactive' || device.esetStatus === 'Inactive').length,
-        color: 'text-red-600',
-        bg: 'bg-red-50',
+        color: '#DC2626',
+        bg: 'rgba(220, 38, 38, 0.15)',
       },
       {
         label: 'Missing ActivityWatch',
         value: devices.filter((device) => device.activityWatchStatus === 'missing' || device.activityWatchStatus === 'Missing').length,
-        color: 'text-orange-600',
-        bg: 'bg-orange-50',
+        color: '#EA580C',
+        bg: 'rgba(234, 88, 12, 0.15)',
       },
       {
         label: 'Unlicensed Windows',
         value: devices.filter((device) => !device.windowsKey).length,
-        color: 'text-yellow-600',
-        bg: 'bg-yellow-50',
+        color: '#CA8A04',
+        bg: 'rgba(202, 138, 4, 0.15)',
       },
     ],
     [devices]
@@ -554,17 +554,17 @@ export default function Dashboard() {
                 </h3>
                 <div className="flex-1 space-y-4">
                   {securityAlerts.map((alert) => (
-                    <div key={alert.label} className={`flex items-center justify-between p-4 rounded-xl border border-[#E5E7EB] ${alert.bg}`}>
+                    <div key={alert.label} className="flex items-center justify-between p-4 rounded-xl border transition-colors" style={{ borderColor: 'var(--color-border)', backgroundColor: alert.bg }}>
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg bg-white shadow-sm ${alert.color}`}>
+                        <div className="p-2 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--color-surface)', color: alert.color }}>
                           <AlertTriangle className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-[#6B7280] uppercase tracking-wider">{alert.label}</p>
-                          <p className={`text-lg font-black ${alert.color}`}>{alert.value} Devices</p>
+                          <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>{alert.label}</p>
+                          <p className="text-lg font-black" style={{ color: alert.color }}>{alert.value} Devices</p>
                         </div>
                       </div>
-                      <Link to="/assets" className="text-[10px] font-black uppercase text-[#111827] hover:underline bg-white/50 px-2 py-1 rounded">Fix</Link>
+                      <Link to="/assets" className="text-[10px] font-black uppercase hover:underline px-2 py-1 rounded transition-colors" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-primary)' }}>Fix</Link>
                     </div>
                   ))}
                 </div>

@@ -40,6 +40,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --color-bg: #0F1117;
   --color-surface: #1A1D27;
   --color-surface-secondary: #23272F;
@@ -115,6 +116,16 @@
 
 /* border-[#F3F4F6] light borders */
 .dark .border-\[\#F3F4F6\] {
+  border-color: var(--color-border-light) !important;
+}
+
+/* divide-[#E5E7EB] standard dividers */
+.dark .divide-\[\#E5E7EB\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-border) !important;
+}
+
+/* divide-[#F3F4F6] light dividers */
+.dark .divide-\[\#F3F4F6\] > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--color-border-light) !important;
 }
 
