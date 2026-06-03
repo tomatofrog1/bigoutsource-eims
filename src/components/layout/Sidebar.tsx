@@ -106,13 +106,21 @@ export function Sidebar() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center justify-between py-2 rounded-lg transition-colors group relative",
+                    "flex items-center justify-between py-2 rounded-lg transition-colors group relative z-0",
                     isRetracted ? "px-0 justify-center w-12 mx-auto" : "px-3",
                     isActive
-                      ? "bg-[#111827] text-white"
+                      ? "text-white"
                       : "text-[#4B5563] hover:bg-[#F3F4F6] hover:text-[#111827]"
                   )}
                 >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeNavBackground"
+                      className="absolute inset-0 bg-[#111827] rounded-lg -z-10"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
                   <div className={cn("flex items-center", isRetracted ? "justify-center" : "gap-3")}>
                     <item.icon className="w-5 h-5 shrink-0" />
                     
