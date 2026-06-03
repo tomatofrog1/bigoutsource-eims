@@ -332,9 +332,9 @@ export default function AuditLogs() {
                       <th className="px-4 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[5%]"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E5E7EB]">
+                  <tbody className="">
                     {[...Array(5)].map((_, i) => (
-                      <tr key={i} className="animate-pulse">
+                      <tr key={i} className="animate-pulse border-b border-[#E5E7EB] last:border-0">
                         <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 rounded mb-2"></div><div className="h-3 w-16 bg-gray-200 rounded"></div></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export default function AuditLogs() {
                       <th className="px-4 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[5%]"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E5E7EB]">
+                  <tbody className="">
                     {currentLogs.map((log, index) => {
                       const { date, time } = formatDateToParts(log.createdAt);
                       return (
@@ -392,7 +392,7 @@ export default function AuditLogs() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
-                          className="hover:bg-[#F9FAFB] transition-colors align-top group"
+                          className="hover:bg-[#F9FAFB] transition-colors align-top group border-b border-[#E5E7EB] last:border-0"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <p className="text-sm font-bold text-[#111827]">{date}</p>

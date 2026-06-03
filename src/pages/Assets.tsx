@@ -207,9 +207,9 @@ export default function Assets() {
                     <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F3F4F6]">
+                <tbody className="">
                   {[...Array(recordsPerPage)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
+                    <tr key={i} className="animate-pulse border-b border-[#F3F4F6] last:border-0">
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
@@ -263,14 +263,14 @@ export default function Assets() {
                     <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F3F4F6]">
+                <tbody className="">
                   {paginatedDevices.map((device, index) => (
                     <motion.tr
                       key={device.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
-                      className="hover:bg-[#F9FAFB] transition-colors"
+                      className="hover:bg-[#F9FAFB] transition-colors border-b border-[#F3F4F6] last:border-0"
                     >
                       <td className="px-6 py-4">
                         <p className="text-sm font-black text-[#111827] font-mono">{device.pcName || 'Unassigned'}</p>

@@ -388,9 +388,9 @@ export default function UserManagement() {
                     <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F3F4F6]">
+                <tbody className="">
                   {[...Array(5)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
+                    <tr key={i} className="animate-pulse border-b border-[#F3F4F6] last:border-0">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0"></div>
@@ -432,7 +432,7 @@ export default function UserManagement() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
-                        className="hover:bg-[#F9FAFB] transition-colors"
+                        className="hover:bg-[#F9FAFB] transition-colors border-b border-[#F3F4F6] last:border-0"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">

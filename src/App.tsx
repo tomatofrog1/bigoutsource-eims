@@ -5,6 +5,7 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
@@ -22,6 +23,7 @@ import EmployeeImportReview from './pages/EmployeeImportReview';
 export default function App() {
   return (
     <AuthProvider>
+    <ThemeProvider>
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -48,6 +50,7 @@ export default function App() {
         </Routes>
         <Toaster position="bottom-right" />
       </Router>
+    </ThemeProvider>
     </AuthProvider>
   );
 }

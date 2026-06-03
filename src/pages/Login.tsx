@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { AlertCircle, Building2, Check, CheckCircle2, ChevronRight, Circle, Eye, EyeOff, Lock, Mail, MapPin, ShieldCheck, User, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
@@ -78,7 +79,17 @@ function getFirstInvalidStep(errors: RegistrationErrors): RegistrationStep {
 
 export default function Login() {
   const { login, register } = useAuth();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    return () => {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      }
+    };
+  }, [isDark]);
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

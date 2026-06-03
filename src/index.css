@@ -14,9 +14,62 @@
   
 }
 
+/* ───────────────────────────────────────
+   Dark-mode CSS custom properties
+   ─────────────────────────────────────── */
+
+:root {
+  --color-bg: #F9FAFB;
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #F3F4F6;
+  --color-surface-hover: #F9FAFB;
+  --color-border: #E5E7EB;
+  --color-border-light: #F3F4F6;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #6B7280;
+  --color-text-faint: #9CA3AF;
+  --color-input-bg: #F3F4F6;
+  --color-input-bg-alt: #F9FAFB;
+  --color-accent: #111827;
+  --color-accent-hover: #374151;
+  --color-skeleton: #E5E7EB;
+  --color-skeleton-shine: #D1D5DB;
+  --color-overlay: rgba(17, 24, 39, 0.45);
+  --color-shadow: rgba(17, 24, 39, 0.08);
+}
+
+.dark {
+  color-scheme: dark;
+  --color-bg: #0F1117;
+  --color-surface: #1A1D27;
+  --color-surface-secondary: #23272F;
+  --color-surface-hover: #23272F;
+  --color-border: #2D3344;
+  --color-border-light: #23272F;
+  --color-text-primary: #F1F3F7;
+  --color-text-secondary: #A3ABBE;
+  --color-text-muted: #7B86A0;
+  --color-text-faint: #565F78;
+  --color-input-bg: #23272F;
+  --color-input-bg-alt: #1A1D27;
+  --color-accent: #E8ECFF;
+  --color-accent-hover: #CBD1EB;
+  --color-skeleton: #2D3344;
+  --color-skeleton-shine: #3A4158;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-shadow: rgba(0, 0, 0, 0.3);
+}
+
 @layer base {
+  * {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
+  }
+
   body {
-    @apply bg-[#F9FAFB] text-[#111827] font-sans;
+    @apply font-sans;
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
   }
 
   button,
@@ -24,7 +77,7 @@
   [role='button'],
   [role='link'] {
     cursor: pointer;
-    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease-out;
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease-out, background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
   }
 
   button:active:not(:disabled),
@@ -33,6 +86,174 @@
   [role='link']:active:not(:disabled) {
     transform: scale(0.97);
   }
+}
+
+/* ───────────────────────────────────────
+   Global dark-mode overrides for
+   hardcoded Tailwind colors used
+   throughout the app
+   ─────────────────────────────────────── */
+
+/* bg-white cards, modals, panels */
+.dark .bg-white {
+  background-color: var(--color-surface) !important;
+}
+
+/* bg-[#F9FAFB] page backgrounds, alt surfaces */
+.dark .bg-\[\#F9FAFB\] {
+  background-color: var(--color-bg) !important;
+}
+
+/* bg-[#F3F4F6] input backgrounds, muted surfaces */
+.dark .bg-\[\#F3F4F6\] {
+  background-color: var(--color-surface-secondary) !important;
+}
+
+/* border-[#E5E7EB] standard borders */
+.dark .border-\[\#E5E7EB\] {
+  border-color: var(--color-border) !important;
+}
+
+/* border-[#F3F4F6] light borders */
+.dark .border-\[\#F3F4F6\] {
+  border-color: var(--color-border-light) !important;
+}
+
+/* divide-[#E5E7EB] standard dividers */
+.dark .divide-\[\#E5E7EB\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-border) !important;
+}
+
+/* divide-[#F3F4F6] light dividers */
+.dark .divide-\[\#F3F4F6\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-border-light) !important;
+}
+
+/* text-[#111827] primary text */
+.dark .text-\[\#111827\] {
+  color: var(--color-text-primary) !important;
+}
+
+/* text-[#374151] label text */
+.dark .text-\[\#374151\] {
+  color: var(--color-text-secondary) !important;
+}
+
+/* text-[#4B5563] secondary text */
+.dark .text-\[\#4B5563\] {
+  color: var(--color-text-secondary) !important;
+}
+
+/* text-[#6B7280] muted text */
+.dark .text-\[\#6B7280\] {
+  color: var(--color-text-muted) !important;
+}
+
+/* text-[#9CA3AF] faint text */
+.dark .text-\[\#9CA3AF\] {
+  color: var(--color-text-faint) !important;
+}
+
+/* bg-[#111827] accent/dark backgrounds — invert for dark mode */
+.dark .bg-\[\#111827\] {
+  background-color: var(--color-accent) !important;
+  color: #111827 !important;
+}
+
+/* hover:bg-[#374151] accent hover */
+.dark .hover\:bg-\[\#374151\]:hover {
+  background-color: var(--color-accent-hover) !important;
+}
+
+/* hover:bg-[#F9FAFB] hover states */
+.dark .hover\:bg-\[\#F9FAFB\]:hover {
+  background-color: var(--color-surface-hover) !important;
+}
+
+/* hover:bg-[#F3F4F6] hover states */
+.dark .hover\:bg-\[\#F3F4F6\]:hover {
+  background-color: var(--color-surface-secondary) !important;
+}
+
+/* hover:bg-[#E5E7EB] */
+.dark .hover\:bg-\[\#E5E7EB\]:hover {
+  background-color: var(--color-border) !important;
+}
+
+/* bg-[#F9FAFB] used for input backgrounds */
+.dark .bg-\[\#F9FAFB\] input,
+.dark input.bg-\[\#F9FAFB\] {
+  background-color: var(--color-input-bg-alt) !important;
+}
+
+/* Focus rings — keep visible in dark */
+.dark .focus\:ring-\[\#111827\]:focus {
+  --tw-ring-color: #6366F1 !important;
+}
+
+/* Skeleton loading pulses */
+.dark .bg-gray-200 {
+  background-color: var(--color-skeleton) !important;
+}
+.dark .bg-gray-100 {
+  background-color: var(--color-surface-secondary) !important;
+}
+
+/* shadow-[#11182720] and similar — soften for dark */
+.dark .shadow-\[\#11182720\],
+.dark .shadow-\[\#11182714\] {
+  --tw-shadow-color: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Overlay backdrop */
+.dark .bg-\[\#111827\]\/45 {
+  background-color: var(--color-overlay) !important;
+  color: inherit !important;
+}
+.dark .bg-\[\#111827\]\/30 {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  color: inherit !important;
+}
+
+/* Chart tooltip in dark */
+.dark .bg-white.p-3 {
+  background-color: var(--color-surface) !important;
+}
+
+/* Recharts text elements */
+.dark .recharts-text {
+  fill: var(--color-text-muted) !important;
+}
+.dark .recharts-cartesian-grid line {
+  stroke: var(--color-border) !important;
+}
+
+/* Icon text on accent bg (e.g. rounded-xl bg-[#F3F4F6] p-3 text-[#111827]) */
+.dark .rounded-xl.bg-\[\#F3F4F6\].text-\[\#111827\] {
+  background-color: var(--color-surface-secondary) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Sidebar active nav bg — keep dark in dark mode */
+.dark .bg-\[\#111827\].rounded-lg {
+  background-color: #6366F1 !important;
+  color: #FFFFFF !important;
+}
+
+/* Scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-faint);
 }
 
 .data-grid-border {
@@ -50,4 +271,3 @@
     transform: translateY(0);
   }
 }
-

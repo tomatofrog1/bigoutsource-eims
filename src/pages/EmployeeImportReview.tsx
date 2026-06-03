@@ -456,9 +456,9 @@ export default function EmployeeImportReview() {
                     <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F3F4F6]">
+                <tbody className="">
                   {[...Array(5)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
+                    <tr key={i} className="animate-pulse border-b border-[#F3F4F6] last:border-0">
                       <td className="px-4 py-3"><div className="h-5 w-16 bg-gray-200 rounded-lg"></div></td>
                       <td className="px-4 py-3"><div className="h-4 w-12 bg-gray-200 rounded"></div></td>
                       <td className="px-4 py-3"><div className="h-4 w-32 bg-gray-200 rounded"></div></td>
@@ -953,9 +953,9 @@ function IssueTable({
           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]"></th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-[#F3F4F6]">
+      <tbody className="">
         {rows.map((row) => (
-          <tr key={row.id}>
+          <tr key={row.id} className="border-b border-[#F3F4F6] last:border-0">
             <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.sourceRow}</td>
             <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.normalizedData.employeeNumber || '-'}</td>
             <td className="px-4 py-3 text-sm font-bold text-[#111827]">{row.normalizedData.fullName || '-'}</td>

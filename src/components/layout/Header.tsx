@@ -37,8 +37,8 @@ export function Header({ title }: { title: string }) {
     .join('') || 'U';
 
   return (
-    <header className="h-16 border-b border-[#E5E7EB] bg-white flex items-center justify-between px-8">
-      <h1 className="text-lg font-semibold text-[#111827]">{title}</h1>
+    <header className="h-16 border-b flex items-center justify-between px-8" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+      <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>{title}</h1>
       
       <div className="flex items-center gap-6">
         
@@ -47,10 +47,10 @@ export function Header({ title }: { title: string }) {
           <ImportIssuesButton />
           <NotificationBell />
           
-          <div className="flex items-center gap-3 pl-4 border-l border-[#E5E7EB]">
+          <div className="flex items-center gap-3 pl-4 border-l" style={{ borderColor: 'var(--color-border)' }}>
             <div className="text-right">
-              <p className="text-sm font-medium text-[#111827]">{name}</p>
-              <p className="text-xs text-[#6B7280]">{user?.role?.replace('_', ' ') || 'User'}</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{name}</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{user?.role?.replace('_', ' ') || 'User'}</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-[#111827] flex items-center justify-center text-white text-xs font-bold">
               {initials}
@@ -146,7 +146,8 @@ function NotificationBell() {
       <button
         type="button"
         onClick={openNotifications}
-        className="relative rounded-full p-2 text-[#4B5563] transition-colors hover:bg-[#F3F4F6] hover:text-[#111827]"
+        className="relative rounded-full p-2 transition-colors"
+        style={{ color: 'var(--color-text-secondary)' }}
         aria-label="Open notifications"
       >
         <Bell className="h-5 w-5" />
@@ -168,24 +169,26 @@ function NotificationBell() {
             transition={{ duration: 0.18, ease: 'easeOut' }}
           >
           <motion.div
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl"
+            className="w-full max-w-md overflow-hidden rounded-2xl border shadow-2xl"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             onClick={(event) => event.stopPropagation()}
             initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] px-5 py-4">
+            <div className="flex items-start justify-between gap-4 border-b px-5 py-4" style={{ borderColor: 'var(--color-border)' }}>
               <div>
-                <h2 className="text-base font-black text-[#111827]">Notifications</h2>
-                <p className="mt-1 text-xs font-bold text-[#6B7280]">
+                <h2 className="text-base font-black" style={{ color: 'var(--color-text-primary)' }}>Notifications</h2>
+                <p className="mt-1 text-xs font-bold" style={{ color: 'var(--color-text-muted)' }}>
                   {unreadCount > 0 ? `${unreadCount} pending item${unreadCount === 1 ? '' : 's'}` : 'No pending alerts'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-xl p-2 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#111827]"
+                className="rounded-xl p-2 transition-colors"
+                style={{ color: 'var(--color-text-faint)' }}
                 aria-label="Close notifications"
               >
                 <X className="h-4 w-4" />
@@ -206,33 +209,35 @@ function NotificationBell() {
                   {pendingUsers.map((account) => (
                     <div
                       key={account.uid}
-                      className={`rounded-xl border p-4 transition-colors ${
+                      className="rounded-xl border p-4 transition-colors"
+                      style={
                         activeNotificationIds.has(String(account.uid))
-                          ? 'border-amber-200 bg-amber-50 shadow-sm'
-                          : 'border-[#E5E7EB] bg-white'
-                      }`}
+                          ? { borderColor: '#F59E0B', backgroundColor: 'rgba(245, 158, 11, 0.1)' }
+                          : { borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }
+                      }
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`rounded-xl p-2 ${
+                          className="rounded-xl p-2"
+                          style={
                             activeNotificationIds.has(String(account.uid))
-                              ? 'bg-white text-amber-700'
-                              : 'bg-[#F9FAFB] text-[#6B7280]'
-                          }`}
+                              ? { color: '#F59E0B' }
+                              : { backgroundColor: 'var(--color-surface-secondary)', color: 'var(--color-text-muted)' }
+                          }
                         >
                           <ShieldAlert className="h-4 w-4" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-black text-[#111827]">Account request pending</p>
+                            <p className="text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>Account request pending</p>
                             {activeNotificationIds.has(String(account.uid)) && (
-                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-700">
+                              <span className="rounded-full px-2 py-0.5 text-[10px] font-black uppercase" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}>
                                 New
                               </span>
                             )}
                           </div>
-                          <p className="mt-1 truncate text-xs font-bold text-[#6B7280]">{account.fullName || account.email}</p>
-                          <p className="mt-0.5 truncate text-[11px] font-bold text-[#9CA3AF]">{account.email}</p>
+                          <p className="mt-1 truncate text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>{account.fullName || account.email}</p>
+                          <p className="mt-0.5 truncate text-[11px] font-bold" style={{ color: 'var(--color-text-muted)' }}>{account.email}</p>
                         </div>
                       </div>
                     </div>
@@ -244,7 +249,7 @@ function NotificationBell() {
             </div>
 
             {isSuperAdmin && notifyRegistrationAttempts && pendingUsers.length > 0 && (
-              <div className="border-t border-[#E5E7EB] bg-[#F9FAFB] px-5 py-4">
+              <div className="border-t px-5 py-4" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface-secondary)' }}>
                 <Link
                   to="/users"
                   onClick={() => setIsOpen(false)}
@@ -264,10 +269,10 @@ function NotificationBell() {
 
 function NotificationEmptyState({ message }: { message: string }) {
   return (
-    <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-[#E5E7EB] px-6 text-center">
-      <Bell className="h-7 w-7 text-[#D1D5DB]" />
-      <p className="mt-3 text-sm font-black text-[#111827]">All clear</p>
-      <p className="mt-1 text-xs font-bold text-[#6B7280]">{message}</p>
+    <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed px-6 text-center" style={{ borderColor: 'var(--color-border)' }}>
+      <Bell className="h-7 w-7" style={{ color: 'var(--color-border)' }} />
+      <p className="mt-3 text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>All clear</p>
+      <p className="mt-1 text-xs font-bold" style={{ color: 'var(--color-text-muted)' }}>{message}</p>
     </div>
   );
 }
