@@ -7,6 +7,7 @@ import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage'
 import { employeeService } from '@/src/services/employeeService';
 import { deviceService } from '@/src/services/deviceService';
 import { auditLogService } from '@/src/services/auditLogService';
+import { accountService } from '@/src/services/accountService';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell
@@ -77,9 +78,12 @@ export default function Dashboard() {
   const [devices, setDevices] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
 
+  const [accounts, setAccounts] = useState<any[]>([]);
+  
   const [employeesLoading, setEmployeesLoading] = useState(true);
   const [devicesLoading, setDevicesLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(true);
+  const [accountsLoading, setAccountsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -88,7 +92,7 @@ export default function Dashboard() {
       try {
         const result = await employeeService.list();
         if (!isMounted) return;
-        setEmployees(asArray(result));
+        setEmployees(asArray(result).filter((emp: any) => !emp.isArchived && !emp.is_archived));
       } finally {
         if (isMounted) setEmployeesLoading(false);
       }
@@ -114,9 +118,20 @@ export default function Dashboard() {
       }
     }
 
+    async function loadAccounts() {
+      try {
+        const result = await accountService.list();
+        if (!isMounted) return;
+        setAccounts(asArray(result));
+      } finally {
+        if (isMounted) setAccountsLoading(false);
+      }
+    }
+
     loadEmployees();
     loadDevices();
     loadLogs();
+    loadAccounts();
     return () => {
       isMounted = false;
     };
@@ -136,8 +151,15 @@ export default function Dashboard() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return employees
-      .filter(emp => emp.joinedAt && new Date(emp.joinedAt) >= thirtyDaysAgo)
-      .sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime())
+      .filter(emp => {
+        const dateStr = emp.createdAt || emp.created_at;
+        return dateStr && new Date(dateStr) >= thirtyDaysAgo;
+      })
+      .sort((a, b) => {
+        const aDate = new Date(a.createdAt || a.created_at).getTime();
+        const bDate = new Date(b.createdAt || b.created_at).getTime();
+        return bDate - aDate;
+      })
       .slice(0, 4);
   }, [employees]);
 
@@ -145,20 +167,28 @@ export default function Dashboard() {
     const assigned = devices.filter((device) => device.status === 'assigned').length;
 
     return [
-      { label: 'Total Personnel', value: employees.length, icon: Users, color: 'text-[#111827]' },
-      { label: 'Assigned Assets', value: assigned, icon: Laptop, color: 'text-blue-600' },
+      { label: 'Total Personnel', value: employees.length, icon: Users, color: 'text-[#111827]', link: '/directory' },
+      { label: 'Assigned Assets', value: assigned, icon: Laptop, color: 'text-blue-600', link: '/assets' },
       { label: 'Turnover Rate', value: `${turnoverStats.rate}%`, icon: UserMinus, color: 'text-orange-600' },
       { label: 'New Hires (30d)', value: recentHires.length, icon: UserPlus, color: 'text-green-600' },
     ];
   }, [employees, devices, turnoverStats, recentHires]);
 
   const departmentDistribution = useMemo(() => {
+    const internalAccounts = new Set(
+      accounts
+        .filter((acc) => acc.accountType === 'internal' || acc.account_type === 'internal')
+        .map((acc) => acc.name)
+    );
+
     const counts = new Map<string, number>();
     employees.forEach((emp) => {
-      if (emp.status === 'active' && emp.department) {
-        counts.set(emp.department, (counts.get(emp.department) || 0) + 1);
+      const empAccount = emp.accountAssignment || emp.account;
+      if (emp.status === 'active' && empAccount && internalAccounts.has(empAccount)) {
+        counts.set(empAccount, (counts.get(empAccount) || 0) + 1);
       }
     });
+
     let dist = Array.from(counts.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
@@ -173,8 +203,9 @@ export default function Dashboard() {
         { name: 'Finance', count: 8 }
       ];
     }
+      
     return dist;
-  }, [employees]);
+  }, [employees, accounts]);
 
   const growthTrend = useMemo(() => {
     const months = new Map<string, number>();
@@ -182,25 +213,22 @@ export default function Dashboard() {
       .filter(e => e.joinedAt)
       .sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime());
 
+      .filter(e => e.createdAt || e.created_at)
+      .sort((a, b) => {
+        const aDate = new Date(a.createdAt || a.created_at).getTime();
+        const bDate = new Date(b.createdAt || b.created_at).getTime();
+        return aDate - bDate;
+      });
+    
     let cumulative = 0;
     sortedEmployees.forEach(emp => {
-      const date = new Date(emp.joinedAt);
+      const date = new Date(emp.createdAt || emp.created_at);
       const monthYear = new Intl.DateTimeFormat('en-US', { month: 'short', year: '2-digit' }).format(date);
       cumulative++;
       months.set(monthYear, cumulative);
     });
 
     let trend = Array.from(months.entries()).map(([month, count]) => ({ month, name: month, count })).slice(-6);
-    if (trend.length === 0) {
-      trend = [
-        { month: 'Jan 26', name: 'Jan 26', count: 12 },
-        { month: 'Feb 26', name: 'Feb 26', count: 18 },
-        { month: 'Mar 26', name: 'Mar 26', count: 25 },
-        { month: 'Apr 26', name: 'Apr 26', count: 34 },
-        { month: 'May 26', name: 'May 26', count: 45 },
-        { month: 'Jun 26', name: 'Jun 26', count: 52 },
-      ];
-    }
     return trend;
   }, [employees]);
 
@@ -224,14 +252,6 @@ export default function Dashboard() {
       return indexA - indexB;
     });
 
-    if (dist.length === 0) {
-      dist = [
-        { site: 'San Pablo City (HQ)', name: 'San Pablo City (HQ)', count: 65 },
-        { site: 'Candelaria', name: 'Candelaria', count: 32 },
-        { site: 'WFH', name: 'WFH', count: 15 },
-        { site: 'Hybrid', name: 'Hybrid', count: 5 },
-      ];
-    }
     return dist;
   }, [employees]);
 
@@ -259,7 +279,7 @@ export default function Dashboard() {
     [devices]
   );
 
-  const totalPersonnel = Math.max(employees.length, 1);
+  const totalPersonnel = employees.length;
 
   return (
     <PageLayout title="System Overview">
@@ -288,10 +308,17 @@ export default function Dashboard() {
                     <div className="p-2 bg-[#F3F4F6] rounded-xl text-[#111827]">
                       <stat.icon className="w-5 h-5" />
                     </div>
-                    <div className={`flex items-center gap-1 text-[10px] font-bold uppercase ${stat.color}`}>
-                      Live
-                      <ArrowUpRight className="w-3 h-3" />
-                    </div>
+                    {stat.link ? (
+                      <Link to={stat.link} className={`flex items-center gap-1 text-[10px] font-bold uppercase ${stat.color} hover:underline`}>
+                        Live
+                        <ArrowUpRight className="w-3 h-3" />
+                      </Link>
+                    ) : (
+                      <div className={`flex items-center gap-1 text-[10px] font-bold uppercase ${stat.color}`}>
+                        Live
+                        <ArrowUpRight className="w-3 h-3" />
+                      </div>
+                    )}
                   </div>
                   <p className="text-xs text-[#6B7280] font-bold uppercase tracking-wider">{stat.label}</p>
                   <p className="text-3xl font-black text-[#111827] mt-1">{stat.value}</p>
@@ -336,7 +363,7 @@ export default function Dashboard() {
           </AnimatePresence>
 
           <AnimatePresence mode="wait" initial={false}>
-            {employeesLoading ? (
+            {employeesLoading || accountsLoading ? (
               <motion.div key="skeleton-dept" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm animate-pulse relative">
                 <div className="w-48 h-6 bg-gray-200 rounded mb-6" />
                 <div className="w-full h-[300px] bg-gray-100 rounded" />
@@ -406,7 +433,7 @@ export default function Dashboard() {
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-                        <span className="text-3xl font-black text-[#111827]">{totalPersonnel > 1 ? totalPersonnel : 117}</span>
+                        <span className="text-3xl font-black text-[#111827]">{totalPersonnel}</span>
                         <span className="text-[10px] font-black uppercase tracking-wider text-[#6B7280]">Total</span>
                       </div>
                     </>
@@ -456,7 +483,7 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div className="text-right shrink-0 ml-3">
-                          <p className="text-xs font-bold text-[#111827]">{formatTime(emp.joinedAt)}</p>
+                          <p className="text-xs font-bold text-[#111827]">{formatTime(emp.createdAt || emp.created_at)}</p>
                           <p className="text-[9px] font-black uppercase text-[#10B981] tracking-wider mt-1 bg-green-50 px-2 py-0.5 rounded-full inline-block">Joined</p>
                         </div>
                       </div>
