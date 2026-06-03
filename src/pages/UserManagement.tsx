@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
-import { Check, CheckCircle2, Loader2, Pencil, Search, ShieldAlert, ShieldCheck, Trash2, UserX, UsersRound, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldAlert, ShieldCheck, Trash2, UserX, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -68,13 +68,28 @@ function toEditDraft(user: AppUser): UserEditDraft {
   };
 }
 
-function selectClassName() {
-  return 'w-full max-w-[180px] rounded-lg border border-[#E5E7EB] bg-white px-2 py-1.5 text-xs font-bold text-[#4B5563] focus:ring-2 focus:ring-[#111827] outline-none';
+
+function getInitials(name: string, email: string) {
+  if (name) {
+    const parts = name.trim().split(' ').filter(Boolean);
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    if (parts.length === 1) {
+      return parts[0].substring(0, 2).toUpperCase();
+    }
+  }
+  return email.substring(0, 2).toUpperCase();
 }
 
 export default function UserManagement() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: '', direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -144,15 +159,55 @@ export default function UserManagement() {
     () => ({
       pending: users.filter((user) => user.status === 'pending').length,
       active: users.filter((user) => user.status === 'active').length,
+      admins: users.filter((user) => user.role === 'admin' && user.status === 'active').length,
       superAdmins: users.filter((user) => user.role === 'super_admin' && user.status === 'active').length,
+      viewers: users.filter((user) => user.role === 'viewer' && user.status === 'active').length,
     }),
     [users]
   );
 
-  const filteredUsers = users.filter((user) => {
-    const text = `${user.email} ${user.fullName || ''} ${user.department || ''} ${user.site || ''} ${user.role} ${user.status}`.toLowerCase();
-    return text.includes(search.toLowerCase());
-  });
+  const filteredUsers = useMemo(() => {
+    let result = users.filter((user) => {
+      const text = `${user.email} ${user.fullName || ''} ${user.department || ''} ${user.site || ''} ${user.role} ${user.status}`.toLowerCase();
+      const matchesSearch = text.includes(search.toLowerCase());
+      const matchesRole = roleFilter
+        ? roleFilter === 'admin'
+          ? ['admin', 'hr_admin', 'it_admin'].includes(user.role)
+          : user.role === roleFilter
+        : true;
+      const matchesStatus = statusFilter ? user.status === statusFilter : true;
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aVal = String((a as any)[sortConfig.key] || '').toLowerCase();
+        const bVal = String((b as any)[sortConfig.key] || '').toLowerCase();
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [users, search, roleFilter, statusFilter, sortConfig]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredUsers, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter, statusFilter]);
+
+  const handleSort = (key: string) => {
+    setSortConfig((current) => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
 
   const approveUser = async (id: string) => {
     setBusyId(id);
@@ -258,10 +313,10 @@ export default function UserManagement() {
   }, [siteOptions, editDraft?.site]);
 
   return (
-    <PageLayout title="System Permissions & Users">
+    <PageLayout title="System Permissions & Users" contentClassName="w-full max-w-[1600px] mx-auto">
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="relative max-w-md flex-1">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="relative max-w-md w-full md:flex-1 z-0">
             <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -271,12 +326,34 @@ export default function UserManagement() {
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] outline-none"
             />
           </div>
+          <div className="flex items-center gap-3 w-full md:w-auto z-10 relative">
+            <AnimatedSelect
+              value={roleFilter}
+              onChange={setRoleFilter}
+              options={[
+                { value: '', label: 'All Roles' },
+                { value: 'viewer', label: 'Viewer' },
+                { value: 'admin', label: 'Admin (All Depts)' },
+                { value: 'super_admin', label: 'Super Admin' },
+              ]}
+            />
+            <AnimatedSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'active', label: 'Active' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'disabled', label: 'Inactive' },
+              ]}
+            />
+          </div>
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
-            <motion.div key="skeleton-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
+            <motion.div key="skeleton-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+              {[...Array(5)].map((_, i) => (
                 <div key={i} className="p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-sm flex items-center gap-4 animate-pulse">
                   <div className="w-11 h-11 rounded-xl bg-gray-200" />
                   <div className="flex-1 space-y-2">
@@ -287,9 +364,11 @@ export default function UserManagement() {
               ))}
             </motion.div>
           ) : (
-            <motion.div key="content-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <SummaryCard label="Pending Requests" count={summary.pending} icon={ShieldAlert} color="text-amber-700" bg="bg-amber-50" />
+            <motion.div key="content-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6">
               <SummaryCard label="Active Accounts" count={summary.active} icon={UsersRound} color="text-green-700" bg="bg-green-50" />
+              <SummaryCard label="Pending Requests" count={summary.pending} icon={ShieldAlert} color="text-amber-700" bg="bg-amber-50" />
+              <SummaryCard label="Viewers" count={summary.viewers} icon={UsersRound} color="text-purple-700" bg="bg-purple-50" />
+              <SummaryCard label="Admins" count={summary.admins} icon={ShieldCheck} color="text-blue-700" bg="bg-blue-50" />
               <SummaryCard label="Super Admins" count={summary.superAdmins} icon={ShieldCheck} color="text-[#111827]" bg="bg-[#F3F4F6]" />
             </motion.div>
           )}
@@ -301,11 +380,11 @@ export default function UserManagement() {
               <table className="w-full min-w-[980px] text-left border-collapse">
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">User</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Role</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Department</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Site</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Status</th>
+                    <SortableHeader label="User" sortKey="fullName" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="Site" sortKey="site" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
                     <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest"></th>
                   </tr>
                 </thead>
@@ -334,25 +413,31 @@ export default function UserManagement() {
               <table className="w-full min-w-[980px] text-left border-collapse">
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">User</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Role</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Department</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Site</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest">Status</th>
+                    <SortableHeader label="User" sortKey="fullName" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="Site" sortKey="site" currentSort={sortConfig} onSort={handleSort} />
+                    <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} />
                     <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F3F4F6]">
-                  {filteredUsers.map((user) => {
+                  {paginatedUsers.map((user, index) => {
                     const isEditing = editingId === user.uid;
                     const canEdit = user.role !== 'super_admin';
     
                     return (
-                      <tr key={user.uid} className="hover:bg-[#F9FAFB] transition-colors">
+                      <motion.tr 
+                        key={user.uid} 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
+                        className="hover:bg-[#F9FAFB] transition-colors"
+                      >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[10px] font-black text-[#111827] border border-[#E5E7EB]">
-                              {(user.fullName || user.email).substring(0, 2).toUpperCase()}
+                              {getInitials(user.fullName || '', user.email)}
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-bold text-[#111827] truncate">{user.fullName || user.email}</p>
@@ -362,22 +447,16 @@ export default function UserManagement() {
                         </td>
                         <td className="px-6 py-4">
                           {isEditing && editDraft ? (
-                            <select
+                            <AnimatedSelect
                               value={editDraft.role}
-                              onChange={(event) =>
+                              onChange={(val) =>
                                 setEditDraft((current) =>
-                                  current ? { ...current, role: event.target.value as UserRole } : current
+                                  current ? { ...current, role: val as UserRole } : current
                                 )
                               }
-                              className={selectClassName()}
+                              options={EDITABLE_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))}
                               disabled={busyId === user.uid}
-                            >
-                              {EDITABLE_ROLES.map((role) => (
-                                <option key={role} value={role}>
-                                  {roleLabel(role)}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           ) : (
                             <div className="flex items-center gap-2">
                               <ShieldCheck className="w-4 h-4 text-[#D1D5DB]" />
@@ -387,64 +466,50 @@ export default function UserManagement() {
                         </td>
                         <td className="px-6 py-4">
                           {isEditing && editDraft ? (
-                            <select
+                            <AnimatedSelect
                               value={editDraft.department}
-                              onChange={(event) =>
-                                setEditDraft((current) => (current ? { ...current, department: event.target.value } : current))
+                              onChange={(val) =>
+                                setEditDraft((current) => (current ? { ...current, department: val } : current))
                               }
-                              className={selectClassName()}
+                              options={[
+                                { value: '', label: 'Select department' },
+                                ...departmentSelectOptions.map((dept) => ({ value: dept, label: dept }))
+                              ]}
                               disabled={busyId === user.uid || !departmentSelectOptions.length}
-                            >
-                              <option value="">Select department</option>
-                              {departmentSelectOptions.map((department) => (
-                                <option key={department} value={department}>
-                                  {department}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           ) : (
                             <span className="text-xs font-bold text-[#4B5563]">{user.department || 'Unassigned'}</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
                           {isEditing && editDraft ? (
-                            <select
+                            <AnimatedSelect
                               value={editDraft.site}
-                              onChange={(event) =>
-                                setEditDraft((current) => (current ? { ...current, site: event.target.value } : current))
+                              onChange={(val) =>
+                                setEditDraft((current) => (current ? { ...current, site: val } : current))
                               }
-                              className={selectClassName()}
+                              options={[
+                                { value: '', label: 'Select site' },
+                                ...siteSelectOptions.map((site) => ({ value: site, label: site }))
+                              ]}
                               disabled={busyId === user.uid || !siteSelectOptions.length}
-                            >
-                              <option value="">Select site</option>
-                              {siteSelectOptions.map((site) => (
-                                <option key={site} value={site}>
-                                  {site}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           ) : (
                             <span className="text-xs font-bold text-[#4B5563]">{user.site || 'San Pablo City (HQ)'}</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
                           {isEditing && editDraft ? (
-                            <select
+                            <AnimatedSelect
                               value={editDraft.status}
-                              onChange={(event) =>
+                              onChange={(val) =>
                                 setEditDraft((current) =>
-                                  current ? { ...current, status: event.target.value as EditableAccountStatus } : current
+                                  current ? { ...current, status: val as EditableAccountStatus } : current
                                 )
                               }
-                              className={selectClassName()}
+                              options={EDITABLE_ACCOUNT_STATUSES}
                               disabled={busyId === user.uid}
-                            >
-                              {EDITABLE_ACCOUNT_STATUSES.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           ) : (
                             <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-tighter ${statusClass(user.status)}`}>
                               {statusLabel(user.status)}
@@ -546,7 +611,7 @@ export default function UserManagement() {
                             )}
                           </div>
                         </td>
-                      </tr>
+                      </motion.tr>
                     );
                   })}
                 </tbody>
@@ -560,20 +625,60 @@ export default function UserManagement() {
                   <h3 className="text-lg font-bold text-[#111827]">No users found</h3>
                 </div>
               )}
+
+              {(!isLoading && filteredUsers.length > 0) && (
+                <div className="px-6 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <span className="text-xs font-bold text-[#6B7280]">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} entries
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 border border-[#E5E7EB] bg-white text-xs font-bold text-[#4B5563] rounded-lg hover:bg-[#F3F4F6] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1 hidden sm:flex">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum = currentPage;
+                        if (totalPages <= 5) pageNum = i + 1;
+                        else if (currentPage <= 3) pageNum = i + 1;
+                        else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                        else pageNum = currentPage - 2 + i;
+                        
+                        if (pageNum < 1 || pageNum > totalPages) return null;
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-[#111827] text-white shadow-sm'
+                                : 'text-[#4B5563] hover:bg-[#E5E7EB]'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 border border-[#E5E7EB] bg-white text-xs font-bold text-[#4B5563] rounded-lg hover:bg-[#F3F4F6] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
         
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#E5E7EB] bg-white py-12 text-center shadow-sm">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
-              <Loader2 className="h-8 w-8 animate-spin text-[#9CA3AF]" />
-            </div>
-            <h3 className="text-base font-bold text-[#111827]">
-              Loading users...
-            </h3>
-          </div>
-        )}
+
       </div>
 
       <AnimatePresence>
@@ -654,5 +759,105 @@ function SummaryCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function AnimatedSelect({
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || 'Select...';
+
+  return (
+    <div className="relative min-w-[140px] w-full max-w-[180px]">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white px-2 py-1.5 text-left text-xs font-bold text-[#4B5563] outline-none transition-all focus:ring-2 focus:ring-[#111827] disabled:opacity-50 disabled:cursor-not-allowed ${
+          !value && options.some((o) => o.value === '')
+            ? 'border-red-300 bg-red-50 hover:border-red-400'
+            : 'border-[#E5E7EB] hover:border-[#CBD5E1]'
+        }`}
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <ChevronRight
+          className={`h-3.5 w-3.5 shrink-0 transition-transform text-[#9CA3AF] ${
+            isOpen ? 'rotate-90' : ''
+          }`}
+        />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+            >
+              <div className="max-h-48 overflow-y-auto py-1">
+                {options.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-xs font-semibold transition-colors hover:bg-[#F3F4F6] ${
+                      value === opt.value ? 'bg-[#F9FAFB] text-[#111827]' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  currentSort,
+  onSort,
+}: {
+  label: string;
+  sortKey: string;
+  currentSort: { key: string; direction: 'asc' | 'desc' };
+  onSort: (key: string) => void;
+}) {
+  const isActiveSort = currentSort.key === sortKey;
+  const SortIcon = isActiveSort ? (currentSort.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+
+  return (
+    <th className="h-14 px-6 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle">
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        aria-sort={isActiveSort ? (currentSort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+        className={`flex max-w-full items-center gap-1.5 rounded-lg py-2 text-left uppercase tracking-widest transition-colors hover:text-[#111827] ${
+          isActiveSort ? 'text-[#111827]' : ''
+        }`}
+      >
+        <span className="truncate">{label}</span>
+        <SortIcon className="h-3.5 w-3.5 shrink-0" />
+      </button>
+    </th>
   );
 }

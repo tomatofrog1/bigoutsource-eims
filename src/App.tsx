@@ -25,7 +25,7 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          
+
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/directory" element={<Directory />} />
