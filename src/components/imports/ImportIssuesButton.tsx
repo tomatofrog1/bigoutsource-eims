@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { employeeImportService } from '@/src/services/employeeImportService';
 
+let cachedImportIssueCount = 0;
+
 export function ImportIssuesButton() {
   const { user } = useAuth();
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(cachedImportIssueCount);
+  const role = user?.role;
 
   useEffect(() => {
-    if (!user || user.role === 'viewer' || user.role === 'it_admin') {
+    if (!user || role === 'viewer' || role === 'it_admin') {
+      cachedImportIssueCount = 0;
       setCount(0);
       return;
     }
@@ -20,9 +23,11 @@ export function ImportIssuesButton() {
     async function loadSummary() {
       try {
         const summary = await employeeImportService.summary();
-        if (isMounted) setCount(Number(summary.unresolvedIssues || 0));
+        const nextCount = Number(summary.unresolvedIssues || 0);
+        cachedImportIssueCount = nextCount;
+        if (isMounted) setCount(nextCount);
       } catch (error) {
-        if (isMounted) setCount(0);
+        if (isMounted) setCount(cachedImportIssueCount);
       }
     }
 
@@ -33,35 +38,22 @@ export function ImportIssuesButton() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [user]);
+  }, [role, user?.uid]);
+
+  if (count <= 0) return null;
 
   return (
-    <AnimatePresence>
-      {count > 0 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 10 }}
-          transition={{
-            type: 'spring',
-            stiffness: 380,
-            damping: 30,
-          }}
-        >
-          <Link
-            to="/employee-imports/issues"
-            title={`Import Issues (${count})`}
-            aria-label={`Import Issues (${count})`}
-            className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-[#DC2626] transition-colors hover:bg-red-100"
-          >
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span className="whitespace-nowrap">Import Issues</span>
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white">
-              {count > 99 ? '99+' : count}
-            </span>
-          </Link>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <Link
+      to="/employee-imports/issues"
+      title={`Import Issues (${count})`}
+      aria-label={`Import Issues (${count})`}
+      className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-[#DC2626] transition-colors hover:bg-red-100"
+    >
+      <AlertTriangle className="h-4 w-4 shrink-0" />
+      <span className="whitespace-nowrap">Import Issues</span>
+      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white">
+        {count > 99 ? '99+' : count}
+      </span>
+    </Link>
   );
 }

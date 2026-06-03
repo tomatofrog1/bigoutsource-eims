@@ -113,6 +113,12 @@ export default function AuditLogs() {
   }, [search, actionFilter, entityFilter, userFilter, startDate, endDate, sortConfig]);
 
   useEffect(() => {
+    if (startDate && endDate && endDate < startDate) {
+      setEndDate('');
+    }
+  }, [startDate, endDate]);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function loadLogs() {
@@ -239,7 +245,11 @@ export default function AuditLogs() {
                 onFocus={(e) => (e.target.type = "date")}
                 onBlur={(e) => (!e.target.value ? (e.target.type = "text") : null)}
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  const nextStartDate = e.target.value;
+                  setStartDate(nextStartDate);
+                  if (nextStartDate && endDate && endDate < nextStartDate) setEndDate('');
+                }}
                 className="w-full bg-transparent text-sm font-bold text-[#4B5563] outline-none min-w-0"
               />
               <span className="text-[#9CA3AF] font-bold shrink-0">-</span>
@@ -249,8 +259,13 @@ export default function AuditLogs() {
                 onFocus={(e) => (e.target.type = "date")}
                 onBlur={(e) => (!e.target.value ? (e.target.type = "text") : null)}
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-transparent text-sm font-bold text-[#4B5563] outline-none min-w-0"
+                min={startDate || undefined}
+                onChange={(e) => {
+                  const nextEndDate = e.target.value;
+                  if (startDate && nextEndDate && nextEndDate < startDate) return;
+                  setEndDate(nextEndDate);
+                }}
+                className="w-full bg-transparent text-sm font-bold text-[#4B5563] outline-none min-w-0 disabled:text-[#9CA3AF]"
               />
             </div>
             <FilterDropdown label="Action" value={actionFilter} onChange={setActionFilter} options={actionOptions} />

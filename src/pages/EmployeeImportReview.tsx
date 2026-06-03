@@ -40,6 +40,18 @@ type DeleteIntent = {
 
 const siteOptions = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
 
+const importReviewCache: {
+  rows: ImportRow[];
+  focusedBatchId: string;
+  activeView: 'ready' | 'issues' | 'duplicates';
+  hasLoaded: boolean;
+} = {
+  rows: [],
+  focusedBatchId: '',
+  activeView: 'issues',
+  hasLoaded: false,
+};
+
 const fieldLabels: Array<[string, string]> = [
   ['employeeNumber', 'ID'],
   ['fullName', 'Name'],
@@ -113,8 +125,8 @@ function mergeDefaults(rows: ImportRow[]) {
 
 export default function EmployeeImportReview() {
   const { batchId } = useParams();
-  const [rows, setRows] = useState<ImportRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [rows, setRows] = useState<ImportRow[]>(() => importReviewCache.rows);
+  const [isLoading, setIsLoading] = useState(() => !importReviewCache.hasLoaded);
   const [isImporting, setIsImporting] = useState(false);
   const [isSavingRow, setIsSavingRow] = useState(false);
   const [isSavingMerge, setIsSavingMerge] = useState(false);
@@ -125,11 +137,11 @@ export default function EmployeeImportReview() {
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [mergeForm, setMergeForm] = useState<Record<string, any>>({});
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
-  const [focusedBatchId, setFocusedBatchId] = useState('');
-  const [activeView, setActiveView] = useState<'ready' | 'issues' | 'duplicates'>('issues');
+  const [focusedBatchId, setFocusedBatchId] = useState(() => importReviewCache.focusedBatchId);
+  const [activeView, setActiveView] = useState<'ready' | 'issues' | 'duplicates'>(() => importReviewCache.activeView);
 
   async function loadRows() {
-    setIsLoading(true);
+    if (!importReviewCache.hasLoaded) setIsLoading(true);
     try {
       const targetBatchId = batchId || focusedBatchId;
       let result = await employeeImportService.list(targetBatchId ? { importBatchId: targetBatchId } : { status: 'issue' });
@@ -140,11 +152,16 @@ export default function EmployeeImportReview() {
 
         if (issueBatchId) {
           result = await employeeImportService.list({ importBatchId: issueBatchId });
+          importReviewCache.focusedBatchId = issueBatchId;
           setFocusedBatchId(issueBatchId);
         }
       }
 
-      setRows(Array.isArray(result.rows) ? result.rows : []);
+      const nextRows = Array.isArray(result.rows) ? result.rows : [];
+      importReviewCache.rows = nextRows;
+      importReviewCache.focusedBatchId = targetBatchId || importReviewCache.focusedBatchId;
+      importReviewCache.hasLoaded = true;
+      setRows(nextRows);
     } catch (error: any) {
       toast.error(error.message || 'Unable to load import review');
     } finally {
@@ -155,6 +172,10 @@ export default function EmployeeImportReview() {
   useEffect(() => {
     loadRows();
   }, [batchId, focusedBatchId]);
+
+  useEffect(() => {
+    importReviewCache.activeView = activeView;
+  }, [activeView]);
 
   useEffect(() => {
     let isMounted = true;
@@ -250,8 +271,12 @@ export default function EmployeeImportReview() {
         ? result.rows.find((row: ImportRow) => row.status === 'ready' || row.status === 'issue')
         : null;
 
+      const nextRows = Array.isArray(refreshed.rows) ? refreshed.rows : [];
+      importReviewCache.focusedBatchId = importBatchId;
+      importReviewCache.rows = nextRows;
+      importReviewCache.hasLoaded = true;
       setFocusedBatchId(importBatchId);
-      setRows(Array.isArray(refreshed.rows) ? refreshed.rows : []);
+      setRows(nextRows);
 
       if (keptRow?.status === 'ready') {
         toast.success(`${action === 'merge' ? 'Merged row' : 'Selected row'} moved to Ready. Click Import Ready Records to add it to Employee Records.`);
@@ -304,7 +329,11 @@ export default function EmployeeImportReview() {
       const updated = await employeeImportService.updateRow(editingRow.id, editForm);
       setFocusedBatchId(updated.importBatchId);
       const refreshed = await employeeImportService.list({ importBatchId: updated.importBatchId });
-      setRows(Array.isArray(refreshed.rows) ? refreshed.rows : []);
+      const nextRows = Array.isArray(refreshed.rows) ? refreshed.rows : [];
+      importReviewCache.focusedBatchId = updated.importBatchId;
+      importReviewCache.rows = nextRows;
+      importReviewCache.hasLoaded = true;
+      setRows(nextRows);
       setEditingRow(null);
       setEditForm({});
       toast.success(updated.status === 'ready' ? 'Row fixed and moved to Ready' : 'Row saved, but still needs review');
@@ -386,9 +415,9 @@ export default function EmployeeImportReview() {
           </div>
         </div>
 
-        <AnimatePresence mode="wait" initial={false}>
+        <>
           {isLoading ? (
-            <motion.div key="skeleton-import-review" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm w-full">
+            <div className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm w-full">
               <table className="w-full min-w-[920px] text-left border-collapse">
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
@@ -411,9 +440,9 @@ export default function EmployeeImportReview() {
                   ))}
                 </tbody>
               </table>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div key="content-import-review" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="flex flex-col gap-0 w-full">
+            <div className="flex flex-col gap-0 w-full">
               {activeView === 'duplicates' && (
                 <div className="space-y-5">
                   {duplicateGroups.length ? (
@@ -477,9 +506,9 @@ export default function EmployeeImportReview() {
                   )}
                 </div>
               )}
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </>
         
         {isLoading && (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#E5E7EB] bg-white py-12 text-center shadow-sm">
