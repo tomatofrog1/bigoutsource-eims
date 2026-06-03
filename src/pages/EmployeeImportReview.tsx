@@ -1,7 +1,31 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import type { ReactNode, ElementType } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckCircle2, Edit, Loader2, Merge, Trash2, UploadCloud, XCircle } from 'lucide-react';
+import {
+  CheckCircle2,
+  Edit,
+  Loader2,
+  Merge,
+  Trash2,
+  UploadCloud,
+  XCircle,
+  Briefcase,
+  Laptop,
+  ShieldCheck,
+  User,
+  Mail,
+  Key,
+  MapPin,
+  Phone,
+  Calendar,
+  Globe,
+  ChevronRight,
+  X,
+  Save,
+  RotateCcw,
+  Archive,
+  ShieldAlert,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
@@ -282,7 +306,7 @@ export default function EmployeeImportReview() {
         toast.success(`${action === 'merge' ? 'Merged row' : 'Selected row'} moved to Ready. Click Import Ready Records to add it to Employee Records.`);
       } else {
         const reason = keptRow?.issues?.map((issue: any) => issue.message).join(', ') || 'remaining issues';
-        toast.success(`${action === 'merge' ? 'Merged row' : 'Selected row'} still needs review: ${reason}`);
+        toast(`${action === 'merge' ? 'Merged row' : 'Selected row'} still needs review: ${reason}`, { icon: '⚠️' });
       }
     } catch (error: any) {
       toast.error(error.message || 'Unable to resolve duplicate');
@@ -336,7 +360,11 @@ export default function EmployeeImportReview() {
       setRows(nextRows);
       setEditingRow(null);
       setEditForm({});
-      toast.success(updated.status === 'ready' ? 'Row fixed and moved to Ready' : 'Row saved, but still needs review');
+      if (updated.status === 'ready') {
+        toast.success('Row fixed and moved to Ready');
+      } else {
+        toast('Row saved, but still needs review', { icon: '⚠️' });
+      }
     } catch (error: any) {
       toast.error(error.message || 'Unable to save import row');
     } finally {
@@ -759,46 +787,83 @@ function MergeRowsModal({
                 Merged result: {mergedCompleteness}/{fieldLabels.length} fields filled
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <EditorInput label="ID" value={form.employeeNumber || ''} onChange={(value) => onChange('employeeNumber', value)} required />
-              <EditorInput label="Name" value={form.fullName || ''} onChange={(value) => onChange('fullName', value)} required />
-              <EditorSelect label="Account" value={form.accountAssignment || ''} onChange={(value) => onChange('accountAssignment', value)} required>
-                <AccountOptions value={form.accountAssignment || ''} accounts={accounts} />
-              </EditorSelect>
-              <EditorInput label="Bigoutsource Email" value={form.boEmail || ''} onChange={(value) => onChange('boEmail', value)} required />
-              <EditorSelect label="Site" value={form.siteName || ''} onChange={(value) => onChange('siteName', value)} required>
-                <option value="">Select site</option>
-                {siteOptions.map((site) => (
-                  <option key={site} value={site}>{site}</option>
-                ))}
-              </EditorSelect>
-              <EditorSelect label="Status" value={form.status || 'active'} onChange={(value) => onChange('status', value)}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </EditorSelect>
-              <EditorInput label="Phone" value={form.phone || ''} onChange={(value) => onChange('phone', value)} />
-              <EditorInput label="Address" value={form.address || ''} onChange={(value) => onChange('address', value)} />
-              <EditorInput label="Email Password" value={form.emailPassword || ''} onChange={(value) => onChange('emailPassword', value)} />
-              <EditorInput label="LMS Account" value={form.lmsAccount || ''} onChange={(value) => onChange('lmsAccount', value)} />
-              <EditorInput label="PC Name" value={form.pcName || ''} onChange={(value) => onChange('pcName', value)} />
-              <EditorInput label="RustDesk ID" value={form.rustdeskId || ''} onChange={(value) => onChange('rustdeskId', value)} />
-              <EditorInput label="Remote ID" value={form.remoteId || ''} onChange={(value) => onChange('remoteId', value)} />
-              <EditorSelect label="ESET" value={form.esetStatus || 'inactive'} onChange={(value) => onChange('esetStatus', value)}>
-                <option value="inactive">Inactive</option>
-                <option value="active">Active</option>
-              </EditorSelect>
-              <EditorInput label="BIOS Date" type="date" value={form.biosDate || ''} onChange={(value) => onChange('biosDate', value)} />
-              <EditorSelect label="ActivityWatch" value={form.activityWatchStatus || 'missing'} onChange={(value) => onChange('activityWatchStatus', value)}>
-                <option value="missing">Missing</option>
-                <option value="installed">Installed</option>
-              </EditorSelect>
-              <EditorInput label="Windows Key" value={form.windowsKey || ''} onChange={(value) => onChange('windowsKey', value)} />
-              <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="ID" required>
+                <Input value={form.employeeNumber || ''} onChange={(value) => onChange('employeeNumber', value)} />
+              </Field>
+              <Field label="Name" required>
+                <Input value={form.fullName || ''} onChange={(value) => onChange('fullName', value)} />
+              </Field>
+              <SelectDropdown
+                label="Account"
+                value={form.accountAssignment || ''}
+                options={accounts.map(acc => ({ id: acc.name, name: acc.name }))}
+                onSelect={(val) => onChange('accountAssignment', val)}
+                required
+                placeholder="Select account"
+              />
+              <Field label="Bigoutsource Email" required>
+                <Input value={form.boEmail || ''} onChange={(value) => onChange('boEmail', value)} />
+              </Field>
+              <SelectDropdown
+                label="Site"
+                value={form.siteName || ''}
+                options={siteOptions.map(site => ({ id: site, name: site }))}
+                onSelect={(val) => onChange('siteName', val)}
+                required
+                placeholder="Select site"
+              />
+              <SelectDropdown
+                label="Status"
+                value={form.status || 'active'}
+                options={[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }]}
+                onSelect={(val) => onChange('status', val)}
+              />
+              <Field label="Phone">
+                <Input value={form.phone || ''} onChange={(value) => onChange('phone', value)} />
+              </Field>
+              <Field label="Address">
+                <Input value={form.address || ''} onChange={(value) => onChange('address', value)} />
+              </Field>
+              <Field label="Email Password">
+                <Input value={form.emailPassword || ''} onChange={(value) => onChange('emailPassword', value)} />
+              </Field>
+              <Field label="LMS Account">
+                <Input value={form.lmsAccount || ''} onChange={(value) => onChange('lmsAccount', value)} />
+              </Field>
+              <Field label="PC Name">
+                <Input value={form.pcName || ''} onChange={(value) => onChange('pcName', value)} />
+              </Field>
+              <Field label="RustDesk ID">
+                <Input value={form.rustdeskId || ''} onChange={(value) => onChange('rustdeskId', value)} />
+              </Field>
+              <Field label="Remote ID">
+                <Input value={form.remoteId || ''} onChange={(value) => onChange('remoteId', value)} />
+              </Field>
+              <SelectDropdown
+                label="ESET"
+                value={form.esetStatus || 'inactive'}
+                options={[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }]}
+                onSelect={(val) => onChange('esetStatus', val)}
+              />
+              <Field label="BIOS Date">
+                <Input type="date" value={form.biosDate || ''} onChange={(value) => onChange('biosDate', value)} />
+              </Field>
+              <SelectDropdown
+                label="ActivityWatch"
+                value={form.activityWatchStatus || 'missing'}
+                options={[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }]}
+                onSelect={(val) => onChange('activityWatchStatus', val)}
+              />
+              <Field label="Windows Key">
+                <Input value={form.windowsKey || ''} onChange={(value) => onChange('windowsKey', value)} />
+              </Field>
+              <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 hover:bg-[#F3F4F6] transition-colors cursor-pointer shadow-xs">
                 <input
                   type="checkbox"
                   checked={Boolean(form.is_archived)}
                   onChange={(event) => onChange('is_archived', event.target.checked)}
-                  className="h-4 w-4 accent-[#111827]"
+                  className="h-4 w-4 accent-[#111827] rounded cursor-pointer"
                 />
                 <span className="text-xs font-black uppercase tracking-widest text-[#4B5563]">Archived</span>
               </label>
@@ -1044,66 +1109,139 @@ function EditRowModal({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-        className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl"
+        className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-[#E5E7EB] bg-white shadow-2xl"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] px-6 py-4">
-          <div>
-            <h2 className="text-lg font-black text-[#111827]">Edit Import Row {row.sourceRow}</h2>
-            <p className="mt-1 text-xs font-bold text-[#6B7280]">{issueText(row)}</p>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E5E7EB] bg-[#F9FAFB] px-6 py-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full border-2 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow flex items-center justify-center text-xl font-black text-[#111827] uppercase tracking-tighter shrink-0">
+              {form.fullName?.split(' ').filter(Boolean).slice(0, 2).map((n: string) => n[0]).join('') || 'EP'}
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-[#111827] leading-tight">{form.fullName || 'New Employee'}</h2>
+              <p className="text-xs font-bold text-[#6B7280] uppercase tracking-widest mt-0.5">
+                Staging Row {row.sourceRow} | ID: {form.employeeNumber || 'Not Set'}
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="rounded-xl p-2 text-[#9CA3AF] transition-all hover:bg-[#F3F4F6] hover:text-[#111827]"
+            className="rounded-xl p-2 text-[#9CA3AF] transition-all hover:bg-[#E5E7EB]/50 hover:text-[#111827]"
           >
-            <XCircle className="h-5 w-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 overflow-y-auto p-6 md:grid-cols-3">
-          <EditorInput label="ID" value={form.employeeNumber || ''} onChange={(value) => onChange('employeeNumber', value)} required />
-          <EditorInput label="Name" value={form.fullName || ''} onChange={(value) => onChange('fullName', value)} required />
-          <EditorSelect label="Account" value={form.accountAssignment || ''} onChange={(value) => onChange('accountAssignment', value)} required>
-            <AccountOptions value={form.accountAssignment || ''} accounts={accounts} />
-          </EditorSelect>
-          <EditorInput label="Bigoutsource Email" value={form.boEmail || ''} onChange={(value) => onChange('boEmail', value)} required />
-          <EditorSelect label="Site" value={form.siteName || ''} onChange={(value) => onChange('siteName', value)} required>
-            <option value="">Select site</option>
-            {siteOptions.map((site) => (
-              <option key={site} value={site}>{site}</option>
-            ))}
-          </EditorSelect>
-          <EditorSelect label="Status" value={form.status || 'active'} onChange={(value) => onChange('status', value)}>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </EditorSelect>
-          <EditorInput label="Phone" value={form.phone || ''} onChange={(value) => onChange('phone', value)} />
-          <EditorInput label="Address" value={form.address || ''} onChange={(value) => onChange('address', value)} />
-          <EditorInput label="Email Password" value={form.emailPassword || ''} onChange={(value) => onChange('emailPassword', value)} />
-          <EditorInput label="LMS Account" value={form.lmsAccount || ''} onChange={(value) => onChange('lmsAccount', value)} />
-          <EditorInput label="PC Name" value={form.pcName || ''} onChange={(value) => onChange('pcName', value)} />
-          <EditorInput label="RustDesk ID" value={form.rustdeskId || ''} onChange={(value) => onChange('rustdeskId', value)} />
-          <EditorInput label="Remote ID" value={form.remoteId || ''} onChange={(value) => onChange('remoteId', value)} />
-          <EditorSelect label="ESET" value={form.esetStatus || 'inactive'} onChange={(value) => onChange('esetStatus', value)}>
-            <option value="inactive">Inactive</option>
-            <option value="active">Active</option>
-          </EditorSelect>
-          <EditorInput label="BIOS Date" type="date" value={form.biosDate || ''} onChange={(value) => onChange('biosDate', value)} />
-          <EditorSelect label="ActivityWatch" value={form.activityWatchStatus || 'missing'} onChange={(value) => onChange('activityWatchStatus', value)}>
-            <option value="missing">Missing</option>
-            <option value="installed">Installed</option>
-          </EditorSelect>
-          <EditorInput label="Windows Key" value={form.windowsKey || ''} onChange={(value) => onChange('windowsKey', value)} />
-          <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3">
-            <input
-              type="checkbox"
-              checked={Boolean(form.is_archived)}
-              onChange={(event) => onChange('is_archived', event.target.checked)}
-              className="h-4 w-4 accent-[#111827]"
-            />
-            <span className="text-xs font-black uppercase tracking-widest text-[#4B5563]">Archived</span>
-          </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto p-6 bg-[#F9FAFB]">
+          {/* Column 1: Work & Account Info */}
+          <div className="space-y-6">
+            <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <SelectDropdown
+                  label="Department/Account"
+                  value={form.accountAssignment || ''}
+                  options={accounts.map(acc => ({ id: acc.name, name: acc.name }))}
+                  onSelect={(val) => onChange('accountAssignment', val)}
+                  required
+                  placeholder="Select account"
+                />
+                <Field label="Bigoutsource Email" required>
+                  <Input value={form.boEmail || ''} onChange={(val) => onChange('boEmail', val)} placeholder="e.g. john@bigoutsource.com" />
+                </Field>
+                <Field label="Email Password">
+                  <Input value={form.emailPassword || ''} onChange={(val) => onChange('emailPassword', val)} placeholder="e.g. P@ssw0rd123" />
+                </Field>
+                <Field label="LMS Account">
+                  <Input value={form.lmsAccount || ''} onChange={(val) => onChange('lmsAccount', val)} placeholder="e.g. john.smith" />
+                </Field>
+                <SelectDropdown
+                  label="Status"
+                  value={form.status || 'active'}
+                  options={[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }]}
+                  onSelect={(val) => onChange('status', val)}
+                />
+                <SelectDropdown
+                  label="Site"
+                  value={form.siteName || ''}
+                  options={siteOptions.map(site => ({ id: site, name: site }))}
+                  onSelect={(val) => onChange('siteName', val)}
+                  required
+                  placeholder="Select site"
+                />
+              </div>
+            </ProfileSection>
+
+            <ProfileSection icon={Phone} title="Contact Details" iconColorClass="text-green-600 bg-green-50">
+              <div className="grid grid-cols-1 gap-4">
+                <Field label="Phone">
+                  <Input value={form.phone || ''} onChange={(val) => onChange('phone', val)} placeholder="e.g. 09123456789" />
+                </Field>
+                <Field label="Address">
+                  <Input value={form.address || ''} onChange={(val) => onChange('address', val)} placeholder="e.g. 123 Main St, Candelaria" />
+                </Field>
+              </div>
+            </ProfileSection>
+          </div>
+
+          {/* Column 2: System Details & Compliance */}
+          <div className="space-y-6">
+            <ProfileSection icon={Laptop} title="System Details" iconColorClass="text-indigo-600 bg-indigo-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Employee ID" required>
+                  <Input value={form.employeeNumber || ''} onChange={(val) => onChange('employeeNumber', val)} placeholder="e.g. 1004" />
+                </Field>
+                <Field label="Employee Full Name" required>
+                  <Input value={form.fullName || ''} onChange={(val) => onChange('fullName', val)} placeholder="e.g. John Doe" />
+                </Field>
+                <Field label="PC Name">
+                  <Input value={form.pcName || ''} onChange={(val) => onChange('pcName', val)} placeholder="e.g. PC-JOHN" />
+                </Field>
+                <Field label="BIOS Date">
+                  <Input type="date" value={form.biosDate || ''} onChange={(val) => onChange('biosDate', val)} />
+                </Field>
+                <Field label="RustDesk ID">
+                  <Input value={form.rustdeskId || ''} onChange={(val) => onChange('rustdeskId', val)} placeholder="e.g. 123 456 789" />
+                </Field>
+                <Field label="Remote ID">
+                  <Input value={form.remoteId || ''} onChange={(val) => onChange('remoteId', val)} placeholder="e.g. 123 456 789" />
+                </Field>
+              </div>
+            </ProfileSection>
+
+            <ProfileSection icon={ShieldCheck} title="Compliance & State" iconColorClass="text-emerald-600 bg-emerald-50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <SelectDropdown
+                  label="ESET"
+                  value={form.esetStatus || 'inactive'}
+                  options={[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }]}
+                  onSelect={(val) => onChange('esetStatus', val)}
+                />
+                <SelectDropdown
+                  label="ActivityWatch"
+                  value={form.activityWatchStatus || 'missing'}
+                  options={[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }]}
+                  onSelect={(val) => onChange('activityWatchStatus', val)}
+                />
+                <div className="sm:col-span-2">
+                  <Field label="Windows Key">
+                    <Input value={form.windowsKey || ''} onChange={(val) => onChange('windowsKey', val)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX" />
+                  </Field>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 hover:bg-[#F9FAFB] transition-colors cursor-pointer shadow-xs">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.is_archived)}
+                      onChange={(event) => onChange('is_archived', event.target.checked)}
+                      className="h-4 w-4 accent-[#111827] rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-black uppercase tracking-widest text-[#4B5563]">Archived (Staged record is archived)</span>
+                  </label>
+                </div>
+              </div>
+            </ProfileSection>
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
@@ -1111,17 +1249,18 @@ function EditRowModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827]"
+            className="flex items-center gap-2 px-5 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
           >
+            <X className="w-4 h-4" />
             Cancel
           </button>
           <button
             type="button"
             onClick={onSave}
             disabled={isSaving}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#111827] px-5 py-2.5 text-sm font-black text-white transition-all hover:bg-[#374151] disabled:opacity-60"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] disabled:bg-[#D1D5DB] disabled:cursor-not-allowed transition-all shadow-lg"
           >
-            {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Row
           </button>
         </div>
@@ -1130,74 +1269,140 @@ function EditRowModal({
   );
 }
 
-function AccountOptions({ value, accounts }: { value: string; accounts: AccountOption[] }) {
-  return (
-    <>
-      <option value="">Select account</option>
-      {value && !accounts.some((account) => account.name === value) && <option value={value}>{value}</option>}
-      {accounts.map((account) => (
-        <option key={account.id} value={account.name}>
-          {account.name}
-        </option>
-      ))}
-    </>
-  );
-}
-
-function EditorInput({
-  label,
-  value,
-  onChange,
-  type = 'text',
-  required = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
-        {label} {required && <span className="text-red-500">*</span>}
-      </span>
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]"
-      />
-    </label>
-  );
-}
-
-function EditorSelect({
-  label,
-  value,
-  onChange,
+function ProfileSection({
+  icon: Icon,
+  title,
   children,
-  required = false,
+  iconColorClass = 'text-[#111827] bg-[#F3F4F6]',
 }: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
+  icon: ElementType;
+  title: string;
   children: ReactNode;
-  required?: boolean;
+  iconColorClass?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1.5">
+    <section className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs p-5 transition-shadow duration-300 hover:shadow-md text-left">
+      <div className="flex items-center gap-3 border-b border-[#F3F4F6] pb-3 mb-4">
+        <div className={cn("p-2 rounded-xl", iconColorClass)}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <h4 className="text-sm font-black text-[#111827] tracking-tight">{title}</h4>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5 w-full text-left">
       <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
         {label} {required && <span className="text-red-500">*</span>}
       </span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#111827]"
+      {children}
+    </div>
+  );
+}
+
+function Input({
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      onChange={(event) => onChange(event.target.value)}
+      className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all"
+    />
+  );
+}
+
+function SelectDropdown({
+  label,
+  value,
+  options,
+  onSelect,
+  required = false,
+  placeholder = 'Select option',
+}: {
+  label: string;
+  value: string;
+  options: { id: string; name: string }[];
+  onSelect: (value: string) => void;
+  required?: boolean;
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const displayLabel = options.find((opt) => opt.id === value || opt.name === value)?.name || value || placeholder;
+
+  return (
+    <div className="flex flex-col gap-1.5 w-full relative text-left" ref={dropdownRef}>
+      <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+        {label} {required && <span className="text-red-500">*</span>}
+      </span>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={cn(
+          'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+          required && !value ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
+        )}
       >
-        {children}
-      </select>
-    </label>
+        <span className="truncate">{displayLabel}</span>
+        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isOpen && 'rotate-90')} />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-64 overflow-y-auto rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+          >
+            <div className="py-1">
+              {options.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    onSelect(opt.id);
+                    setIsOpen(false);
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 text-left text-sm font-semibold transition-colors hover:bg-[#F3F4F6]',
+                    value === opt.id || value === opt.name ? 'bg-[#EFF6FF] text-[#2563EB]' : 'text-[#4B5563]'
+                  )}
+                >
+                  {opt.name}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
