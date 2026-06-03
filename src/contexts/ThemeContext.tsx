@@ -21,7 +21,7 @@ function applyDarkClass(isDark: boolean) {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const storageKey = user ? `${BASE_STORAGE_KEY}_${user.id}` : BASE_STORAGE_KEY;
+  const storageKey = user ? `${BASE_STORAGE_KEY}_${user.uid}` : BASE_STORAGE_KEY;
 
   const [isDark, setIsDark] = useState(() => {
     try {

@@ -41,18 +41,21 @@
 
 .dark {
   color-scheme: dark;
-  --color-bg: #0F1117;
-  --color-surface: #1A1D27;
-  --color-surface-secondary: #23272F;
-  --color-surface-hover: #23272F;
-  --color-border: #2D3344;
-  --color-border-light: #23272F;
-  --color-text-primary: #F1F3F7;
-  --color-text-secondary: #A3ABBE;
-  --color-text-muted: #7B86A0;
-  --color-text-faint: #565F78;
-  --color-input-bg: #23272F;
-  --color-input-bg-alt: #1A1D27;
+  /* Darker page bg increases separation between panels */
+  --color-bg: #0D0F15;
+  --color-surface: #1B1F2A;
+  --color-surface-secondary: #262B36;
+  --color-surface-hover: #2A2F3B;
+  /* Stronger borders so cards, tables and inputs read clearly */
+  --color-border: #3A4156;
+  --color-border-light: #2C313E;
+  /* High-contrast, clearly-stepped text ramp (all ≥ ~6:1) for legibility */
+  --color-text-primary: #F5F7FA;
+  --color-text-secondary: #CBD2DF;
+  --color-text-muted: #B2BACB;
+  --color-text-faint: #959EB5;
+  --color-input-bg: #262B36;
+  --color-input-bg-alt: #1B1F2A;
   --color-accent: #E8ECFF;
   --color-accent-hover: #CBD1EB;
   --color-skeleton: #2D3344;
@@ -238,6 +241,133 @@
 .dark .bg-\[\#111827\].rounded-lg {
   background-color: #6366F1 !important;
   color: #FFFFFF !important;
+}
+
+/* ───────────────────────────────────────
+   Semantic / tinted colors (status chips,
+   alert cards, accents) — softened for dark.
+   Solid -600/-700 buttons are left vivid.
+   ─────────────────────────────────────── */
+
+/* RED — danger / inactive / errors */
+.dark .bg-red-50,
+.dark .bg-\[\#FEF2F2\],
+.dark .bg-\[\#FFF7F7\] {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
+.dark .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.20) !important;
+}
+.dark .text-red-600,
+.dark .text-red-700,
+.dark .text-\[\#DC2626\],
+.dark .text-\[\#B91C1C\],
+.dark .text-\[\#991B1B\] {
+  color: #F87171 !important;
+}
+.dark .border-red-100,
+.dark .border-red-200,
+.dark .border-\[\#FEE2E2\],
+.dark .border-\[\#FECACA\] {
+  border-color: rgba(239, 68, 68, 0.35) !important;
+}
+.dark .ring-red-50,
+.dark .ring-red-100,
+.dark .ring-red-200 {
+  --tw-ring-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+/* GREEN / EMERALD — success / active / compliant */
+.dark .bg-green-50,
+.dark .bg-emerald-50,
+.dark .bg-\[\#F0FDF4\] {
+  background-color: rgba(34, 197, 94, 0.12) !important;
+}
+.dark .bg-green-100 {
+  background-color: rgba(34, 197, 94, 0.20) !important;
+}
+.dark .text-green-600,
+.dark .text-green-700,
+.dark .text-emerald-600,
+.dark .text-emerald-700,
+.dark .text-\[\#16A34A\],
+.dark .text-\[\#047857\] {
+  color: #4ADE80 !important;
+}
+.dark .border-green-100,
+.dark .border-emerald-100,
+.dark .border-\[\#BBF7D0\] {
+  border-color: rgba(34, 197, 94, 0.35) !important;
+}
+.dark .ring-green-100 {
+  --tw-ring-color: rgba(34, 197, 94, 0.35) !important;
+}
+
+/* AMBER / YELLOW — warnings / pending */
+.dark .bg-amber-50,
+.dark .bg-yellow-50 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+}
+.dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.20) !important;
+}
+.dark .text-amber-600,
+.dark .text-amber-700,
+.dark .text-amber-800,
+.dark .text-yellow-600 {
+  color: #FBBF24 !important;
+}
+.dark .border-amber-100,
+.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+.dark .ring-amber-200 {
+  --tw-ring-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+/* BLUE — info / primary accent (eyebrows, wizard, focus) */
+.dark .bg-blue-50,
+.dark .bg-\[\#EFF6FF\],
+.dark .bg-\[\#F8FAFF\] {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+}
+.dark .bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.20) !important;
+}
+.dark .text-blue-600,
+.dark .text-blue-700,
+.dark .text-\[\#2563EB\] {
+  color: #60A5FA !important;
+}
+.dark .border-blue-100,
+.dark .border-\[\#2563EB\],
+.dark .border-\[\#BFDBFE\],
+.dark .border-\[\#DBEAFE\] {
+  border-color: rgba(59, 130, 246, 0.40) !important;
+}
+.dark .focus\:ring-\[\#2563EB\]:focus {
+  --tw-ring-color: #60A5FA !important;
+}
+
+/* ORANGE */
+.dark .text-orange-600 {
+  color: #FB923C !important;
+}
+
+/* Neutral near-white surfaces & inactive gray chips */
+.dark .bg-\[\#F8FAFC\] {
+  background-color: var(--color-bg) !important;
+}
+.dark .text-gray-700 {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Translucent white panels (sticky footers, frosted popovers) */
+.dark .bg-white\/95 {
+  background-color: rgba(26, 29, 39, 0.95) !important;
+}
+.dark .bg-white\/90 {
+  background-color: rgba(26, 29, 39, 0.90) !important;
 }
 
 /* Scrollbar styling for dark mode */

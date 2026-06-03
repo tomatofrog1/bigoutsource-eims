@@ -10,6 +10,7 @@ import {
   Moon,
   Save,
   Sun,
+  Type,
   UserCheck,
   X,
 } from 'lucide-react';
@@ -19,6 +20,7 @@ import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { useTextSize, type TextSize } from '@/src/contexts/TextSizeContext';
 import { AppUser } from '@/src/types';
 import { authService } from '@/src/services/authService';
 import { settingsService } from '@/src/services/settingsService';
@@ -41,6 +43,7 @@ function asArray(value: any) {
 export default function Settings() {
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { textSize, setTextSize } = useTextSize();
   const isSuperAdmin = user?.role === 'super_admin';
   const [activeTab, setActiveTab] = useState<SettingsTab | null>(null);
   const [companyName, setCompanyName] = useState('BigOutsource');
@@ -224,6 +227,20 @@ export default function Settings() {
                     Dark Mode
                   </span>
                   <DarkModeToggle isDark={isDark} onToggle={toggleTheme} />
+                </div>
+                <div
+                  className="flex min-h-24 w-full flex-col gap-4 rounded-2xl border px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <span className="flex items-center gap-3 text-sm font-black">
+                    <Type className="h-5 w-5" />
+                    Text Size
+                  </span>
+                  <TextSizeControl value={textSize} onChange={setTextSize} />
                 </div>
               </div>
             </motion.aside>
@@ -544,6 +561,40 @@ function SaveButton({ onClick, isSaving }: { onClick: () => void; isSaving: bool
       {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
       Save Changes
     </button>
+  );
+}
+
+function TextSizeControl({ value, onChange }: { value: TextSize; onChange: (size: TextSize) => void }) {
+  const options: { id: TextSize; label: string }[] = [
+    { id: 'normal', label: 'Normal' },
+    { id: 'large', label: 'Large' },
+    { id: 'xlarge', label: 'Larger' },
+  ];
+
+  return (
+    <div
+      className="inline-flex items-center gap-1 rounded-xl border p-1"
+      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface-secondary)' }}
+      role="group"
+      aria-label="Text size"
+    >
+      {options.map((opt) => {
+        const active = value === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            aria-pressed={active}
+            className={`rounded-lg px-3 py-1.5 text-xs font-black transition-colors ${
+              active ? 'bg-[#111827] text-white' : 'text-[#4B5563] hover:text-[#111827]'
+            }`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

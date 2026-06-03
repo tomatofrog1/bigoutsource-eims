@@ -14,6 +14,12 @@
           document.documentElement.classList.add('dark');
         }
       } catch (e) {}
+      // Apply saved text size synchronously to avoid a resize flash
+      try {
+        var ts = localStorage.getItem('eims_text_size');
+        var sizes = { normal: '16px', large: '18px', xlarge: '20px' };
+        if (ts && sizes[ts]) document.documentElement.style.fontSize = sizes[ts];
+      } catch (e) {}
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
