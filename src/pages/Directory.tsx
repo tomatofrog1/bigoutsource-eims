@@ -83,10 +83,8 @@ type AddEmployeeForm = {
 type FormErrors = Partial<Record<keyof AddEmployeeForm, string>>;
 
 type DirectoryFieldKey =
-  | 'id'
   | 'fullName'
   | 'employeeId'
-  | 'employeeNumber'
   | 'accountAssignment'
   | 'phone'
   | 'address'
@@ -94,7 +92,6 @@ type DirectoryFieldKey =
   | 'emailPassword'
   | 'lmsAccount'
   | 'status'
-  | 'siteId'
   | 'site'
   | 'pcName'
   | 'rustDeskId'
@@ -128,16 +125,13 @@ const actionColumnWidth = '10rem';
 const columnWeights: Partial<Record<DirectoryFieldKey, number>> = {
   fullName: 2.4,
   employeeId: 1,
-  employeeNumber: 1,
   accountAssignment: 1.35,
   site: 0.8,
 };
 
 const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (emp: EmployeeRecord) => ReactNode }> = [
-  { key: 'id', label: 'Record ID', render: (emp) => emp.id || '-' },
   { key: 'fullName', label: 'Name', render: (emp) => emp.fullName || 'Unnamed Employee' },
   { key: 'employeeId', label: 'Employee ID', render: (emp) => emp.employeeId || '-' },
-  { key: 'employeeNumber', label: 'Employee Number', render: (emp) => emp.employeeNumber || emp.employeeId || '-' },
   { key: 'accountAssignment', label: 'Account', render: (emp) => emp.accountAssignment || '-' },
   { key: 'phone', label: 'Phone Number', render: (emp) => emp.phone || '-' },
   { key: 'address', label: 'Address', render: (emp) => emp.address || '-' },
@@ -158,7 +152,6 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
       </span>
     ),
   },
-  { key: 'siteId', label: 'Site ID', render: (emp) => emp.siteId || '-' },
   { key: 'site', label: 'Site', render: (emp) => emp.site || 'Unassigned' },
   { key: 'pcName', label: 'PC Name', render: (emp) => emp.pcName || 'Unassigned' },
   { key: 'rustDeskId', label: 'RustDesk ID', render: (emp) => emp.rustDeskId || emp.rustdeskId || '-' },
@@ -461,29 +454,11 @@ export default function Directory() {
     })
     .filter((emp) => {
       const searchableValues = [
-        emp.id,
         emp.fullName,
         emp.employeeId,
-        emp.employeeNumber,
         emp.accountAssignment,
-        emp.phone,
-        emp.address,
         emp.boEmail,
-        emp.emailPassword,
         emp.lmsAccount,
-        emp.status,
-        emp.siteId,
-        emp.site,
-        emp.pcName,
-        emp.rustDeskId,
-        emp.rustdeskId,
-        emp.remoteId,
-        emp.esetStatus,
-        emp.biosDate,
-        emp.activityWatchStatus,
-        emp.windowsKey,
-        emp.updatedAt,
-        emp.updatedBy,
       ];
       const matchesSearch =
         !hasSearchTerm ||
