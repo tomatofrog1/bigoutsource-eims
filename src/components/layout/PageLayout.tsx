@@ -14,7 +14,7 @@ export function PageLayout({ children, title, contentClassName = 'max-w-6xl mx-a
   const location = useLocation();
 
   return (
-    <div className="flex h-screen w-full bg-[#F9FAFB] overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden" style={{ backgroundColor: 'var(--color-bg)' }}>
       <Sidebar />
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <Header title={title} />

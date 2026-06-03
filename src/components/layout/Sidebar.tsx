@@ -68,12 +68,13 @@ export function Sidebar() {
   return (
     <>
       <aside className={cn(
-        "h-full border-r border-[#E5E7EB] bg-white flex flex-col shrink-0 transition-all duration-300 relative",
+        "h-full border-r flex flex-col shrink-0 transition-all duration-300 relative",
         isRetracted ? "w-20" : "w-64"
-      )}>
+      )} style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
         <button
           onClick={toggleSidebar}
-          className="absolute -right-4 top-7 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#E5E7EB] bg-white text-[#4B5563] shadow-md hover:border-[#D1D5DB] hover:bg-[#F9FAFB] hover:text-[#111827] z-20 transition-all focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+          className="absolute -right-4 top-7 flex h-8 w-8 items-center justify-center rounded-full border-2 shadow-md z-20 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
           aria-label={isRetracted ? "Expand sidebar" : "Retract sidebar"}
         >
           {isRetracted ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
@@ -90,7 +91,8 @@ export function Sidebar() {
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: 'auto' }}
                   exit={{ opacity: 0, width: 0 }}
-                  className="font-bold text-l tracking-tight text-[#111827] whitespace-nowrap overflow-hidden"
+                  className="font-bold text-l tracking-tight whitespace-nowrap overflow-hidden"
+                  style={{ color: 'var(--color-text-primary)' }}
                 >
                   Big Outsource EIMS
                 </motion.span>
@@ -106,17 +108,19 @@ export function Sidebar() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center justify-between py-2 rounded-lg transition-colors group relative z-0",
+                    "flex items-center justify-between py-2 rounded-lg group relative z-0",
                     isRetracted ? "px-0 justify-center w-12 mx-auto" : "px-3",
                     isActive
-                      ? "text-white"
+                      ? ""
                       : "text-[#4B5563] hover:bg-[#F3F4F6] hover:text-[#111827]"
                   )}
+                  style={{ color: isActive ? 'var(--color-surface)' : 'var(--color-text-secondary)' }}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="activeNavBackground"
-                      className="absolute inset-0 bg-[#111827] rounded-lg -z-10"
+                      className="absolute inset-0 rounded-lg -z-10"
+                      style={{ backgroundColor: 'var(--color-accent)' }}
                       initial={false}
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
@@ -155,11 +159,12 @@ export function Sidebar() {
           </nav>
         </div>
 
-        <div className={cn("mt-auto border-t border-[#E5E7EB]", isRetracted ? "p-4 space-y-4" : "p-4 space-y-4")}>
+        <div className={cn("mt-auto border-t", isRetracted ? "p-4 space-y-4" : "p-4 space-y-4")} style={{ borderColor: 'var(--color-border)' }}>
           <div className={cn(isRetracted ? "flex justify-center" : "px-3")}>
             <div className={cn("flex items-center", isRetracted ? "justify-center" : "gap-3")}>
               <div
-                className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[10px] font-bold text-[#111827] border border-[#E5E7EB] shrink-0 relative group cursor-help"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0 relative group cursor-help"
+                style={{ backgroundColor: 'var(--color-surface-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}
               >
                 {user.email.substring(0, 2).toUpperCase()}
 
@@ -181,8 +186,8 @@ export function Sidebar() {
                     exit={{ opacity: 0, width: 0 }}
                     className="min-w-0 overflow-hidden"
                   >
-                    <p className="text-xs font-bold text-[#111827] truncate">{user.email}</p>
-                    <p className="text-[10px] text-[#6B7280] uppercase font-bold tracking-tighter truncate">{user.role.replace('_', ' ')}</p>
+                    <p className="text-xs font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{user.email}</p>
+                    <p className="text-[10px] uppercase font-bold tracking-tighter truncate" style={{ color: 'var(--color-text-muted)' }}>{user.role.replace('_', ' ')}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -235,7 +240,8 @@ export function Sidebar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+              className="w-full max-w-sm rounded-2xl p-6 shadow-2xl"
+              style={{ backgroundColor: 'var(--color-surface)' }}
             >
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">

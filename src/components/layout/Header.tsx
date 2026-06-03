@@ -37,8 +37,8 @@ export function Header({ title }: { title: string }) {
     .join('') || 'U';
 
   return (
-    <header className="h-16 border-b border-[#E5E7EB] bg-white flex items-center justify-between px-8">
-      <h1 className="text-lg font-semibold text-[#111827]">{title}</h1>
+    <header className="h-16 border-b flex items-center justify-between px-8" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+      <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>{title}</h1>
       
       <div className="flex items-center gap-6">
         
@@ -47,10 +47,10 @@ export function Header({ title }: { title: string }) {
           <ImportIssuesButton />
           <NotificationBell />
           
-          <div className="flex items-center gap-3 pl-4 border-l border-[#E5E7EB]">
+          <div className="flex items-center gap-3 pl-4 border-l" style={{ borderColor: 'var(--color-border)' }}>
             <div className="text-right">
-              <p className="text-sm font-medium text-[#111827]">{name}</p>
-              <p className="text-xs text-[#6B7280]">{user?.role?.replace('_', ' ') || 'User'}</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{name}</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{user?.role?.replace('_', ' ') || 'User'}</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-[#111827] flex items-center justify-center text-white text-xs font-bold">
               {initials}
@@ -146,7 +146,8 @@ function NotificationBell() {
       <button
         type="button"
         onClick={openNotifications}
-        className="relative rounded-full p-2 text-[#4B5563] transition-colors hover:bg-[#F3F4F6] hover:text-[#111827]"
+        className="relative rounded-full p-2 transition-colors"
+        style={{ color: 'var(--color-text-secondary)' }}
         aria-label="Open notifications"
       >
         <Bell className="h-5 w-5" />
@@ -168,14 +169,15 @@ function NotificationBell() {
             transition={{ duration: 0.18, ease: 'easeOut' }}
           >
           <motion.div
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl"
+            className="w-full max-w-md overflow-hidden rounded-2xl border shadow-2xl"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             onClick={(event) => event.stopPropagation()}
             initial={{ opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] px-5 py-4">
+            <div className="flex items-start justify-between gap-4 border-b px-5 py-4" style={{ borderColor: 'var(--color-border)' }}>
               <div>
                 <h2 className="text-base font-black text-[#111827]">Notifications</h2>
                 <p className="mt-1 text-xs font-bold text-[#6B7280]">
@@ -244,7 +246,7 @@ function NotificationBell() {
             </div>
 
             {isSuperAdmin && notifyRegistrationAttempts && pendingUsers.length > 0 && (
-              <div className="border-t border-[#E5E7EB] bg-[#F9FAFB] px-5 py-4">
+              <div className="border-t px-5 py-4" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface-secondary)' }}>
                 <Link
                   to="/users"
                   onClick={() => setIsOpen(false)}
