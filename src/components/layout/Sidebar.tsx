@@ -105,9 +105,8 @@ export function Sidebar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  title={isRetracted ? item.label : undefined}
                   className={cn(
-                    "flex items-center justify-between py-2 rounded-lg transition-colors group",
+                    "flex items-center justify-between py-2 rounded-lg transition-colors group relative",
                     isRetracted ? "px-0 justify-center w-12 mx-auto" : "px-3",
                     isActive
                       ? "bg-[#111827] text-white"
@@ -116,6 +115,16 @@ export function Sidebar() {
                 >
                   <div className={cn("flex items-center", isRetracted ? "justify-center" : "gap-3")}>
                     <item.icon className="w-5 h-5 shrink-0" />
+                    
+                    {isRetracted && (
+                      <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
+                        <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
+                        <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
+                          {item.label}
+                        </div>
+                      </div>
+                    )}
+
                     <AnimatePresence initial={false}>
                       {!isRetracted && (
                         <motion.span
@@ -142,10 +151,19 @@ export function Sidebar() {
           <div className={cn(isRetracted ? "flex justify-center" : "px-3")}>
             <div className={cn("flex items-center", isRetracted ? "justify-center" : "gap-3")}>
               <div
-                className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[10px] font-bold text-[#111827] border border-[#E5E7EB] shrink-0"
-                title={isRetracted ? user.email : undefined}
+                className="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[10px] font-bold text-[#111827] border border-[#E5E7EB] shrink-0 relative group cursor-help"
               >
                 {user.email.substring(0, 2).toUpperCase()}
+
+                {isRetracted && (
+                  <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
+                    <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
+                    <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl flex flex-col items-start">
+                      <span className="truncate">{user.email}</span>
+                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{user.role.replace('_', ' ')}</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <AnimatePresence initial={false}>
                 {!isRetracted && (
@@ -164,13 +182,22 @@ export function Sidebar() {
           </div>
           <button
             onClick={() => setShowLogoutModal(true)}
-            title={isRetracted ? "Log out" : undefined}
             className={cn(
-              "flex items-center text-[#EF4444] hover:bg-[#FEF2F2] transition-colors",
+              "flex items-center text-[#EF4444] hover:bg-[#FEF2F2] transition-colors relative group",
               isRetracted ? "p-2 justify-center mx-auto rounded-lg w-10 h-10" : "gap-3 w-full px-3 py-2 rounded-lg text-left"
             )}
           >
             <LogOut className="w-5 h-5 shrink-0" />
+
+            {isRetracted && (
+              <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
+                <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#EF4444] mr-[-1px]"></div>
+                <div className="bg-[#EF4444] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
+                  Log out
+                </div>
+              </div>
+            )}
+
             <AnimatePresence initial={false}>
               {!isRetracted && (
                 <motion.span

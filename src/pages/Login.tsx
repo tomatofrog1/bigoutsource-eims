@@ -235,7 +235,7 @@ export default function Login() {
           }}
           className="bg-white rounded-3xl border border-[#E5E7EB] shadow-2xl p-8 md:p-10 overflow-hidden"
         >
-          <div className="flex flex-col items-center mb-8">
+          <motion.div layout className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 bg-[#111827] rounded-2xl flex items-center justify-center mb-4">
               <ShieldCheck className="w-8 h-8 text-white" />
             </div>
@@ -269,9 +269,9 @@ export default function Login() {
                 </motion.span>
               </AnimatePresence>
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-2 gap-2 p-1 mb-6 bg-[#F3F4F6] rounded-xl relative z-0">
+          <motion.div layout className="grid grid-cols-2 gap-2 p-1 mb-6 bg-[#F3F4F6] rounded-xl relative z-0">
             <button
               type="button"
               onClick={() => {
@@ -311,10 +311,10 @@ export default function Login() {
                 Register
               </span>
             </button>
-          </div>
+          </motion.div>
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-            <AnimatePresence mode="wait" initial={false}>
+          <motion.form layout onSubmit={handleSubmit} className="space-y-5 w-full relative" noValidate>
+            <AnimatePresence mode="popLayout" initial={false}>
               {isRegistering ? (
                 <motion.div
                   key="register-container"
@@ -322,7 +322,7 @@ export default function Login() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -15 }}
                   transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className="space-y-5"
+                  className="space-y-5 w-full"
                 >
                   <RegistrationProgress
                     currentStep={registrationStep}
@@ -493,7 +493,7 @@ export default function Login() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 15 }}
                   transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className="space-y-5"
+                  className="space-y-5 w-full"
                 >
                   <AuthInput
                     icon={Mail}
@@ -525,16 +525,16 @@ export default function Login() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </form>
+          </motion.form>
 
-          <div className="mt-8 pt-8 border-t border-[#F3F4F6] text-center">
+          <motion.div layout className="mt-8 pt-8 border-t border-[#F3F4F6] text-center">
             <p className="text-[10px] text-[#9CA3AF] uppercase tracking-widest font-bold">
               © 2026 BIG OUTSOURCE
             </p>
             <p className="mt-2 text-[10px] text-[#9CA3AF]">
               Secure access for authorized users
             </p>
-          </div>
+          </motion.div>
         </motion.div>
       </motion.div>
       <AnimatePresence>

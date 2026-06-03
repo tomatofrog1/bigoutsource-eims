@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Briefcase,
   Calendar,
+  ChevronRight,
   Clock,
   Edit,
   Eye,
@@ -52,6 +53,7 @@ type EmployeeForm = {
   employeeNumber: string;
   fullName: string;
   firstName: string;
+  middleName: string;
   lastName: string;
   accountAssignment: string;
   phone: string;
@@ -76,6 +78,7 @@ const emptyEmployee: EmployeeForm = {
   employeeNumber: '',
   fullName: '',
   firstName: '',
+  middleName: '',
   lastName: '',
   accountAssignment: '',
   phone: '',
@@ -99,6 +102,7 @@ const emptyEmployee: EmployeeForm = {
 const editableFields: Array<keyof EmployeeForm> = [
   'employeeNumber',
   'firstName',
+  'middleName',
   'lastName',
   'accountAssignment',
   'phone',
@@ -130,30 +134,35 @@ function formatStatus(value: string) {
 
 function parseEmployeeName(fullName = '') {
   const name = String(fullName || '').trim();
-  if (!name) return { firstName: '', lastName: '' };
+  if (!name) return { firstName: '', middleName: '', lastName: '' };
 
   if (name.includes(',')) {
-    const [lastName, firstName] = name.split(',');
+    const [lastName, rest] = name.split(',').map(s => s.trim());
+    const restParts = rest.split(/\s+/).filter(Boolean);
+    if (restParts.length === 1) return { firstName: restParts[0], middleName: '', lastName };
     return {
-      firstName: String(firstName || '').trim(),
-      lastName: String(lastName || '').trim(),
+      firstName: restParts[0],
+      middleName: restParts.slice(1).join(' '),
+      lastName
     };
   }
 
   const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+  if (parts.length === 1) return { firstName: parts[0], middleName: '', lastName: '' };
+  if (parts.length === 2) return { firstName: parts[0], middleName: '', lastName: parts[1] };
 
   return {
-    firstName: parts.slice(0, -1).join(' '),
+    firstName: parts[0],
+    middleName: parts.slice(1, -1).join(' '),
     lastName: parts[parts.length - 1],
   };
 }
 
-function formatEmployeeName(firstName = '', lastName = '') {
+function formatEmployeeName(firstName = '', middleName = '', lastName = '') {
   const first = String(firstName || '').trim();
+  const middle = String(middleName || '').trim();
   const last = String(lastName || '').trim();
-  if (first && last) return `${last}, ${first}`;
-  return first || last;
+  return [first, middle, last].filter(Boolean).join(' ');
 }
 
 function sanitizeNamePart(value = '') {
@@ -190,7 +199,13 @@ function formatDate(value?: string) {
 }
 
 function actionLabel(action: string) {
-  return action.replace(/\./g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  const norm = action.toUpperCase();
+  if (norm === 'UPDATE') return 'Updated record';
+  if (norm === 'CREATE') return 'Created record';
+  if (norm === 'DELETE') return 'Deleted record';
+  if (norm === 'ARCHIVE') return 'Archived record';
+  if (norm === 'UNARCHIVE') return 'Unarchived record';
+  return action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatFieldName(field: string) {
@@ -237,6 +252,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     employeeNumber: emp?.employeeNumber || emp?.employeeId || '',
     fullName,
     firstName: nameParts.firstName,
+    middleName: nameParts.middleName,
     lastName: nameParts.lastName,
     accountAssignment: emp?.accountAssignment || '',
     phone: emp?.phone || '',
@@ -273,7 +289,31 @@ export default function EmployeeProfile() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
+  const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isEsetDropdownOpen, setIsEsetDropdownOpen] = useState(false);
+  const [isActivityWatchDropdownOpen, setIsActivityWatchDropdownOpen] = useState(false);
+  const [visibleLogsCount, setVisibleLogsCount] = useState(3);
   const canManageEmployee = user?.role !== 'viewer';
+
+  const missingDataStatus = useMemo(() => {
+    let criticalCount = 0;
+    let mildCount = 0;
+    if (!employee.employeeNumber) criticalCount++;
+    if (!employee.accountAssignment) criticalCount++;
+    if (!employee.siteId && !employee.site) criticalCount++;
+    
+    if (!employee.phone) mildCount++;
+    if (!employee.address) mildCount++;
+    if (!employee.pcName) mildCount++;
+    if (!employee.rustdeskId && !employee.remoteId) mildCount++;
+    if (!employee.windowsKey) mildCount++;
+
+    if (criticalCount > 0) return { type: 'critical', text: `${criticalCount} critical data missing` };
+    if (mildCount > 0) return { type: 'warning', text: `${mildCount} incomplete data` };
+    return null;
+  }, [employee]);
 
   const hasChanges = useMemo(
     () => editableFields.some((field) => String(form[field] || '') !== String(employee[field] || '')),
@@ -359,7 +399,7 @@ export default function EmployeeProfile() {
     }
 
     const selectedSite = sites.find((site) => site.id === form.siteId);
-    const fullName = formatEmployeeName(form.firstName, form.lastName);
+    const fullName = formatEmployeeName(form.firstName, form.middleName, form.lastName);
     setIsSaving(true);
 
     try {
@@ -435,6 +475,21 @@ export default function EmployeeProfile() {
   const internalAccounts = accounts.filter((account) => account.accountType === 'internal');
   const externalAccounts = accounts.filter((account) => account.accountType === 'external');
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 380, damping: 30 } }
+  };
+
   return (
     <PageLayout title={pageTitle}>
       <AnimatePresence mode="wait" initial={false}>
@@ -490,47 +545,76 @@ export default function EmployeeProfile() {
           Employee Directory
         </Link>
 
-        <div className="relative bg-white rounded-3xl border border-[#E5E7EB] overflow-hidden shadow-sm">
-          <div className="h-24 bg-gradient-to-br from-[#111827] via-[#1F2937] to-[#111827]"></div>
-          <div className="px-8 py-7 flex flex-col md:flex-row md:items-end gap-6">
-            <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Field label="ID" required>
-                    <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} />
-                  </Field>
-                  <Field label="First Name" required>
-                    <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} />
-                  </Field>
-                  <Field label="Last Name" required>
-                    <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} />
-                  </Field>
-                </div>
-              ) : (
-                <div>
-                  <div>
-                    <div className="flex items-center gap-3">
+        <div className="relative bg-white rounded-3xl border border-[#E5E7EB] overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+          <div className="h-32 bg-gradient-to-br from-[#111827] via-[#1F2937] to-[#111827]"></div>
+          
+          <div className="px-8 pb-8 pt-4 flex flex-col md:flex-row md:items-end gap-6 relative">
+            <div className="absolute -top-16 left-8">
+              <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter">
+                {employee.fullName?.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('') || 'EP'}
+              </div>
+            </div>
+            
+            <div className="flex-1 min-w-0 mt-14 md:mt-0 md:ml-32">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {isEditing ? (
+                  <motion.div 
+                    key="edit-mode"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    className="grid grid-cols-1 md:grid-cols-4 gap-4"
+                  >
+                    <Field label="ID" required>
+                      <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. 1004" />
+                    </Field>
+                    <Field label="First Name" required>
+                      <Input value={form.firstName} onChange={(value) => updateForm('firstName', value)} placeholder="e.g. John" />
+                    </Field>
+                    <Field label="Middle Name">
+                      <Input value={form.middleName} onChange={(value) => updateForm('middleName', value)} placeholder="e.g. Doe" />
+                    </Field>
+                    <Field label="Last Name" required>
+                      <Input value={form.lastName} onChange={(value) => updateForm('lastName', value)} placeholder="e.g. Smith" />
+                    </Field>
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key="view-mode"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  >
+                    <div className="flex flex-wrap items-center gap-3">
                       <h2 className="text-3xl font-black text-[#111827] tracking-tight">
                         {employee.fullName || 'Unnamed Employee'}
                       </h2>
 
-                      {employee.isArchived ? (
-                        <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold border border-red-200">
+                      {employee.isArchived && (
+                        <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-black uppercase tracking-wider ring-1 ring-red-200/60 shadow-sm">
                           Archived
                         </span>
-                      ) : (
-                        <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold border border-green-200">
-                          Active
-                        </span>
+                      )}
+
+                      {missingDataStatus && (
+                        <div className={cn(
+                          'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 shadow-sm',
+                          missingDataStatus.type === 'critical' ? 'bg-red-50 text-red-700 ring-red-200/60' : 'bg-amber-50 text-amber-700 ring-amber-200/60'
+                        )}>
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                          {missingDataStatus.text}
+                        </div>
                       )}
                     </div>
 
                     <p className="text-[#6B7280] font-bold mt-1 uppercase text-xs tracking-widest">
                       {employee.employeeNumber || 'No ID'} | {employee.site || 'Unassigned'}
                     </p>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="flex gap-3">
@@ -595,33 +679,48 @@ export default function EmployeeProfile() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-8 space-y-8">
-            <ProfileSection icon={Globe} title="Work & Account Info">
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8">
+            <ProfileSection icon={Briefcase} title="Work & Account Info" iconColorClass="text-blue-600 bg-blue-50">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                 <ProfileField label="Department/Account Type" icon={Briefcase} editing={isEditing}>
                   {isEditing ? (
-                    <Select value={form.accountAssignment} onChange={(value) => updateForm('accountAssignment', value)}>
-                      <option value="">Select department</option>
-                      {internalAccounts.length > 0 && (
-                        <optgroup label="Internal">
-                          {internalAccounts.map((account) => (
-                            <option key={account.id} value={account.name}>
-                              {account.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                      {externalAccounts.length > 0 && (
-                        <optgroup label="External">
-                          {externalAccounts.map((account) => (
-                            <option key={account.id} value={account.name}>
-                              {account.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </Select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsAccountDropdownOpen((current) => !current)}
+                        className={cn(
+                          'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                          !form.accountAssignment ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
+                        )}
+                      >
+                        <span className="truncate">{form.accountAssignment || 'Select department'}</span>
+                        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isAccountDropdownOpen && 'rotate-90')} />
+                      </button>
+                      <AnimatePresence>
+                        {isAccountDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setIsAccountDropdownOpen(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
+                              className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                            >
+                              {accounts.length ? (
+                                <div className="max-h-64 overflow-y-auto">
+                                  <AccountDropdownGroup title="Internal" accounts={internalAccounts} onSelect={(acc) => { updateForm('accountAssignment', acc.name); setIsAccountDropdownOpen(false); }} />
+                                  <AccountDropdownGroup title="External" accounts={externalAccounts} onSelect={(acc) => { updateForm('accountAssignment', acc.name); setIsAccountDropdownOpen(false); }} />
+                                </div>
+                              ) : (
+                                <div className="px-3 py-3 text-xs font-bold text-[#6B7280]">No departments yet</div>
+                              )}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ) : (
                     employee.accountAssignment || 'Not Assigned'
                   )}
@@ -630,7 +729,7 @@ export default function EmployeeProfile() {
                   {isEditing ? <GeneratedValue value={preview.boEmail} placeholder={accountBasedPreviewPlaceholder} /> : employee.boEmail || 'Not Assigned'}
                 </ProfileField>
                 <ProfileField label="Email Password" icon={Key} editing={isEditing}>
-                  {isEditing ? <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} /> : employee.emailPassword || 'Not Assigned'}
+                  {isEditing ? <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" /> : employee.emailPassword || 'Not Assigned'}
                 </ProfileField>
                 <ProfileField label="LMS Account" icon={User} editing={isEditing}>
                   {isEditing ? (
@@ -643,24 +742,100 @@ export default function EmployeeProfile() {
                 </ProfileField>
                 <ProfileField label="Status" icon={ShieldCheck} editing={isEditing}>
                   {isEditing ? (
-                    <Select value={form.status} onChange={(value) => updateForm('status', value)}>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </Select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsStatusDropdownOpen((current) => !current)}
+                        className={cn(
+                          'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                          'border-[#E5E7EB]'
+                        )}
+                      >
+                        <span className="truncate">{formatStatus(form.status)}</span>
+                        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isStatusDropdownOpen && 'rotate-90')} />
+                      </button>
+                      <AnimatePresence>
+                        {isStatusDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
+                              className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                            >
+                              <div className="max-h-64 overflow-y-auto py-1">
+                                {[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }].map((opt) => (
+                                  <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() => {
+                                      updateForm('status', opt.id as any);
+                                      setIsStatusDropdownOpen(false);
+                                    }}
+                                    className="w-full px-3 py-2.5 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                  >
+                                    {opt.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ) : (
-                    employee.status.toUpperCase()
+                    formatStatus(employee.status)
                   )}
                 </ProfileField>
                 <ProfileField label="Site" icon={MapPin} editing={isEditing}>
                   {isEditing ? (
-                    <Select value={form.siteId} onChange={(value) => updateForm('siteId', value)}>
-                      <option value="">Select site</option>
-                      {sites.map((site) => (
-                        <option key={site.id} value={site.id}>
-                          {site.name}
-                        </option>
-                      ))}
-                    </Select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsSiteDropdownOpen((current) => !current)}
+                        className={cn(
+                          'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                          !form.siteId ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
+                        )}
+                      >
+                        <span className="truncate">
+                          {sites.find((site) => site.id === form.siteId)?.name || 'Select site'}
+                        </span>
+                        <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isSiteDropdownOpen && 'rotate-90')} />
+                      </button>
+                      <AnimatePresence>
+                        {isSiteDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setIsSiteDropdownOpen(false)} />
+                            <motion.div
+                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                              transition={{ duration: 0.15, ease: 'easeOut' }}
+                              className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                            >
+                              <div className="max-h-64 overflow-y-auto py-1">
+                                {sites.map((site) => (
+                                  <button
+                                    key={site.id}
+                                    type="button"
+                                    onClick={() => {
+                                      updateForm('siteId', site.id);
+                                      setIsSiteDropdownOpen(false);
+                                    }}
+                                    className="w-full px-3 py-2.5 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                  >
+                                    {site.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ) : (
                     employee.site || 'Unassigned'
                   )}
@@ -668,19 +843,19 @@ export default function EmployeeProfile() {
               </div>
             </ProfileSection>
 
-            <ProfileSection icon={Laptop} title="Device Assets">
+            <ProfileSection icon={Laptop} title="Device Assets" iconColorClass="text-purple-600 bg-purple-50">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                 <ProfileField label="PC Name" icon={Laptop} editing={isEditing}>
-                  {isEditing ? <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} /> : employee.pcName || 'Unassigned'}
+                  {isEditing ? <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} /> : employee.pcName || 'Not Assigned'}
                 </ProfileField>
                 <ProfileField label="BIOS Date" icon={Calendar} editing={isEditing}>
-                  {isEditing ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate || 'Not Set'}
+                  {isEditing ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : 'Not Set'}
                 </ProfileField>
                 <ProfileField label="RustDesk ID" icon={Globe} editing={isEditing}>
-                  {isEditing ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} /> : employee.rustdeskId || 'Not Assigned'}
+                  {isEditing ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" /> : employee.rustdeskId || 'Not Assigned'}
                 </ProfileField>
-                <ProfileField label="Remote ID" icon={ShieldCheck} editing={isEditing}>
-                  {isEditing ? <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} /> : employee.remoteId || 'Not Assigned'}
+                <ProfileField label="Remote ID" icon={Globe} editing={isEditing}>
+                  {isEditing ? <Input value={form.remoteId} onChange={(value) => updateForm('remoteId', value)} placeholder="e.g. 123 456 789" /> : employee.remoteId || 'Not Assigned'}
                 </ProfileField>
               </div>
 
@@ -688,7 +863,7 @@ export default function EmployeeProfile() {
                 <div className="flex-1">
                   <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
                   {isEditing ? (
-                    <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} />
+                    <Input value={form.windowsKey} onChange={(value) => updateForm('windowsKey', value)} placeholder="e.g. XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" />
                   ) : (
                     <p className="text-sm font-mono font-black text-[#111827] bg-[#F3F4F6] px-2 py-0.5 rounded w-fit">
                       {showSensitive ? employee.windowsKey || 'Not Assigned' : '*****-*****-*****-*****-*****'}
@@ -707,10 +882,10 @@ export default function EmployeeProfile() {
                 )}
               </div>
             </ProfileSection>
-          </div>
+          </motion.div>
 
-          <div className="lg:col-span-4 space-y-8">
-            <ProfileSection icon={ShieldAlert} title="Security Compliance" compact>
+          <motion.div variants={itemVariants} className="lg:col-span-4 space-y-8">
+            <ProfileSection icon={ShieldAlert} title="Security Compliance" compact iconColorClass="text-amber-600 bg-amber-50">
               <div className="space-y-4">
                 <ComplianceField
                   label="ESET Status"
@@ -718,97 +893,216 @@ export default function EmployeeProfile() {
                   editing={isEditing}
                   status={employee.esetStatus === 'active'}
                 >
-                  <Select value={form.esetStatus} onChange={(value) => updateForm('esetStatus', value)}>
-                    <option value="inactive">Inactive</option>
-                    <option value="active">Active</option>
-                  </Select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsEsetDropdownOpen((current) => !current)}
+                      className={cn(
+                        'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                        'border-[#E5E7EB]'
+                      )}
+                    >
+                      <span className="truncate">{formatStatus(form.esetStatus)}</span>
+                      <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isEsetDropdownOpen && 'rotate-90')} />
+                    </button>
+                    <AnimatePresence>
+                      {isEsetDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setIsEsetDropdownOpen(false)} />
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.15, ease: 'easeOut' }}
+                            className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                          >
+                            <div className="max-h-64 overflow-y-auto py-1">
+                              {[{ id: 'active', name: 'Active' }, { id: 'inactive', name: 'Inactive' }].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateForm('esetStatus', opt.id as any);
+                                    setIsEsetDropdownOpen(false);
+                                  }}
+                                  className="w-full px-3 py-2.5 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                >
+                                  {opt.name}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </ComplianceField>
                 <ComplianceField
                   label="ActivityWatch"
-                  value={formatStatus(employee.activityWatchStatus)}
+                  value={employee.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'}
                   editing={isEditing}
                   status={employee.activityWatchStatus === 'installed'}
                 >
-                  <Select value={form.activityWatchStatus} onChange={(value) => updateForm('activityWatchStatus', value)}>
-                    <option value="missing">Missing</option>
-                    <option value="installed">Installed</option>
-                  </Select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsActivityWatchDropdownOpen((current) => !current)}
+                      className={cn(
+                        'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]',
+                        'border-[#E5E7EB]'
+                      )}
+                    >
+                      <span className="truncate">{form.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'}</span>
+                      <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform text-[#9CA3AF]', isActivityWatchDropdownOpen && 'rotate-90')} />
+                    </button>
+                    <AnimatePresence>
+                      {isActivityWatchDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setIsActivityWatchDropdownOpen(false)} />
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.15, ease: 'easeOut' }}
+                            className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+                          >
+                            <div className="max-h-64 overflow-y-auto py-1">
+                              {[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    updateForm('activityWatchStatus', opt.id as any);
+                                    setIsActivityWatchDropdownOpen(false);
+                                  }}
+                                  className="w-full px-3 py-2.5 text-left text-sm font-semibold text-[#4B5563] transition-colors hover:bg-[#F3F4F6]"
+                                >
+                                  {opt.name}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </ComplianceField>
               </div>
             </ProfileSection>
 
-            <ProfileSection icon={Phone} title="Contact & Location" compact>
+            <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
               <div className="space-y-6">
                 <ProfileField label="Phone Number" editing={isEditing}>
-                  {isEditing ? <Input value={form.phone} onChange={(value) => updateForm('phone', value)} /> : employee.phone || 'Not Assigned'}
+                  {isEditing ? <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="e.g. 09123456789" /> : employee.phone || 'Not Assigned'}
                 </ProfileField>
                 <ProfileField label="Address" editing={isEditing}>
-                  {isEditing ? <Input value={form.address} onChange={(value) => updateForm('address', value)} /> : employee.address || 'Not Assigned'}
+                  {isEditing ? <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" /> : employee.address || 'Not Assigned'}
                 </ProfileField>
               </div>
             </ProfileSection>
-          </div>
+          </motion.div>
 
-          <div className="lg:col-span-12">
-            <ProfileSection icon={Clock} title="Audit History">
-              <div className="space-y-4">
+          <motion.div variants={itemVariants} className="lg:col-span-12">
+            <ProfileSection icon={Clock} title="Audit History" iconColorClass="text-indigo-600 bg-indigo-50">
+              <div className="relative pl-4 md:pl-0">
                 {auditLogs.length ? (
-                  auditLogs.map((log) => (
-                    <div key={log.id} className="rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] p-5">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-black text-[#111827]">{actionLabel(log.action)}</p>
-                          <p className="text-xs font-bold text-[#6B7280] mt-1">by {actorLabel(log)}</p>
+                  <>
+                  <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-[#E5E7EB] before:via-[#E5E7EB] before:to-transparent">
+                    <AnimatePresence initial={false}>
+                      {auditLogs.slice(0, visibleLogsCount).map((log) => (
+                        <motion.div
+                          key={log.id}
+                          initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                          exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                          className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
+                        >
+                          {/* Timeline node */}
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-indigo-100 text-indigo-600 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                          <Clock className="w-4 h-4" />
                         </div>
-                        <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-wider">{formatDate(log.createdAt)}</p>
-                      </div>
-                      <div className="mt-4 space-y-2">
-                        {detailsText(log.details).map((item: any, index: number) => (
-                          <div
-                            key={index}
-                            className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-3"
-                          >
-                            {'to' in item ? (
-                              <div className="flex flex-col gap-1 text-sm">
-                                <span className="font-black text-[#111827]">
-                                  {item.field}
-                                </span>
 
-                                <div className="flex items-center gap-2 text-[#6B7280]">
-                                  <span className="line-through text-red-500">
-                                    {item.from}
-                                  </span>
-
-                                  <span className="font-bold text-[#9CA3AF]">→</span>
-
-                                  <span className="font-bold text-green-600">
-                                    {item.to}
-                                  </span>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex justify-between text-sm">
-                                <span className="font-black text-[#111827]">
-                                  {item.field}
-                                </span>
-
-                                <span className="text-[#4B5563] font-medium">
-                                  {item.value}
-                                </span>
-                              </div>
-                            )}
+                        {/* Card */}
+                        <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                          <div className="flex flex-col gap-1 mb-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-black text-[#111827]">{actionLabel(log.action)}</p>
+                              <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-wider">{formatDate(log.createdAt)}</p>
+                            </div>
+                            <p className="text-xs font-bold text-[#6B7280]">by {actorLabel(log)}</p>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))
+                          <div className="space-y-2">
+                            {detailsText(log.details).map((item: any, index: number) => (
+                              <div
+                                key={index}
+                                className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] px-4 py-3"
+                              >
+                                {'to' in item ? (
+                                  <div className="flex flex-col gap-1 text-sm">
+                                    <span className="font-black text-[#111827]">
+                                      {item.field}
+                                    </span>
+
+                                    <div className="flex items-center gap-2 text-[#6B7280]">
+                                      <span className="line-through text-red-500">
+                                        {item.from}
+                                      </span>
+
+                                      <span className="font-bold text-[#9CA3AF]">→</span>
+
+                                      <span className="font-bold text-green-600">
+                                        {item.to}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex justify-between text-sm">
+                                    <span className="font-black text-[#111827]">
+                                      {item.field}
+                                    </span>
+
+                                    <span className="text-[#4B5563] font-medium">
+                                      {item.value}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                  <div className="mt-8 flex justify-center gap-4">
+                    {visibleLogsCount > 3 && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleLogsCount(prev => Math.max(3, prev - 3))}
+                        className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
+                      >
+                        View less
+                      </button>
+                    )}
+                    {visibleLogsCount < auditLogs.length && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleLogsCount(prev => Math.min(prev + 3, auditLogs.length))}
+                        className="px-6 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-bold text-[#4B5563] hover:text-[#111827] hover:bg-[#F9FAFB] hover:shadow-sm transition-all shadow-sm"
+                      >
+                        View {Math.min(3, auditLogs.length - visibleLogsCount)} more {auditLogs.length - visibleLogsCount === 1 ? 'record' : 'records'}
+                      </button>
+                    )}
+                  </div>
+                  </>
                 ) : (
                   <p className="text-sm font-bold text-[#9CA3AF]">No audit history for this employee yet.</p>
                 )}
               </div>
             </ProfileSection>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
           </motion.form>
         )}
       </AnimatePresence>
@@ -917,22 +1211,27 @@ function ProfileSection({
   title,
   children,
   compact = false,
+  iconColorClass = 'text-[#111827] bg-[#F3F4F6]',
 }: {
   icon: ElementType;
   title: string;
   children: ReactNode;
   compact?: boolean;
+  iconColorClass?: string;
 }) {
   return (
-    <section className={cn('bg-white rounded-2xl border border-[#E5E7EB] shadow-sm', compact ? 'p-6' : 'p-8')}>
+    <motion.section 
+      whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+      className={cn('bg-white rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-xl transition-shadow duration-300', compact ? 'p-6' : 'p-8')}
+    >
       <div className="flex items-center gap-3 mb-8">
-        <div className="p-2 bg-[#F3F4F6] rounded-xl text-[#111827]">
+        <div className={cn('p-2 rounded-xl', iconColorClass)}>
           <Icon className="w-5 h-5" />
         </div>
         <h3 className="text-lg font-black text-[#111827]">{title}</h3>
       </div>
       {children}
-    </section>
+    </motion.section>
   );
 }
 
@@ -947,17 +1246,46 @@ function ProfileField({
   editing?: boolean;
   children: ReactNode;
 }) {
+  const isMissing = !editing && (
+    children === 'Not Assigned' || 
+    children === 'Not Set' || 
+    children === 'Unassigned' || 
+    children === '' || 
+    children === null || 
+    children === undefined
+  );
+
   return (
-    <div>
+    <div className={cn("group rounded-xl transition-colors duration-200", !editing && "-mx-3 px-3 py-2 hover:bg-[#F9FAFB]")}>
       <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">{label}</p>
-      {editing ? (
-        children
-      ) : (
-        <div className="flex items-center gap-3">
-          {Icon && <Icon className="w-4 h-4 text-[#D1D5DB]" />}
-          <span className="text-sm font-bold text-[#111827]">{children}</span>
-        </div>
-      )}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {editing ? (
+          <motion.div
+            key="edit"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          >
+            {children}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="view"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            className="flex items-center gap-3"
+          >
+            {Icon && <Icon className={cn("w-4 h-4 transition-colors", isMissing ? "text-red-400 group-hover:text-red-500" : "text-[#D1D5DB] group-hover:text-[#9CA3AF]")} />}
+            <span className={cn("text-sm font-bold flex items-center gap-1.5", isMissing ? "text-red-600" : "text-[#111827]")}>
+              {children}
+              {isMissing && <ShieldAlert className="w-3.5 h-3.5" />}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -976,16 +1304,33 @@ function ComplianceField({
   children: ReactNode;
 }) {
   return (
-    <div className="p-4 rounded-xl border border-[#E5E7EB]">
-      <p className="text-[10px] font-bold text-[#9CA3AF] uppercase mb-1.5">{label}</p>
-      {editing ? (
-        children
-      ) : (
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-black text-[#111827]">{value}</p>
-          <div className={cn('w-2.5 h-2.5 rounded-full shadow-sm', status ? 'bg-green-500' : 'bg-red-500')} />
-        </div>
-      )}
+    <div className="group p-4 rounded-xl border border-[#E5E7EB] hover:border-[#CBD5E1] hover:shadow-md transition-all duration-300">
+      <p className="text-[10px] font-bold text-[#9CA3AF] uppercase mb-1.5 group-hover:text-[#6B7280] transition-colors">{label}</p>
+      <AnimatePresence mode="popLayout" initial={false}>
+        {editing ? (
+          <motion.div
+            key="edit"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          >
+            {children}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="view"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            className="flex items-center justify-between"
+          >
+            <p className="text-sm font-black text-[#111827]">{value}</p>
+            <div className={cn('w-2.5 h-2.5 rounded-full shadow-sm', status ? 'bg-green-500 shadow-green-200' : 'bg-red-500 shadow-red-200')} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1027,6 +1372,36 @@ function GeneratedValue({ value, placeholder }: { value: string; placeholder: st
   return (
     <div className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563]">
       {value || placeholder}
+    </div>
+  );
+}
+
+function AccountDropdownGroup({
+  title,
+  accounts,
+  onSelect,
+}: {
+  title: string;
+  accounts: AccountOption[];
+  onSelect: (account: AccountOption) => void;
+}) {
+  if (!accounts.length) return null;
+
+  return (
+    <div className="border-b border-[#F3F4F6] last:border-b-0">
+      <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+        {title}
+      </div>
+      {accounts.map((account) => (
+        <button
+          key={account.id}
+          type="button"
+          onClick={() => onSelect(account)}
+          className="flex w-full items-center justify-between gap-3 border-t border-[#F3F4F6] px-3 py-2.5 text-left text-sm font-bold text-[#111827] transition-all hover:bg-[#F9FAFB]"
+        >
+          <span className="truncate">{account.name}</span>
+        </button>
+      ))}
     </div>
   );
 }
