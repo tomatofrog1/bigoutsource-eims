@@ -7,6 +7,14 @@
     <link rel="icon" type="image/svg+xml" href="src/public/logo-only-bigoutsource.svg" />
   </head>
   <body>
+    <script>
+      // Prevent flash of wrong theme by applying .dark class synchronously
+      try {
+        if (JSON.parse(localStorage.getItem('eims_dark_mode'))) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -227,7 +227,7 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     id: emp.id || emp.employeeId || emp.employeeNumber || crypto.randomUUID(),
     employeeId: emp.employeeId || emp.employeeNumber || '',
     employeeNumber: emp.employeeNumber,
-    fullName: emp.fullName || '',
+    fullName: String(emp.fullName || '').replace(/\u00A0/g, ' '),
     phone: emp.phone || '',
     address: emp.address || '',
     siteId: emp.siteId || '',
@@ -319,18 +319,23 @@ function suggestDepartmentCode(name = '') {
 }
 
 function generatedPreview(form: AddEmployeeForm, account?: AccountOption) {
-  const first = sanitizeNamePart(form.firstName);
-  const middleInitials = form.middleName
+  const firstRaw = String(form.firstName || '');
+  const firstForLms = sanitizeNamePart(firstRaw);
+  
+  const firstInitials = firstRaw
     .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
     .map((part) => sanitizeNamePart(part).charAt(0))
     .join('');
+
   const last = sanitizeNamePart(form.lastName);
   const code = account?.departmentCode || suggestDepartmentCode(account?.name || '');
-  const identifier = `${first.charAt(0)}${middleInitials}${last}`;
+  const identifier = `${firstInitials}${last}`;
   const domain = account?.accountType === 'internal' ? 'com' : ['hc', 'utd'].includes(code) ? 'team' : 'ph';
 
   return {
-    lmsAccount: first && last ? `${first}.${last}` : '',
+    lmsAccount: firstForLms && last ? `${firstForLms}.${last}` : '',
     boEmail: identifier && code ? `${identifier}.${code}@bigoutsource.${domain}` : '',
     pcName: identifier && code ? `${code}-${identifier}` : '',
   };
@@ -720,6 +725,9 @@ export default function Directory() {
     if ((requireAll || step === 0) && !form.lastName.trim()) {
       errors.lastName = 'Enter the employee last name.';
     }
+    if ((requireAll || step === 0) && form.phone && !/^\d+$/.test(form.phone)) {
+      errors.phone = 'Please enter numbers only.';
+    }
     if ((requireAll || step === 1) && !form.accountAssignment.trim()) {
       errors.accountAssignment = 'Select an account or department before generating access.';
     }
@@ -801,7 +809,11 @@ export default function Directory() {
         firstName: form.firstName.trim(),
         middleName: form.middleName.trim() || undefined,
         lastName: form.lastName.trim(),
-        fullName: [form.firstName.trim(), form.middleName.trim(), form.lastName.trim()].filter(Boolean).join(' '),
+        fullName: [
+          form.firstName.trim().replace(/ /g, '\u00A0'),
+          form.middleName.trim().replace(/ /g, '\u00A0'),
+          form.lastName.trim().replace(/ /g, '\u00A0')
+        ].filter(Boolean).join(' '),
         accountAssignment: form.accountAssignment.trim(),
         phone: form.phone.trim() || undefined,
         address: form.address.trim() || undefined,
@@ -981,9 +993,9 @@ export default function Directory() {
                     <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F3F4F6]">
+                <tbody className="">
                   {[...Array(recordsPerPage)].map((_, index) => (
-                    <tr key={`skeleton-${index}`} className={cn(tableRowHeightClass, 'animate-pulse')}>
+                    <tr key={`skeleton-${index}`} className={cn(tableRowHeightClass, 'animate-pulse border-b border-[#F3F4F6] last:border-0')}>
                       {visibleFields.map((field) => (
                         <td key={field.key} className={cn('py-0 align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
                           <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
@@ -1055,14 +1067,14 @@ export default function Directory() {
                     <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F3F4F6]">
+                <tbody className="">
                   {paginatedEmployees.map((emp, index) => (
                     <motion.tr 
                       key={emp.id} 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
-                      className={cn(tableRowHeightClass, 'hover:bg-[#F9FAFB] transition-colors group')}
+                      className={cn(tableRowHeightClass, 'hover:bg-[#F9FAFB] transition-colors group border-b border-[#F3F4F6] last:border-0')}
                     >
                     {visibleFields.map((field) => (
                       <td
@@ -1087,7 +1099,7 @@ export default function Directory() {
                   </motion.tr>
                 ))}
                 {Array.from({ length: placeholderRowCount }).map((_, index) => (
-                  <tr key={`placeholder-${index}`} className={cn(tableRowHeightClass, 'pointer-events-none')}>
+                  <tr key={`placeholder-${index}`} className={cn(tableRowHeightClass, 'pointer-events-none border-b border-[#F3F4F6] last:border-0')}>
                     <td colSpan={visibleFields.length + 1} className="px-4 py-0 align-middle" />
                   </tr>
                 ))}
@@ -1126,7 +1138,7 @@ export default function Directory() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm">
-          <div className="flex h-[800px] max-h-[94vh] w-full max-w-[1080px] flex-col overflow-hidden rounded-2xl border border-[#D1D5DB] bg-[#F8FAFC] shadow-2xl shadow-[#11182733]">
+          <div className="flex h-[800px] max-h-[94vh] w-full max-w-[1080px] flex-col overflow-hidden rounded-2xl border border-[#D1D5DB] bg-[#F9FAFB] shadow-2xl shadow-[#11182733]">
             <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] bg-white px-6 py-5">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-[#2563EB]">Onboarding Workflow</p>
@@ -1156,9 +1168,9 @@ export default function Directory() {
                         className={cn(
                           'group flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-all',
                           isCurrent
-                            ? 'border-[#2563EB] bg-[#EFF6FF] shadow-sm'
+                            ? 'border-[#2563EB] bg-[#EFF6FF] dark:bg-[#2563EB]/10 shadow-sm'
                             : isComplete
-                              ? 'border-[#BBF7D0] bg-[#F0FDF4]'
+                              ? 'border-[#BBF7D0] dark:border-[#16A34A]/30 bg-[#F0FDF4] dark:bg-[#16A34A]/10'
                               : 'border-[#E5E7EB] bg-white',
                           index > activeStep ? 'cursor-not-allowed opacity-70' : 'hover:border-[#CBD5E1]'
                         )}
@@ -1199,8 +1211,20 @@ export default function Directory() {
 
                       <SectionCard title="Contact Details" eyebrow="Optional">
                         <div className="grid grid-cols-1 gap-4">
-                          <Field label="Phone Number">
-                            <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="e.g. 09123456789" />
+                          <Field label="Phone Number" error={formErrors.phone}>
+                            <Input 
+                              value={form.phone} 
+                              onChange={(value) => {
+                                if (!/^\d*$/.test(value)) {
+                                  setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' }));
+                                  setForm((current) => ({ ...current, phone: value.replace(/\D/g, '') }));
+                                } else {
+                                  updateForm('phone', value);
+                                }
+                              }} 
+                              placeholder="e.g. 09123456789" 
+                              error={Boolean(formErrors.phone)} 
+                            />
                           </Field>
                           <Field label="Address">
                             <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" />
@@ -1221,7 +1245,7 @@ export default function Directory() {
                                 onClick={() => setIsAccountDropdownOpen((current) => !current)}
                                 className={cn(
                                   'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
-                                  formErrors.accountAssignment ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+                                  formErrors.accountAssignment ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB]'
                                 )}
                               >
                                 <span className="truncate">{form.accountAssignment || 'Select account type'}</span>
@@ -1262,7 +1286,7 @@ export default function Directory() {
                           />
                         </div>
                         {selectedAccountMissingCode && (
-                          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+                          <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-xs font-bold text-amber-800 dark:text-amber-500">
                             This preview uses the suggested account code. Add a stored department code to this account before saving.
                           </div>
                         )}
@@ -1281,7 +1305,7 @@ export default function Directory() {
                                 onClick={() => setIsSiteDropdownOpen((current) => !current)}
                                 className={cn(
                                   'flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#2563EB]',
-                                  formErrors.siteId ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+                                  formErrors.siteId ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB]'
                                 )}
                               >
                                 <span className="truncate">
@@ -1439,7 +1463,7 @@ export default function Directory() {
                 </div>
               </div>
 
-              <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-[#E5E7EB] bg-white/95 px-6 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
+              <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-[#E5E7EB] bg-white/95 dark:bg-[#1A1D27]/95 px-6 py-4 backdrop-blur md:flex-row md:items-center md:justify-between">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <button
                     type="button"
@@ -1786,7 +1810,7 @@ function Input({
       onChange={(event) => onChange(event.target.value)}
       className={cn(
         'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all placeholder:text-[#9CA3AF] focus:ring-2 focus:ring-[#2563EB]',
-        error ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+        error ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB]'
       )}
     />
   );
@@ -1802,7 +1826,7 @@ function GeneratedValue({
   const isReady = Boolean(value);
 
   return (
-    <div className={cn('rounded-2xl border p-4', isReady ? 'border-[#BFDBFE] bg-[#F8FAFF]' : 'border-[#E5E7EB] bg-[#F9FAFB]')}>
+    <div className={cn('rounded-2xl border p-4', isReady ? 'border-[#BFDBFE] dark:border-[#2563EB]/20 bg-[#F8FAFF] dark:bg-[#2563EB]/10' : 'border-[#E5E7EB] bg-[#F9FAFB]')}>
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Sparkles className={cn('h-3.5 w-3.5 shrink-0', isReady ? 'text-[#2563EB]' : 'text-[#9CA3AF]')} />
@@ -1814,7 +1838,7 @@ function GeneratedValue({
         className={cn(
           'flex min-h-11 items-center rounded-xl border px-3 py-2.5 text-sm font-black',
           isReady
-            ? 'border-[#DBEAFE] bg-white text-[#111827]'
+            ? 'border-[#DBEAFE] dark:border-[#2563EB]/30 bg-white text-[#111827]'
             : 'border-[#E5E7EB] bg-white text-[#9CA3AF]'
         )}
       >
@@ -1841,7 +1865,7 @@ function Select({
       onChange={(event) => onChange(event.target.value)}
       className={cn(
         'w-full rounded-xl border bg-white px-3 py-2.5 text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#2563EB]',
-        error ? 'border-red-300 bg-red-50' : 'border-[#D1D5DB]'
+        error ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB]'
       )}
     >
       {children}

@@ -144,4 +144,16 @@ export const AuditLogModel = {
       )
       .slice(0, limit);
   },
+
+  async findById(id) {
+    const rows = await supabaseRequest('audit_logs', {
+      searchParams: {
+        select: '*',
+        id: `eq.${id}`,
+        limit: '1',
+      },
+    });
+    if (!rows || rows.length === 0) return null;
+    return enrichWithProfileName(normalize(rows[0]));
+  },
 };

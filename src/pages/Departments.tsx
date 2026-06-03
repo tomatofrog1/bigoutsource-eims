@@ -255,7 +255,7 @@ export default function Departments() {
     setSelectedDepartment(dept);
     setEditName(dept.name);
     setEditCode(dept.departmentCode || suggestDepartmentCode(dept.name));
-    setIsEditCodeEdited(false);
+    setIsEditCodeEdited(true);
     setIsEditModalOpen(true);
   };
 

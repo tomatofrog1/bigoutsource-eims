@@ -19,6 +19,8 @@ function toDevice(employee) {
     site: employee.site,
     assigneeId: employee.id,
     assigneeName: employee.fullName,
+    assigneeStatus: employee.status,
+    isArchived: employee.isArchived,
     createdAt: employee.createdAt,
     updatedAt: employee.updatedAt,
   };

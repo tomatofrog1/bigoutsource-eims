@@ -15,4 +15,5 @@ function toQuery(params = {}) {
 
 export const auditLogService = {
   list: (params) => apiRequest(`/audit-logs${toQuery(params)}`),
+  undo: (id) => apiRequest(`/audit-logs/${id}/undo`, { method: 'POST' }),
 };

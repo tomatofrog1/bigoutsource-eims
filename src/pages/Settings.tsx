@@ -7,7 +7,9 @@ import {
   EyeOff,
   Loader2,
   Lock,
+  Moon,
   Save,
+  Sun,
   UserCheck,
   X,
 } from 'lucide-react';
@@ -16,6 +18,7 @@ import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { AppUser } from '@/src/types';
 import { authService } from '@/src/services/authService';
 import { settingsService } from '@/src/services/settingsService';
@@ -37,6 +40,7 @@ function asArray(value: any) {
 
 export default function Settings() {
   const { user } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const isSuperAdmin = user?.role === 'super_admin';
   const [activeTab, setActiveTab] = useState<SettingsTab | null>(null);
   const [companyName, setCompanyName] = useState('BigOutsource');
@@ -189,7 +193,7 @@ export default function Settings() {
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
             <motion.div key="skeleton-settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="w-full flex flex-col gap-3 relative">
-              {[...Array(isSuperAdmin ? 3 : 1)].map((_, i) => (
+              {[...Array(isSuperAdmin ? 4 : 2)].map((_, i) => (
                 <div key={i} className="h-14 w-full rounded-2xl bg-white border border-[#E5E7EB] shadow-sm animate-pulse flex items-center px-4">
                   <div className="h-6 w-6 rounded-md bg-gray-200"></div>
                   <div className="ml-3 h-4 w-24 bg-gray-200 rounded"></div>
@@ -207,6 +211,20 @@ export default function Settings() {
                   </>
                 )}
                 <TabButton active={activeTab === 'password'} icon={Lock} label="Password" onClick={() => setActiveTab('password')} />
+                <div
+                  className="flex min-h-24 w-full items-center justify-between rounded-2xl border px-5"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <span className="flex items-center gap-3 text-sm font-black">
+                    {isDark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                    Dark Mode
+                  </span>
+                  <DarkModeToggle isDark={isDark} onToggle={toggleTheme} />
+                </div>
               </div>
             </motion.aside>
           )}
@@ -355,6 +373,7 @@ export default function Settings() {
                 </form>
               </section>
             )}
+
             </SettingsModal>
           ) : null}
         </AnimatePresence>
@@ -376,13 +395,15 @@ function SettingsModal({ children, onClose }: { children: React.ReactNode; onClo
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-        className="w-full max-w-2xl rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-2xl"
+        className="w-full max-w-2xl rounded-2xl border p-6 shadow-2xl"
+        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
         <div className="mb-4 flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E5E7EB] text-[#6B7280] transition-colors hover:bg-[#F9FAFB] hover:text-[#111827]"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-muted)' }}
             aria-label="Close settings popup"
           >
             <X className="h-4 w-4" />
@@ -411,9 +432,16 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-h-24 w-full items-center justify-between rounded-2xl border px-5 text-left transition-colors ${
-        active ? 'border-[#111827] bg-[#111827] text-white' : 'border-[#E5E7EB] bg-white text-[#111827] hover:bg-[#F9FAFB]'
-      }`}
+      className="flex min-h-24 w-full items-center justify-between rounded-2xl border px-5 text-left"
+      style={active ? {
+        borderColor: 'var(--color-text-primary)',
+        backgroundColor: 'var(--color-text-primary)',
+        color: 'white',
+      } : {
+        borderColor: 'var(--color-border)',
+        backgroundColor: 'var(--color-surface)',
+        color: 'var(--color-text-primary)',
+      }}
     >
       <span className="flex items-center gap-3 text-sm font-black">
         <Icon className="h-5 w-5" />
@@ -515,6 +543,53 @@ function SaveButton({ onClick, isSaving }: { onClick: () => void; isSaving: bool
     >
       {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
       Save Changes
+    </button>
+  );
+}
+
+function DarkModeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="relative inline-flex h-8 w-16 shrink-0 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+      style={{
+        backgroundColor: isDark ? '#6366F1' : '#D1D5DB',
+      }}
+      role="switch"
+      aria-checked={isDark}
+      aria-label="Toggle dark mode"
+    >
+      <motion.div
+        layout
+        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md"
+        style={{ marginLeft: isDark ? '2.125rem' : '0.25rem' }}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {isDark ? (
+            <motion.div
+              key="moon"
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Moon className="h-3.5 w-3.5 text-[#6366F1]" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="sun"
+              initial={{ rotate: 90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: -90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Sun className="h-3.5 w-3.5 text-[#F59E0B]" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </button>
   );
 }

@@ -41,36 +41,56 @@ export function isValidDepartmentCode(code = '') {
 }
 
 export function parseEmployeeName(data = {}) {
-  const firstName = String(data.firstName || data.first_name || '').trim();
-  const middleName = String(data.middleName || data.middle_name || '').trim();
-  const lastName = String(data.lastName || data.last_name || '').trim();
+  const firstNameRaw = String(data.firstName || data.first_name || '').trim();
+  const middleNameRaw = String(data.middleName || data.middle_name || '').trim();
+  const lastNameRaw = String(data.lastName || data.last_name || '').trim();
 
-  if (firstName || middleName || lastName) {
+  if (firstNameRaw || middleNameRaw || lastNameRaw) {
     return {
-      firstName,
-      middleName,
-      lastName,
-      fullName: [firstName, middleName, lastName].filter(Boolean).join(' ').trim(),
+      firstName: firstNameRaw.replace(/\u00A0/g, ' '),
+      middleName: middleNameRaw.replace(/\u00A0/g, ' '),
+      lastName: lastNameRaw.replace(/\u00A0/g, ' '),
+      fullName: [firstNameRaw, middleNameRaw, lastNameRaw].filter(Boolean).join(' ').trim(),
     };
   }
 
-  const fullName = String(data.fullName || data.name || '').trim();
-  const parts = fullName.split(/\s+/).filter(Boolean);
+  const fullNameRaw = String(data.fullName || data.name || '').trim();
+  
+  if (fullNameRaw.includes(',')) {
+    const [lastName, rest] = fullNameRaw.split(',').map(s => s.trim());
+    const restParts = rest.split(/ +/).filter(Boolean);
+    if (restParts.length === 1) {
+      return { 
+        firstName: restParts[0].replace(/\u00A0/g, ' '), 
+        middleName: '', 
+        lastName: lastName.replace(/\u00A0/g, ' '),
+        fullName: fullNameRaw
+      };
+    }
+    return {
+      firstName: restParts[0].replace(/\u00A0/g, ' '),
+      middleName: restParts.slice(1).join(' ').replace(/\u00A0/g, ' '),
+      lastName: lastName.replace(/\u00A0/g, ' '),
+      fullName: fullNameRaw
+    };
+  }
+
+  const parts = fullNameRaw.split(/ +/).filter(Boolean);
 
   if (parts.length <= 1) {
     return {
-      firstName: parts[0] || '',
+      firstName: (parts[0] || '').replace(/\u00A0/g, ' '),
       middleName: '',
       lastName: '',
-      fullName,
+      fullName: fullNameRaw,
     };
   }
 
   return {
-    firstName: parts[0],
-    middleName: parts.slice(1, -1).join(' '),
-    lastName: parts[parts.length - 1],
-    fullName,
+    firstName: parts[0].replace(/\u00A0/g, ' '),
+    middleName: parts.slice(1, -1).join(' ').replace(/\u00A0/g, ' '),
+    lastName: parts[parts.length - 1].replace(/\u00A0/g, ' '),
+    fullName: fullNameRaw,
   };
 }
 
@@ -83,10 +103,10 @@ export function buildLmsUsernameBase(name) {
 }
 
 export function buildEmployeeIdentifierBase(name) {
-  const givenNames = [name.firstName, name.middleName]
-    .join(' ')
+  const givenNames = String(name.firstName || '')
     .split(/\s+/)
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, 2);
   const initials = givenNames.map((part) => stripSpecial(part).charAt(0)).join('');
   return `${initials}${stripSpecial(name.lastName)}`;
 }

@@ -60,6 +60,15 @@ function normalizeDate(value) {
   return date.toISOString().slice(0, 10);
 }
 
+function normalizeSite(value) {
+  const next = String(value || '').trim().toLowerCase();
+  if (next === 'can' || next === 'cand' || next === 'candelaria') return 'Candelaria';
+  if (next === 'wfh/hybrid' || next === 'hybrid') return 'Hybrid';
+  if (next === 'wfh') return 'WFH';
+  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo city (hq)') return 'San Pablo City (HQ)';
+  return value || '';
+}
+
 function normalizeRow(row) {
   const status = normalizeStatus(value(row, 'Status'));
   const fullName = value(row, 'Name');
@@ -74,7 +83,7 @@ function normalizeRow(row) {
     emailPassword: value(row, 'Email Password'),
     lmsAccount: generateLmsAccount(fullName) || value(row, 'LMS Account'),
     status: status.status,
-    siteName: value(row, 'Site'),
+    siteName: normalizeSite(value(row, 'Site')),
     pcName: value(row, 'PC Name'),
     rustdeskId: value(row, 'RustDesk ID'),
     remoteId: value(row, 'Remote ID'),
@@ -126,7 +135,7 @@ function coerceEditableData(data = {}) {
     emailPassword: String(data.emailPassword || '').trim(),
     lmsAccount: generateLmsAccount(fullName) || String(data.lmsAccount || '').trim(),
     status: status.status,
-    siteName: String(data.siteName || '').trim(),
+    siteName: normalizeSite(data.siteName),
     pcName: String(data.pcName || '').trim(),
     rustdeskId: String(data.rustdeskId || '').trim(),
     remoteId: String(data.remoteId || '').trim(),

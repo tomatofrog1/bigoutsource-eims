@@ -23,6 +23,10 @@ export function PageLayout({ children, title, contentClassName = 'max-w-6xl mx-a
         <Sidebar />
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           <Header title={title} />
+    <div className="flex h-screen w-full overflow-hidden" style={{ backgroundColor: 'var(--color-bg)' }}>
+      <Sidebar />
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <Header title={title} />
         <main className="flex-1 overflow-y-auto p-8">
           <AnimatePresence mode="wait">
             <motion.div

@@ -26,6 +26,18 @@ function canonical(value, allowed, fallback = value) {
   return match || fallback;
 }
 
+function normalizeSite(value) {
+  if (value === undefined || value === null || value === '') return value;
+  const next = String(value).trim().toLowerCase();
+  if (next === 'can' || next === 'cand' || next === 'candelaria') return 'Candelaria';
+  if (next === 'wfh/hybrid' || next === 'hybrid') return 'Hybrid';
+  if (next === 'wfh') return 'WFH';
+  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo city (hq)') return 'HQ';
+  
+  const match = SITE_OPTIONS.find((option) => option.toLowerCase() === next);
+  return match || value;
+}
+
 function normalizeEset(value) {
   if (value === 'installed') return 'active';
   if (value === 'missing' || value === 'update_required') return 'inactive';
@@ -51,7 +63,7 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   if (data?.emailPassword !== undefined) payload.email_password = blankToNull(data.emailPassword);
   if (lmsAccount !== undefined) payload.lms_account = lmsAccount;
   if (data?.status !== undefined) payload.status = canonical(data.status, STATUS_OPTIONS, data.status);
-  if (site !== undefined) payload.site = canonical(site, SITE_OPTIONS, site);
+  if (site !== undefined) payload.site = normalizeSite(site);
   if (data?.pcName !== undefined) payload.pc_name = blankToNull(data.pcName);
   if (valueFrom(data, 'rustdeskId', 'rustDeskId') !== undefined) {
     payload.rustdesk_id = blankToNull(valueFrom(data, 'rustdeskId', 'rustDeskId'));

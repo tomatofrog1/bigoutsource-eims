@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   User,
   X,
+  Undo2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -139,30 +140,49 @@ function parseEmployeeName(fullName = '') {
 
   if (name.includes(',')) {
     const [lastName, rest] = name.split(',').map(s => s.trim());
-    const restParts = rest.split(/\s+/).filter(Boolean);
-    if (restParts.length === 1) return { firstName: restParts[0], middleName: '', lastName };
+    const restParts = rest.split(/ +/).filter(Boolean);
+    if (restParts.length === 1) {
+      return { 
+        firstName: restParts[0].replace(/\u00A0/g, ' '), 
+        middleName: '', 
+        lastName: lastName.replace(/\u00A0/g, ' ') 
+      };
+    }
     return {
-      firstName: restParts[0],
-      middleName: restParts.slice(1).join(' '),
-      lastName
+      firstName: restParts[0].replace(/\u00A0/g, ' '),
+      middleName: restParts.slice(1).join(' ').replace(/\u00A0/g, ' '),
+      lastName: lastName.replace(/\u00A0/g, ' ')
     };
   }
 
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length === 1) return { firstName: parts[0], middleName: '', lastName: '' };
-  if (parts.length === 2) return { firstName: parts[0], middleName: '', lastName: parts[1] };
+  const parts = name.split(/ +/).filter(Boolean);
+  
+  let firstName = '';
+  let middleName = '';
+  let lastName = '';
+
+  if (parts.length === 1) {
+    firstName = parts[0];
+  } else if (parts.length === 2) {
+    firstName = parts[0];
+    lastName = parts[1];
+  } else {
+    firstName = parts[0];
+    middleName = parts.slice(1, -1).join(' ');
+    lastName = parts[parts.length - 1];
+  }
 
   return {
-    firstName: parts[0],
-    middleName: parts.slice(1, -1).join(' '),
-    lastName: parts[parts.length - 1],
+    firstName: firstName.replace(/\u00A0/g, ' '),
+    middleName: middleName.replace(/\u00A0/g, ' '),
+    lastName: lastName.replace(/\u00A0/g, ' '),
   };
 }
 
 function formatEmployeeName(firstName = '', middleName = '', lastName = '') {
-  const first = String(firstName || '').trim();
-  const middle = String(middleName || '').trim();
-  const last = String(lastName || '').trim();
+  const first = String(firstName || '').trim().replace(/ /g, '\u00A0');
+  const middle = String(middleName || '').trim().replace(/ /g, '\u00A0');
+  const last = String(lastName || '').trim().replace(/ /g, '\u00A0');
   return [first, middle, last].filter(Boolean).join(' ');
 }
 
@@ -171,15 +191,19 @@ function sanitizeNamePart(value = '') {
 }
 
 function generatedPreview(fullName = '', account?: AccountOption) {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean);
-  const first = sanitizeNamePart(parts[0] || '');
-  const last = sanitizeNamePart(parts.length > 1 ? parts[parts.length - 1] : '');
-  const middleInitials = parts
-    .slice(1, -1)
+  const nameParts = parseEmployeeName(fullName);
+  const firstRaw = String(nameParts.firstName || '');
+  
+  const firstInitials = firstRaw
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
     .map((part) => sanitizeNamePart(part).charAt(0))
     .join('');
+
+  const last = sanitizeNamePart(nameParts.lastName || '');
   const code = account?.departmentCode || '';
-  const identifier = `${first.charAt(0)}${middleInitials}${last}`;
+  const identifier = `${firstInitials}${last}`;
   const domain = account?.accountType === 'internal' ? 'com' : ['hc', 'utd'].includes(code) ? 'team' : 'ph';
 
   return {
@@ -251,7 +275,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
 
   return {
     employeeNumber: emp?.employeeNumber || emp?.employeeId || '',
-    fullName,
+    fullName: fullName.replace(/\u00A0/g, ' '),
     firstName: nameParts.firstName,
     middleName: nameParts.middleName,
     lastName: nameParts.lastName,
@@ -280,6 +304,7 @@ export default function EmployeeProfile() {
   const { user } = useAuth();
   const [employee, setEmployee] = useState<EmployeeForm>(emptyEmployee);
   const [form, setForm] = useState<EmployeeForm>(emptyEmployee);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof EmployeeForm, string>>>({});
   const [sites, setSites] = useState<SiteOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -296,6 +321,9 @@ export default function EmployeeProfile() {
   const [isEsetDropdownOpen, setIsEsetDropdownOpen] = useState(false);
   const [isActivityWatchDropdownOpen, setIsActivityWatchDropdownOpen] = useState(false);
   const [visibleLogsCount, setVisibleLogsCount] = useState(3);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [undoTargetLog, setUndoTargetLog] = useState<any | null>(null);
+  const [isUndoing, setIsUndoing] = useState(false);
   const canManageEmployee = user?.role !== 'viewer';
 
   const missingDataStatus = useMemo(() => {
@@ -360,10 +388,39 @@ export default function EmployeeProfile() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, refreshTrigger]);
+
+  const handleUndo = (log: any) => {
+    if (!log.action.endsWith('.update')) {
+      toast.error('Only update actions can be undone.');
+      return;
+    }
+    setUndoTargetLog(log);
+  };
+
+  const confirmUndo = async () => {
+    if (!undoTargetLog) return;
+    setIsUndoing(true);
+    const loadingToast = toast.loading('Undoing action...');
+    try {
+      await auditLogService.undo(undoTargetLog.id);
+      toast.success('Action successfully undone.', { id: loadingToast });
+      setRefreshTrigger((prev) => prev + 1);
+      setUndoTargetLog(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to undo action', { id: loadingToast });
+    } finally {
+      setIsUndoing(false);
+    }
+  };
 
   const updateForm = (field: keyof EmployeeForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+    setFormErrors((current) => {
+      if (!current[field]) return current;
+      const { [field]: _removed, ...nextErrors } = current;
+      return nextErrors;
+    });
   };
 
   const handleReveal = () => {
@@ -383,6 +440,7 @@ export default function EmployeeProfile() {
   const cancelEditing = () => {
     setForm(employee);
     setIsEditing(false);
+    setFormErrors({});
   };
 
   const saveProfile = async (event: FormEvent) => {
@@ -396,6 +454,12 @@ export default function EmployeeProfile() {
 
     if (!form.employeeNumber.trim() || !form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
       toast.error('ID, first name, last name, account, and site are required');
+      return;
+    }
+
+    if (form.phone && !/^\d+$/.test(form.phone)) {
+      setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' }));
+      toast.error('Please resolve the highlighted fields before saving');
       return;
     }
 
@@ -469,7 +533,7 @@ export default function EmployeeProfile() {
 
   const pageTitle = employee.fullName ? `Profile: ${employee.fullName}` : 'Employee Profile';
   const selectedAccount = accounts.find((account) => account.name === form.accountAssignment);
-  const preview = generatedPreview(form.fullName, selectedAccount);
+  const preview = generatedPreview(formatEmployeeName(form.firstName, form.middleName, form.lastName), selectedAccount);
   const accountBasedPreviewPlaceholder = selectedAccount
     ? 'Generated after name is entered'
     : 'Generated after name and department are entered';
@@ -1021,8 +1085,22 @@ export default function EmployeeProfile() {
 
             <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
               <div className="space-y-6">
-                <ProfileField label="Phone Number" editing={isEditing}>
-                  {isEditing ? <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="e.g. 09123456789" /> : employee.phone || 'Not Assigned'}
+                <ProfileField label="Phone Number" editing={isEditing} error={formErrors.phone}>
+                  {isEditing ? (
+                    <Input 
+                      value={form.phone} 
+                      onChange={(value) => {
+                        if (!/^\d*$/.test(value)) {
+                          setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' }));
+                          setForm((current) => ({ ...current, phone: value.replace(/\D/g, '') }));
+                        } else {
+                          updateForm('phone', value);
+                        }
+                      }} 
+                      placeholder="e.g. 09123456789" 
+                      error={Boolean(formErrors.phone)}
+                    />
+                  ) : employee.phone || 'Not Assigned'}
                 </ProfileField>
                 <ProfileField label="Address" editing={isEditing}>
                   {isEditing ? <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" /> : employee.address || 'Not Assigned'}
@@ -1048,11 +1126,26 @@ export default function EmployeeProfile() {
                           className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group"
                         >
                           {/* Timeline node */}
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-indigo-100 text-indigo-600 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                          <Clock className="w-4 h-4" />
-                        </div>
+                          <div className="flex flex-col items-center gap-2 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-indigo-100 text-indigo-600 shadow">
+                              <Clock className="w-4 h-4" />
+                            </div>
+                            {log.action.endsWith('.update') && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUndo(log);
+                                }}
+                                className="p-1.5 text-[#9CA3AF] hover:text-[#2563EB] hover:bg-[#EFF6FF] rounded-full transition-colors bg-white shadow-sm border border-[#E5E7EB] group/undo"
+                                title="Undo Action"
+                              >
+                                <Undo2 className="w-3.5 h-3.5 transition-transform group-hover/undo:-rotate-45" />
+                              </button>
+                            )}
+                          </div>
 
-                        {/* Card */}
+                          {/* Card */}
                         <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
                           <div className="flex flex-col gap-1 mb-3">
                             <div className="flex items-center justify-between">
@@ -1231,6 +1324,70 @@ export default function EmployeeProfile() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {undoTargetLog && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-xs"
+          >
+            <motion.div 
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="w-full max-w-md bg-white rounded-3xl border border-[#E5E7EB] shadow-2xl p-6"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600">
+                  <Undo2 className="w-6 h-6" />
+                </div>
+
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-[#111827]">
+                    Undo Revert Action
+                  </h3>
+
+                  <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
+                    Are you sure you want to revert this{' '}
+                    <span className="font-bold text-[#111827]">
+                      {actionLabel(undoTargetLog.action).toLowerCase()}
+                    </span>{' '}
+                    action? This will restore the fields to their previous values.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUndoTargetLog(null)}
+                  disabled={isUndoing}
+                  className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] disabled:opacity-50 transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={confirmUndo}
+                  disabled={isUndoing}
+                  className="flex items-center gap-2 px-4 py-2.5 text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                >
+                  {isUndoing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Undo2 className="w-4 h-4" />
+                  )}
+                  Confirm Undo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageLayout>
   );
 }
@@ -1271,11 +1428,13 @@ function ProfileField({
   icon: Icon,
   editing,
   children,
+  error,
 }: {
   label: string;
   icon?: ElementType;
   editing?: boolean;
   children: ReactNode;
+  error?: string;
 }) {
   const isMissing = !editing && (
     children === 'Not Assigned' || 
@@ -1299,6 +1458,7 @@ function ProfileField({
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           >
             {children}
+            {error && <span className="text-xs font-bold text-red-600 mt-1.5 block">{error}</span>}
           </motion.div>
         ) : (
           <motion.div
@@ -1382,11 +1542,13 @@ function Input({
   onChange,
   placeholder,
   type = 'text',
+  error = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  error?: boolean;
 }) {
   return (
     <input
@@ -1394,7 +1556,10 @@ function Input({
       value={value}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all"
+      className={cn(
+        'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
+        error ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]'
+      )}
     />
   );
 }

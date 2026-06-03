@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { AlertCircle, History, Loader2, Search, ChevronRight, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { AlertCircle, History, Loader2, Search, ChevronRight, CheckCircle2, ArrowUp, ArrowDown, ArrowUpDown, Undo2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
@@ -107,6 +107,9 @@ export default function AuditLogs() {
   const [isLoading, setIsLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>({ key: 'createdAt', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [undoTargetLog, setUndoTargetLog] = useState<any | null>(null);
+  const [isUndoing, setIsUndoing] = useState(false);
   const recordsPerPage = 5;
 
   useEffect(() => {
@@ -138,7 +141,31 @@ export default function AuditLogs() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshTrigger]);
+
+  const handleUndo = (log: any) => {
+    if (!log.action.endsWith('.update')) {
+      toast.error('Only update actions can be undone.');
+      return;
+    }
+    setUndoTargetLog(log);
+  };
+
+  const confirmUndo = async () => {
+    if (!undoTargetLog) return;
+    setIsUndoing(true);
+    const loadingToast = toast.loading('Undoing action...');
+    try {
+      await auditLogService.undo(undoTargetLog.id);
+      toast.success('Action successfully undone.', { id: loadingToast });
+      setRefreshTrigger((prev) => prev + 1);
+      setUndoTargetLog(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to undo action', { id: loadingToast });
+    } finally {
+      setIsUndoing(false);
+    }
+  };
 
   const actionOptions = useMemo(() => {
     const actions = Array.from(new Set(logs.map((log) => cleanString(log.action)).filter(Boolean)));
@@ -301,12 +328,13 @@ export default function AuditLogs() {
                       <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[20%] h-14">
                         <div className="py-2 text-left w-full">Target Entity</div>
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[25%]">Details</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[20%]">Details</th>
+                      <th className="px-4 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[5%]"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E5E7EB]">
+                  <tbody className="">
                     {[...Array(5)].map((_, i) => (
-                      <tr key={i} className="animate-pulse">
+                      <tr key={i} className="animate-pulse border-b border-[#E5E7EB] last:border-0">
                         <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 rounded mb-2"></div><div className="h-3 w-16 bg-gray-200 rounded"></div></td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -317,6 +345,7 @@ export default function AuditLogs() {
                         <td className="px-6 py-4"><div className="h-6 w-24 bg-gray-200 rounded-full"></div></td>
                         <td className="px-6 py-4"><div className="h-4 w-32 bg-gray-200 rounded mb-2"></div><div className="h-3 w-20 bg-gray-200 rounded"></div></td>
                         <td className="px-6 py-4"><div className="h-6 w-full max-w-sm bg-gray-200 rounded"></div></td>
+                        <td className="px-4 py-4"></td>
                       </tr>
                     ))}
                   </tbody>
@@ -350,10 +379,11 @@ export default function AuditLogs() {
                           Target Entity {renderSortIcon('target')}
                         </button>
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[25%]">Details</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[20%]">Details</th>
+                      <th className="px-4 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[5%]"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E5E7EB]">
+                  <tbody className="">
                     {currentLogs.map((log, index) => {
                       const { date, time } = formatDateToParts(log.createdAt);
                       return (
@@ -362,7 +392,7 @@ export default function AuditLogs() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
-                          className="hover:bg-[#F9FAFB] transition-colors align-top group"
+                          className="hover:bg-[#F9FAFB] transition-colors align-top group border-b border-[#E5E7EB] last:border-0"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <p className="text-sm font-bold text-[#111827]">{date}</p>
@@ -390,6 +420,21 @@ export default function AuditLogs() {
                           </td>
                           <td className="px-6 py-4">
                             <AuditDetails details={log.details} />
+                          </td>
+                          <td className="px-4 py-4 text-right align-middle">
+                            {log.action.endsWith('.update') && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUndo(log);
+                                }}
+                                className="p-2 text-[#9CA3AF] hover:text-[#2563EB] hover:bg-[#EFF6FF] rounded-lg transition-colors inline-flex items-center justify-center group/undo"
+                                title="Undo Action"
+                              >
+                                <Undo2 className="w-4 h-4 transition-transform group-hover/undo:-rotate-45" />
+                              </button>
+                            )}
                           </td>
                         </motion.tr>
                       );
@@ -426,6 +471,70 @@ export default function AuditLogs() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {undoTargetLog && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-xs"
+          >
+            <motion.div 
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="w-full max-w-md bg-white rounded-3xl border border-[#E5E7EB] shadow-2xl p-6"
+            >
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600">
+                  <Undo2 className="w-6 h-6" />
+                </div>
+
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-[#111827]">
+                    Undo Revert Action
+                  </h3>
+
+                  <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
+                    Are you sure you want to revert this{' '}
+                    <span className="font-bold text-[#111827]">
+                      {cleanString(undoTargetLog.action)}
+                    </span>{' '}
+                    action? This will restore the fields to their previous values.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUndoTargetLog(null)}
+                  disabled={isUndoing}
+                  className="px-4 py-2.5 border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] disabled:opacity-50 transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={confirmUndo}
+                  disabled={isUndoing}
+                  className="flex items-center gap-2 px-4 py-2.5 text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                >
+                  {isUndoing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Undo2 className="w-4 h-4" />
+                  )}
+                  Confirm Undo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageLayout>
   );
 }
