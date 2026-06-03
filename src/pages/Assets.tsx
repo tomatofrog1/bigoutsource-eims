@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Laptop, Database, Cpu, Wifi, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Laptop, Database, Cpu, Wifi, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { Pagination } from '@/src/components/Pagination';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -17,7 +17,7 @@ export default function Assets() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [licenseFilter, setLicenseFilter] = useState('All');
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'pcName', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const recordsPerPage = 10;
 
   const toggleSort = (key: string) => {
@@ -88,6 +88,14 @@ export default function Assets() {
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
+    } else {
+      result = [...result].sort((a, b) => {
+        let aVal = String(a.assigneeName || '').toLowerCase();
+        let bVal = String(b.assigneeName || '').toLowerCase();
+        if (aVal < bVal) return -1;
+        if (aVal > bVal) return 1;
+        return 0;
+      });
     }
 
     return result;
@@ -124,15 +132,15 @@ export default function Assets() {
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] outline-none"
               />
             </div>
-            <select
+            <AnimatedSelect
               value={licenseFilter}
-              onChange={(e) => setLicenseFilter(e.target.value)}
-              className="bg-white border border-[#E5E7EB] rounded-xl px-4 py-2.5 text-sm font-bold text-[#4B5563] outline-none focus:ring-2 focus:ring-[#111827]"
-            >
-              <option value="All">All Licenses</option>
-              <option value="Licensed">Has Windows Key</option>
-              <option value="Unlicensed">No Key</option>
-            </select>
+              onChange={setLicenseFilter}
+              options={[
+                { value: 'All', label: 'All Licenses' },
+                { value: 'Licensed', label: 'Has Windows Key' },
+                { value: 'Unlicensed', label: 'No Key' },
+              ]}
+            />
           </div>
           <div className="flex gap-2">
             <button className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563]">
@@ -189,7 +197,7 @@ export default function Assets() {
                       { key: 'rustdeskId', label: 'Remote Access' },
                     ].map((header) => {
                       const isActiveSort = sortConfig?.key === header.key;
-                      const SortIcon = isActiveSort ? (sortConfig.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+                      const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                       return (
                         <th key={header.key} className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-left">
@@ -245,7 +253,7 @@ export default function Assets() {
                       { key: 'rustdeskId', label: 'Remote Access' },
                     ].map((header) => {
                       const isActiveSort = sortConfig?.key === header.key;
-                      const SortIcon = isActiveSort ? (sortConfig.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+                      const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                       return (
                         <th key={header.key} className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-left">
@@ -321,5 +329,68 @@ export default function Assets() {
         </AnimatePresence>
       </div>
     </PageLayout>
+  );
+}
+
+function AnimatedSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || 'Select...';
+
+  return (
+    <div className="relative min-w-[160px] z-10">
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <ChevronRight
+          className={`h-4 w-4 shrink-0 transition-transform text-[#9CA3AF] ${
+            isOpen ? 'rotate-90' : ''
+          }`}
+        />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-xl shadow-[#11182714]"
+            >
+              <div className="max-h-48 overflow-y-auto py-1">
+                {options.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[#F3F4F6] ${
+                      value === opt.value ? 'bg-[#EFF6FF]' : ''
+                    }`}
+                  >
+                    <span className={`truncate text-sm font-semibold ${value === opt.value ? 'text-[#2563EB]' : 'text-[#4B5563]'}`}>{opt.label}</span>
+                    {value === opt.value && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

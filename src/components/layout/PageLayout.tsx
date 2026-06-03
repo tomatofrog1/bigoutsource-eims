@@ -14,6 +14,15 @@ export function PageLayout({ children, title, contentClassName = 'max-w-6xl mx-a
   const location = useLocation();
 
   return (
+    <div className="flex h-screen w-full bg-[#F9FAFB] overflow-hidden relative">
+      {/* Natural ambient background lighting */}
+      <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-blue-400/10 blur-[140px] pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full bg-blue-300/10 blur-[140px] pointer-events-none z-0" />
+      
+      <div className="relative z-10 flex h-full w-full">
+        <Sidebar />
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          <Header title={title} />
     <div className="flex h-screen w-full overflow-hidden" style={{ backgroundColor: 'var(--color-bg)' }}>
       <Sidebar />
       <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -32,6 +41,7 @@ export function PageLayout({ children, title, contentClassName = 'max-w-6xl mx-a
             </motion.div>
           </AnimatePresence>
         </main>
+        </div>
       </div>
     </div>
   );

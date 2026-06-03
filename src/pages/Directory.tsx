@@ -494,10 +494,10 @@ export default function Directory() {
       return matchesSearch && matchesSite && matchesStatus && matchesAccount;
     });
 
-  const sortedEmployees = useMemo(
-    () => (sortConfig ? [...filteredEmployees].sort((a, b) => compareEmployees(a, b, sortConfig)) : filteredEmployees),
-    [filteredEmployees, sortConfig]
-  );
+  const sortedEmployees = useMemo(() => {
+    const targetSort: SortConfig = sortConfig || { key: 'fullName', direction: 'asc' };
+    return [...filteredEmployees].sort((a, b) => compareEmployees(a, b, targetSort));
+  }, [filteredEmployees, sortConfig]);
   const totalPages = Math.max(1, Math.ceil(sortedEmployees.length / recordsPerPage));
   const pageStartIndex = (currentPage - 1) * recordsPerPage;
   const paginatedEmployees = sortedEmployees.slice(pageStartIndex, pageStartIndex + recordsPerPage);
@@ -1035,7 +1035,7 @@ export default function Directory() {
                     {visibleFields.map((field) => {
                       const isSortable = sortableFieldKeys.includes(field.key);
                       const isActiveSort = sortConfig?.key === field.key;
-                      const SortIcon = isActiveSort ? (sortConfig.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+                      const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                       return (
                         <th
@@ -1049,14 +1049,14 @@ export default function Directory() {
                             <button
                               type="button"
                               onClick={() => toggleSort(field.key)}
-                              aria-sort={isActiveSort ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+                              aria-sort={isActiveSort ? (sortConfig?.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
                               className={cn(
                                 'flex max-w-full items-center gap-1.5 rounded-lg py-2 text-left uppercase tracking-widest transition-colors hover:text-[#111827]',
                                 isActiveSort && 'text-[#111827]'
                               )}
                             >
                               <span className="truncate">{field.label}</span>
-                              <SortIcon className="h-3.5 w-3.5 shrink-0" />
+                              <SortIcon className={cn('h-3.5 w-3.5 shrink-0', isActiveSort ? 'text-[#111827]' : 'text-[#9CA3AF]')} />
                             </button>
                           ) : (
                             <div className="truncate">{field.label}</div>
@@ -1753,7 +1753,7 @@ function AccountFilterDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="flex min-w-[168px] items-center justify-between gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
+        className="flex min-w-[200px] items-center justify-between gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
       >
         <span className="truncate">{selectedLabel}</span>
         <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-90')} />

@@ -79,7 +79,7 @@ export default function Dashboard() {
   const [logs, setLogs] = useState<any[]>([]);
 
   const [accounts, setAccounts] = useState<any[]>([]);
-  
+
   const [employeesLoading, setEmployeesLoading] = useState(true);
   const [devicesLoading, setDevicesLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(true);
@@ -143,7 +143,7 @@ export default function Dashboard() {
       const status = String(e.status || '').toLowerCase();
       return status === 'inactive' || status === 'terminated' || status === 'offboarding';
     }).length;
-    const rate = active + inactive > 0 ? ((inactive / (active + inactive)) * 100).toFixed(1) : '0.0';
+    const rate = active + inactive > 0 ? ((inactive / (active + inactive)) * 100).toFixed(2) : '0.00';
     return { inactive, rate };
   }, [employees]);
 
@@ -203,7 +203,7 @@ export default function Dashboard() {
         { name: 'Finance', count: 8 }
       ];
     }
-      
+
     return dist;
   }, [employees, accounts]);
 
@@ -216,7 +216,7 @@ export default function Dashboard() {
         const bDate = new Date(b.createdAt || b.created_at).getTime();
         return aDate - bDate;
       });
-    
+
     let cumulative = 0;
     sortedEmployees.forEach(emp => {
       const date = new Date(emp.createdAt || emp.created_at);
@@ -230,7 +230,12 @@ export default function Dashboard() {
   }, [employees]);
 
   const siteDistribution = useMemo(() => {
+    const ORDER = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
     const counts = new Map<string, number>();
+    
+    // Pre-initialize standard sites to ensure they always show up
+    ORDER.forEach(site => counts.set(site, 0));
+
     employees.forEach((employee) => {
       if (employee.status === 'active') {
         let siteName = employee.site || 'Unassigned';
@@ -240,7 +245,6 @@ export default function Dashboard() {
     });
     let dist = Array.from(counts.entries()).map(([site, count]) => ({ site, name: site, count }));
 
-    const ORDER = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
     dist.sort((a, b) => {
       let indexA = ORDER.indexOf(a.site);
       let indexB = ORDER.indexOf(b.site);
@@ -347,7 +351,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                         <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} dy={10} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} />
-                        <RechartsTooltip content={<CustomTooltip chartType="growth" />} cursor={{ stroke: '#E5E7EB', strokeWidth: 2 }} />
+                        <RechartsTooltip content={<CustomTooltip chartType="growth" />} cursor={{ stroke: '#E5E7EB', strokeWidth: 2 }} wrapperStyle={{ zIndex: 9999 }} />
                         <Line type="monotone" dataKey="count" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, fill: '#6366F1', strokeWidth: 2, stroke: '#ffffff' }} activeDot={{ r: 6 }} />
                       </LineChart>
                     </ResponsiveContainer>
@@ -379,7 +383,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E5E7EB" />
                         <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} />
                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#111827', fontWeight: 'bold' }} width={90} />
-                        <RechartsTooltip content={<CustomTooltip chartType="department" />} cursor={{ fill: '#F9FAFB' }} />
+                        <RechartsTooltip content={<CustomTooltip chartType="department" />} cursor={{ fill: '#F9FAFB' }} wrapperStyle={{ zIndex: 9999 }} />
                         <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={24} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -426,7 +430,7 @@ export default function Dashboard() {
                               <Cell key={`cell-${index}`} fill={SITE_COLORS[entry.site] || COLORS[index % COLORS.length]} />
                             ))}
                           </Pie>
-                          <RechartsTooltip content={<CustomTooltip chartType="site" />} wrapperStyle={{ zIndex: 100 }} />
+                          <RechartsTooltip content={<CustomTooltip chartType="site" />} wrapperStyle={{ zIndex: 9999 }} />
                         </PieChart>
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">

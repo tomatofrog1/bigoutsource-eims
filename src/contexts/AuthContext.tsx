@@ -70,7 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(toAppUser(apiUser));
       toast.success('Successfully logged in');
     } catch (error: any) {
-      toast.error(error.message || 'Login failed');
+      const msg = error.message || 'Login failed';
+      if (!msg.toLowerCase().includes('pending') && !msg.toLowerCase().includes('disabled')) {
+        toast.error(msg);
+      }
       throw error;
     }
   };

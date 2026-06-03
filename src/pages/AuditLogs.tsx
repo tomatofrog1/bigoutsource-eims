@@ -249,7 +249,7 @@ export default function AuditLogs() {
       <div className="flex flex-col gap-6 w-full">
 
         {/* Filters and Search */}
-        <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           {/* Top Row: Search */}
           <div className="relative w-full">
             <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -258,7 +258,7 @@ export default function AuditLogs() {
               placeholder="Search logs..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-[#2563EB] focus:border-transparent outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-[#2563EB] focus:border-transparent outline-none transition-all"
             />
           </div>
           {/* Bottom Row: Filters */}

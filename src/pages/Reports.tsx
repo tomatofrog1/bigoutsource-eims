@@ -657,16 +657,16 @@ export default function Reports() {
       <AnimatePresence mode="wait" initial={false}>
         {isLoading ? (
           <motion.div key="skeleton-reports" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 relative">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-white border border-[#E5E7EB] rounded-2xl p-8 shadow-sm animate-pulse">
+            {[...Array(REPORTS.length)].map((_, i) => (
+              <div key={i} className="bg-white border border-[#E5E7EB] rounded-2xl p-8 shadow-sm animate-pulse flex flex-col h-full min-h-[290px]">
                 <div className="flex items-start justify-between mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-gray-200"></div>
-                  <div className="w-12 h-6 rounded-lg bg-gray-200"></div>
+                  <div className="w-16 h-6 rounded-lg bg-gray-200"></div>
                 </div>
-                <div className="w-2/3 h-6 rounded bg-gray-200 mb-3"></div>
+                <div className="w-3/4 h-6 rounded bg-gray-200 mb-3"></div>
                 <div className="w-full h-4 rounded bg-gray-200 mb-2"></div>
-                <div className="w-3/4 h-4 rounded bg-gray-200 mb-8"></div>
-                <div className="w-full h-12 rounded-xl bg-gray-200"></div>
+                <div className="w-2/3 h-4 rounded bg-gray-200 mb-8"></div>
+                <div className="w-full h-11 rounded-xl bg-gray-200 mt-auto"></div>
               </div>
             ))}
             <SkeletonLoadingMessage message="Preparing report templates..." />
@@ -964,7 +964,8 @@ export default function Reports() {
                   </button>
                   <button
                     onClick={confirmDownload}
-                    className="px-4 py-2 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all flex items-center gap-2"
+                    disabled={!previewData?.sheets.some(s => s.rows.length > 0)}
+                    className="px-4 py-2 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Download className="w-4 h-4" />
                     Confirm & Download

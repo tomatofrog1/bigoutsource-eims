@@ -68,6 +68,7 @@ export function Sidebar() {
   return (
     <>
       <aside className={cn(
+        "h-full border-r border-[#E5E7EB] bg-white flex flex-col shrink-0 transition-all duration-300 relative z-50",
         "h-full border-r flex flex-col shrink-0 transition-all duration-300 relative",
         isRetracted ? "w-20" : "w-64"
       )} style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
@@ -129,7 +130,7 @@ export function Sidebar() {
                     <item.icon className="w-5 h-5 shrink-0" />
                     
                     {isRetracted && (
-                      <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
+                      <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
                         <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
                         <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
                           {item.label}
@@ -169,7 +170,7 @@ export function Sidebar() {
                 {user.email.substring(0, 2).toUpperCase()}
 
                 {isRetracted && (
-                  <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
+                  <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
                     <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
                     <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl flex flex-col items-start">
                       <span className="truncate">{user.email}</span>
@@ -203,7 +204,7 @@ export function Sidebar() {
             <LogOut className="w-5 h-5 shrink-0" />
 
             {isRetracted && (
-              <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
+              <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
                 <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#EF4444] mr-[-1px]"></div>
                 <div className="bg-[#EF4444] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
                   Log out

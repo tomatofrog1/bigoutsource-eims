@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { AlertCircle, Building2, Check, CheckCircle2, ChevronRight, Circle, Clock, Eye, EyeOff, Lock, Mail, MapPin, ShieldCheck, ShieldX, User, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { AlertCircle, Building2, Check, CheckCircle2, ChevronRight, Circle, Eye, EyeOff, Lock, Mail, MapPin, ShieldCheck, User, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import logoUrl from '../public/logo-only-bigoutsource.svg';
 
 type AuthMode = 'login' | 'register';
 type RegistrationStep = 0 | 1 | 2;
@@ -108,6 +110,7 @@ export default function Login() {
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(0);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState<RegistrationStep>(0);
   const [isExiting, setIsExiting] = useState(false);
+  const [authStatusError, setAuthStatusError] = useState<{ type: 'pending' | 'disabled', message: string } | null>(null);
 
   const isRegistering = mode === 'register';
   useEffect(() => {
@@ -203,6 +206,13 @@ export default function Login() {
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 500);
+    } catch (error: any) {
+      const msg = error.message || '';
+      if (msg.toLowerCase().includes('pending')) {
+        setAuthStatusError({ type: 'pending', message: msg });
+      } else if (msg.toLowerCase().includes('disabled')) {
+        setAuthStatusError({ type: 'disabled', message: msg });
+      }
     } finally {
       // Only set loading to false if we are not navigating away to avoid state update warning
       setTimeout(() => {
@@ -232,25 +242,30 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Natural ambient background lighting */}
+      <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full bg-blue-400/10 blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full bg-blue-300/10 blur-[140px] pointer-events-none" />
+      
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.97 }}
         animate={isExiting ? { opacity: 0, y: -50, scale: 0.95 } : { opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-md"
+        className="w-full max-w-[440px] relative z-10"
       >
         <motion.div
           layout
           transition={{
             layout: { type: 'spring', stiffness: 350, damping: 35 }
           }}
-          className="bg-white rounded-3xl border border-[#E5E7EB] shadow-2xl p-8 md:p-10 overflow-hidden"
+          className="bg-white/90 backdrop-blur-xl rounded-[32px] border border-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] p-8 md:p-10 overflow-hidden relative"
         >
-          <motion.div layout className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-[#111827] rounded-2xl flex items-center justify-center mb-4">
-              <ShieldCheck className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-[#111827] tracking-tight text-center w-full min-h-[32px] flex items-center justify-center">
+          {/* Subtle top accent inside card */}
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-gray-50 to-transparent pointer-events-none" />
+
+          <motion.div layout className="flex flex-col items-center mb-8 relative z-10">
+            <img src={logoUrl} alt="Big Outsource" className="w-20 h-auto mb-6 relative z-10 object-contain" />
+            <h1 className="text-[32px] font-black text-[#111827] tracking-tight text-center w-full min-h-[36px] flex items-center justify-center">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.span
                   key={mode}
@@ -264,7 +279,7 @@ export default function Login() {
                 </motion.span>
               </AnimatePresence>
             </h1>
-            <p className="text-[#6B7280] text-sm mt-2 text-center text-balance w-full min-h-[40px] flex items-center justify-center">
+            <p className="text-[#6B7280] text-[15px] mt-3 text-center text-balance w-full min-h-[44px] flex items-center justify-center leading-relaxed">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.span
                   key={mode}
@@ -478,7 +493,7 @@ export default function Login() {
                         type="button"
                         onClick={handleNextStep}
                         disabled={currentStepHasErrors || isLoading}
-                        className="rounded-xl bg-[#111827] py-3 text-sm font-bold text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] active:scale-[0.98] disabled:opacity-50"
+                        className="rounded-2xl bg-[#111827] py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50"
                       >
                         Next
                       </button>
@@ -486,7 +501,7 @@ export default function Login() {
                       <button
                         type="submit"
                         disabled={isLoading || !canSubmit}
-                        className="rounded-xl bg-[#111827] py-3 text-sm font-bold text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="rounded-2xl bg-[#111827] py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {isLoading ? (
                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -525,7 +540,7 @@ export default function Login() {
                   <button
                     type="submit"
                     disabled={isLoading || !canSubmit}
-                    className="w-full bg-[#111827] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#374151] shadow-lg shadow-[#11182720] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full bg-[#111827] text-white py-3.5 rounded-2xl font-bold text-[15px] shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -549,6 +564,61 @@ export default function Login() {
         </motion.div>
       </motion.div>
       <AnimatePresence>
+        {authStatusError && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/60 px-4 py-6 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="w-full max-w-md rounded-[28px] bg-white overflow-hidden shadow-2xl relative"
+            >
+              {/* Subtle top accent gradient */}
+              <div className={`h-40 w-full absolute top-0 left-0 ${authStatusError.type === 'pending' ? 'bg-gradient-to-b from-amber-500/10 to-transparent' : 'bg-gradient-to-b from-red-500/10 to-transparent'}`} />
+
+              <div className="px-8 pt-12 pb-10 relative z-10 flex flex-col items-center text-center">
+                <div className={`flex h-24 w-24 items-center justify-center rounded-full mb-6 shadow-xl ${
+                  authStatusError.type === 'pending' 
+                    ? 'bg-gradient-to-tr from-amber-400 to-amber-200 shadow-amber-500/20' 
+                    : 'bg-gradient-to-tr from-red-500 to-red-300 shadow-red-500/20'
+                }`}>
+                  {authStatusError.type === 'pending' ? (
+                    <Clock className="h-10 w-10 text-amber-900" />
+                  ) : (
+                    <ShieldX className="h-10 w-10 text-white" />
+                  )}
+                </div>
+                
+                <h2 className="text-[28px] font-black text-[#111827] mb-4 tracking-tight">
+                  {authStatusError.type === 'pending' ? 'Pending Approval' : 'Access Revoked'}
+                </h2>
+                
+                <p className="text-[15px] text-[#4B5563] leading-relaxed mb-10 max-w-[340px]">
+                  {authStatusError.type === 'pending' 
+                    ? 'Your account has been created successfully, but requires administrator approval before you can log in.'
+                    : 'Your account access has been revoked. If you believe this is a mistake, please contact your IT administrator.'}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setAuthStatusError(null)}
+                  className={`w-full rounded-2xl py-4 text-[15px] font-bold text-white transition-all shadow-lg active:scale-[0.98] ${
+                    authStatusError.type === 'pending'
+                      ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/25'
+                      : 'bg-[#DC2626] hover:bg-[#B91C1C] shadow-red-600/25'
+                  }`}
+                >
+                  Return to Login
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
         {modalError && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -620,14 +690,14 @@ function AuthInput({
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-bold text-[#374151] uppercase tracking-wider">{label}</label>
       <div className="relative">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] peer-focus:text-[#111827] transition-colors pointer-events-none" />
         <input
           type={type}
           required={required}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-3 bg-[#F3F4F6] border-none rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
+          className="peer w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-[15px] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 transition-all outline-none placeholder:text-gray-400 shadow-sm shadow-gray-900/5"
         />
       </div>
       <AnimatePresence initial={false}>
@@ -677,16 +747,16 @@ function SelectInput({
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-bold text-[#374151] uppercase tracking-wider">{label}</label>
-      <div className="relative">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] z-10 pointer-events-none" />
+      <div className="relative group">
+        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] group-focus-within:text-[#111827] transition-colors z-10 pointer-events-none" />
         <button
           type="button"
           disabled={disabled}
           onClick={() => setIsOpen((current) => !current)}
-          className={`flex w-full items-center justify-between gap-3 rounded-xl border-none bg-[#F3F4F6] py-3 pl-10 pr-4 text-left text-sm outline-none transition-all focus:ring-2 focus:ring-[#111827] disabled:cursor-not-allowed disabled:opacity-60 ${error ? 'ring-2 ring-[#DC2626]' : ''
+          className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-gray-50 py-3.5 pl-11 pr-4 text-left text-[15px] outline-none transition-all shadow-sm shadow-gray-900/5 focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 disabled:cursor-not-allowed disabled:opacity-60 ${error ? 'border-[#DC2626] ring-4 ring-red-500/10 bg-red-50' : 'border-gray-200'
             }`}
         >
-          <span className={`truncate ${!value ? 'text-[#9CA3AF]' : 'text-[#111827]'}`}>
+          <span className={`truncate ${!value ? 'text-gray-400' : 'text-[#111827]'}`}>
             {value || placeholder}
           </span>
           <ChevronRight
@@ -775,7 +845,7 @@ function PasswordInput({
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-bold text-[#374151] uppercase tracking-wider">{label}</label>
       <div className="relative">
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] peer-focus:text-[#111827] transition-colors pointer-events-none" />
         <input
           type={showPassword ? 'text' : 'password'}
           required
@@ -783,7 +853,7 @@ function PasswordInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-12 py-3 bg-[#F3F4F6] border-none rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
+          className="peer w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-[15px] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 transition-all outline-none placeholder:text-gray-400 shadow-sm shadow-gray-900/5"
         />
         <button
           type="button"
