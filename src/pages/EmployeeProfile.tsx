@@ -280,6 +280,7 @@ export default function EmployeeProfile() {
   const { user } = useAuth();
   const [employee, setEmployee] = useState<EmployeeForm>(emptyEmployee);
   const [form, setForm] = useState<EmployeeForm>(emptyEmployee);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof EmployeeForm, string>>>({});
   const [sites, setSites] = useState<SiteOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -391,6 +392,11 @@ export default function EmployeeProfile() {
 
   const updateForm = (field: keyof EmployeeForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+    setFormErrors((current) => {
+      if (!current[field]) return current;
+      const { [field]: _removed, ...nextErrors } = current;
+      return nextErrors;
+    });
   };
 
   const handleReveal = () => {
@@ -410,6 +416,7 @@ export default function EmployeeProfile() {
   const cancelEditing = () => {
     setForm(employee);
     setIsEditing(false);
+    setFormErrors({});
   };
 
   const saveProfile = async (event: FormEvent) => {
@@ -423,6 +430,12 @@ export default function EmployeeProfile() {
 
     if (!form.employeeNumber.trim() || !form.firstName.trim() || !form.lastName.trim() || !form.accountAssignment.trim() || !form.siteId) {
       toast.error('ID, first name, last name, account, and site are required');
+      return;
+    }
+
+    if (form.phone && !/^\d+$/.test(form.phone)) {
+      setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' }));
+      toast.error('Please resolve the highlighted fields before saving');
       return;
     }
 
@@ -1020,8 +1033,22 @@ export default function EmployeeProfile() {
 
             <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
               <div className="space-y-6">
-                <ProfileField label="Phone Number" editing={isEditing}>
-                  {isEditing ? <Input value={form.phone} onChange={(value) => updateForm('phone', value)} placeholder="e.g. 09123456789" /> : employee.phone || 'Not Assigned'}
+                <ProfileField label="Phone Number" editing={isEditing} error={formErrors.phone}>
+                  {isEditing ? (
+                    <Input 
+                      value={form.phone} 
+                      onChange={(value) => {
+                        if (!/^\d*$/.test(value)) {
+                          setFormErrors((current) => ({ ...current, phone: 'Please enter numbers only.' }));
+                          setForm((current) => ({ ...current, phone: value.replace(/\D/g, '') }));
+                        } else {
+                          updateForm('phone', value);
+                        }
+                      }} 
+                      placeholder="e.g. 09123456789" 
+                      error={Boolean(formErrors.phone)}
+                    />
+                  ) : employee.phone || 'Not Assigned'}
                 </ProfileField>
                 <ProfileField label="Address" editing={isEditing}>
                   {isEditing ? <Input value={form.address} onChange={(value) => updateForm('address', value)} placeholder="e.g. 123 Main St, City" /> : employee.address || 'Not Assigned'}
@@ -1347,11 +1374,13 @@ function ProfileField({
   icon: Icon,
   editing,
   children,
+  error,
 }: {
   label: string;
   icon?: ElementType;
   editing?: boolean;
   children: ReactNode;
+  error?: string;
 }) {
   const isMissing = !editing && (
     children === 'Not Assigned' || 
@@ -1375,6 +1404,7 @@ function ProfileField({
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           >
             {children}
+            {error && <span className="text-xs font-bold text-red-600 mt-1.5 block">{error}</span>}
           </motion.div>
         ) : (
           <motion.div
@@ -1458,11 +1488,13 @@ function Input({
   onChange,
   placeholder,
   type = 'text',
+  error = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  error?: boolean;
 }) {
   return (
     <input
@@ -1470,7 +1502,10 @@ function Input({
       value={value}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none focus:ring-2 focus:ring-[#111827] transition-all"
+      className={cn(
+        'w-full px-3 py-2.5 bg-white border rounded-xl text-sm text-[#111827] outline-none transition-all',
+        error ? 'border-red-300 bg-red-50 focus:ring-2 focus:ring-red-500' : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]'
+      )}
     />
   );
 }
