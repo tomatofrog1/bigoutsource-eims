@@ -922,8 +922,8 @@ export default function Directory() {
         </aside>
 
         <div className="flex min-w-0 flex-col gap-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1 min-w-[300px]">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-[300px]">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -934,7 +934,7 @@ export default function Directory() {
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <FilterDropdown
                   value={siteFilter}
                   onChange={setSiteFilter}
@@ -959,7 +959,7 @@ export default function Directory() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               {canManageRecords && (
                 <>
                   <input
@@ -972,21 +972,21 @@ export default function Directory() {
                   <button
                     onClick={handleImport}
                     disabled={isStagingImport}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                    className="flex items-center gap-1.5 whitespace-nowrap px-3 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
                   >
                     {isStagingImport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                     {isStagingImport ? 'Staging' : 'Import'}
                   </button>
                   <button
                     onClick={exportToExcel}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
+                    className="flex items-center gap-1.5 whitespace-nowrap px-3 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:text-[#111827] transition-all"
                   >
                     <Upload className="w-4 h-4" />
                     Export
                   </button>
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-black hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
+                    className="flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-black hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
                   >
                     <UserPlus className="w-4 h-4" />
                     Add Record
@@ -1721,7 +1721,7 @@ function FilterDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="flex min-w-[150px] items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
+        className="flex min-w-[132px] items-center justify-between gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
       >
         <span className="truncate">{options.find((o) => o.value === value)?.label || placeholder || value}</span>
         <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-90')} />
@@ -1812,7 +1812,7 @@ function AccountFilterDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="flex min-w-[200px] items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
+        className="flex min-w-[168px] items-center justify-between gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] focus:ring-2 focus:ring-[#111827]"
       >
         <span className="truncate">{selectedLabel}</span>
         <ChevronRight className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-90')} />
