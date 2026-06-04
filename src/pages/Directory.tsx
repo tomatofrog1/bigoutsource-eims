@@ -422,6 +422,7 @@ export default function Directory() {
   const [siteFilter, setSiteFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [accountFilter, setAccountFilter] = useState(() => searchParams.get('account') || 'All Account');
+  const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFields, setSelectedFields] = useState<DirectoryFieldKey[] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -497,7 +498,7 @@ export default function Directory() {
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const hasSearchTerm = normalizedSearchTerm.length > 0;
 
-  const filteredEmployees = employees
+  const baseFilteredEmployees = employees
     .filter((emp) => {
       if (hasSearchTerm) {
         return statusFilter === 'Archived' ? emp.isArchived : true;
@@ -524,6 +525,16 @@ export default function Directory() {
       return matchesSearch && matchesSite && matchesStatus && matchesAccount;
     });
 
+  const incompleteCount = useMemo(() => {
+    return baseFilteredEmployees.filter(emp => calculateIncompleteData(emp) !== null).length;
+  }, [baseFilteredEmployees]);
+
+  const filteredEmployees = useMemo(() => {
+    return showIncompleteOnly
+      ? baseFilteredEmployees.filter(emp => calculateIncompleteData(emp) !== null)
+      : baseFilteredEmployees;
+  }, [baseFilteredEmployees, showIncompleteOnly]);
+
   const sortedEmployees = useMemo(() => {
     const targetSort: SortConfig = sortConfig || { key: 'updatedAt', direction: 'desc' };
     return [...filteredEmployees].sort((a, b) => compareEmployees(a, b, targetSort));
@@ -535,7 +546,7 @@ export default function Directory() {
   const placeholderRowCount = showTableEmptyState ? 0 : Math.max(0, recordsPerPage - paginatedEmployees.length);
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, siteFilter, statusFilter, accountFilter, sortConfig]);
+  }, [searchTerm, siteFilter, statusFilter, accountFilter, sortConfig, showIncompleteOnly]);
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -816,6 +827,24 @@ export default function Directory() {
     toast.success('Draft cleared');
   };
 
+  const generateTempEmployeeId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let newId = '';
+    let isDuplicate = true;
+
+    while (isDuplicate) {
+      let randomPart = '';
+      for (let i = 0; i < 5; i++) {
+        randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      newId = `BOSS${randomPart}`;
+
+      isDuplicate = employees.some(emp => emp.employeeId === newId || emp.employeeNumber === newId);
+    }
+
+    updateForm('employeeNumber', newId);
+  };
+
   const handleAddEmployee = async (event: FormEvent) => {
     event.preventDefault();
 
@@ -1010,6 +1039,24 @@ export default function Directory() {
               )}
             </div>
           </div>
+
+          {incompleteCount > 0 && (
+            <div className="flex">
+              <button
+                type="button"
+                onClick={() => setShowIncompleteOnly(!showIncompleteOnly)}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black transition-all ring-1',
+                  showIncompleteOnly
+                    ? 'bg-amber-100 text-amber-900 ring-amber-300 shadow-sm'
+                    : 'bg-amber-50/50 text-amber-700 ring-amber-200/60 hover:bg-amber-50 hover:ring-amber-300'
+                )}
+              >
+                <ShieldAlert className="w-4 h-4" />
+                Incomplete Data ({incompleteCount})
+              </button>
+            </div>
+          )}
 
           <AnimatePresence mode="wait" initial={false}>
             {isLoading ? (
@@ -1250,7 +1297,19 @@ export default function Directory() {
                             <div className="flex flex-col md:flex-row md:justify-between gap-4 md:gap-0">
                               <div className="md:w-[48%]">
                                 <Field label="Employee ID" required error={formErrors.employeeNumber}>
-                                  <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                      <Input value={form.employeeNumber} onChange={(value) => updateForm('employeeNumber', value)} placeholder="e.g. BOSS00045" error={Boolean(formErrors.employeeNumber)} />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={generateTempEmployeeId}
+                                      className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                      title="Generate Temporary ID"
+                                    >
+                                      <Sparkles className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                 </Field>
                               </div>
                               <div className="md:w-[48%]">
