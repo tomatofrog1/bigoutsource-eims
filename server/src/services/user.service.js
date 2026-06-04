@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '../config/supabase.js';
 import { UserProfileModel } from '../models/userProfile.model.js';
+import { RoleModel } from '../models/role.model.js';
+import { sanitizeCapabilities } from './role.service.js';
 import { AppError } from '../utils/apiResponse.js';
 
 export const UserService = {
@@ -37,7 +39,6 @@ export const UserService = {
     if (user.role === 'super_admin') throw new AppError('Super Admin accounts cannot be edited here', 400);
 
     const updates = {};
-    const allowedRoles = ['viewer', 'admin'];
     const allowedStatuses = ['active', 'disabled'];
 
     if (data.department !== undefined) {
@@ -53,8 +54,12 @@ export const UserService = {
     }
 
     if (data.role !== undefined) {
-      if (!allowedRoles.includes(data.role)) {
-        throw new AppError('Role must be viewer or admin', 400);
+      if (data.role === 'super_admin') {
+        throw new AppError('Super Admin cannot be assigned here', 400);
+      }
+      const role = await RoleModel.findBySlug(data.role);
+      if (!role) {
+        throw new AppError('Unknown role', 400);
       }
       updates.role = data.role;
     }
@@ -73,6 +78,20 @@ export const UserService = {
     if (!Object.keys(updates).length) throw new AppError('No valid fields to update', 400);
 
     return UserProfileModel.update(id, updates);
+  },
+
+  /**
+   * Sets per-account capability overrides. Pass `null` to clear the override and
+   * revert the account to its role's default capabilities. Meta-capabilities are
+   * never grantable (same guardrail as the role editor).
+   */
+  async setCapabilities(id, capabilities) {
+    const user = await UserProfileModel.findById(id);
+    if (!user) throw new AppError('User not found', 404);
+    if (user.role === 'super_admin') throw new AppError('Super Admin permissions cannot be overridden', 400);
+
+    const overrides = capabilities === null ? null : sanitizeCapabilities(capabilities);
+    return UserProfileModel.update(id, { capabilityOverrides: overrides });
   },
 
   async remove(id) {

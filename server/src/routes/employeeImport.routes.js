@@ -1,18 +1,17 @@
 import { Router } from 'express';
 import { EmployeeImportController } from '../controllers/employeeImport.controller.js';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requirePermission } from '../middleware/auth.middleware.js';
 
 const router = Router();
-const importManagers = ['super_admin', 'admin', 'hr_admin'];
 
 router.get('/summary', EmployeeImportController.summary);
-router.get('/', requireRole(importManagers), EmployeeImportController.list);
-router.post('/stage', requireRole(importManagers), EmployeeImportController.stage);
-router.post('/duplicates/resolve', requireRole(importManagers), EmployeeImportController.resolveDuplicate);
-router.delete('/rows', requireRole(importManagers), EmployeeImportController.deleteRows);
-router.put('/rows/:id', requireRole(importManagers), EmployeeImportController.updateRow);
-router.delete('/rows/:id', requireRole(importManagers), EmployeeImportController.deleteRow);
-router.post('/delete-many', requireRole(importManagers), EmployeeImportController.deleteMany);
-router.post('/:importBatchId/import-ready', requireRole(importManagers), EmployeeImportController.importReady);
+router.get('/', requirePermission('imports.manage'), EmployeeImportController.list);
+router.post('/stage', requirePermission('imports.manage'), EmployeeImportController.stage);
+router.post('/duplicates/resolve', requirePermission('imports.manage'), EmployeeImportController.resolveDuplicate);
+router.delete('/rows', requirePermission('imports.manage'), EmployeeImportController.deleteRows);
+router.put('/rows/:id', requirePermission('imports.manage'), EmployeeImportController.updateRow);
+router.delete('/rows/:id', requirePermission('imports.manage'), EmployeeImportController.deleteRow);
+router.post('/delete-many', requirePermission('imports.manage'), EmployeeImportController.deleteMany);
+router.post('/:importBatchId/import-ready', requirePermission('imports.manage'), EmployeeImportController.importReady);
 
 export default router;

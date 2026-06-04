@@ -35,15 +35,21 @@ export default function App() {
             <Route path="/directory" element={<Directory />} />
             <Route path="/employee/:id" element={<EmployeeProfile />} />
             <Route path="/departments" element={<Departments />} />
-            <Route path="/assets" element={<Assets />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/logs" element={<AuditLogs />} />
             <Route path="/settings" element={<Settings />} />
-            <Route element={<ProtectedRoute roles={['super_admin', 'admin', 'hr_admin']} />}>
+            <Route element={<ProtectedRoute capability="assets.view" />}>
+              <Route path="/assets" element={<Assets />} />
+            </Route>
+            <Route element={<ProtectedRoute capability="reports.view" />}>
+              <Route path="/reports" element={<Reports />} />
+            </Route>
+            <Route element={<ProtectedRoute capability="auditlogs.view" />}>
+              <Route path="/logs" element={<AuditLogs />} />
+            </Route>
+            <Route element={<ProtectedRoute capability="imports.manage" />}>
               <Route path="/employee-imports/issues" element={<EmployeeImportReview />} />
               <Route path="/employee-imports/:batchId" element={<EmployeeImportReview />} />
             </Route>
-            <Route element={<ProtectedRoute roles={['super_admin']} />}>
+            <Route element={<ProtectedRoute capability="users.manage" />}>
               <Route path="/users" element={<UserManagement />} />
             </Route>
           </Route>

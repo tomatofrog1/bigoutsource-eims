@@ -7,12 +7,12 @@ import { employeeImportService } from '@/src/services/employeeImportService';
 let cachedImportIssueCount = 0;
 
 export function ImportIssuesButton() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [count, setCount] = useState(cachedImportIssueCount);
-  const role = user?.role;
+  const canManageImports = can('imports.manage');
 
   useEffect(() => {
-    if (!user || role === 'viewer' || role === 'it_admin') {
+    if (!canManageImports) {
       cachedImportIssueCount = 0;
       setCount(0);
       return;
@@ -38,7 +38,7 @@ export function ImportIssuesButton() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [role, user?.uid]);
+  }, [canManageImports, user?.uid]);
 
   if (count <= 0) return null;
 

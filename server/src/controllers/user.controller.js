@@ -34,6 +34,16 @@ export const UserController = {
     }
   },
 
+  async setCapabilities(req, res, next) {
+    try {
+      const value = req.body?.capabilities;
+      const capabilities = value === null ? null : value;
+      return success(res, await UserService.setCapabilities(req.params.id, capabilities), 'Permissions updated');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async remove(req, res, next) {
     try {
       return success(res, await UserService.remove(req.params.id), 'User deleted');

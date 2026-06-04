@@ -2,12 +2,17 @@ import { supabaseAdmin, supabaseAuth } from '../config/supabase.js';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/apiResponse.js';
 import { UserProfileModel } from '../models/userProfile.model.js';
+import { RoleService } from './role.service.js';
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
-export function publicUser(profile) {
+export async function publicUser(profile) {
+  const capabilities = Array.isArray(profile.capabilities)
+    ? profile.capabilities
+    : await RoleService.resolveUserCapabilities(profile);
+
   return {
     id: profile.id,
     uid: profile.id,
@@ -15,6 +20,7 @@ export function publicUser(profile) {
     fullName: profile.fullName,
     role: profile.role,
     roles: [profile.role],
+    capabilities,
     status: profile.status,
     department: profile.department,
     site: profile.site,
@@ -117,7 +123,7 @@ export const AuthService = {
       });
 
       return {
-        user: publicUser(profile),
+        user: await publicUser(profile),
         message: 'Account created and pending Super Admin approval.',
       };
     } catch (error) {
@@ -142,11 +148,11 @@ export const AuthService = {
       token: data.session.access_token,
       refreshToken: data.session.refresh_token,
       expiresAt: data.session.expires_at,
-      user: publicUser(profile),
+      user: await publicUser(profile),
     };
   },
 
-  me(user) {
+  async me(user) {
     return publicUser(user);
   },
 

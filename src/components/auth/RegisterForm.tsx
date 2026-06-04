@@ -3,6 +3,7 @@ import { Building2, Check, Mail, MapPin, ShieldCheck, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { authService } from '@/src/services/authService';
+import { roleService, type Role } from '@/src/services/roleService';
 import { AppUser, UserRole } from '@/src/types';
 import logoUrl from '@/src/public/logo-only-bigoutsource.svg';
 import { AuthInput, PasswordInput, SelectInput } from './authFields';
@@ -18,10 +19,7 @@ const REGISTRATION_STEPS = [
 
 const SITE_OPTIONS = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
 
-// Roles an admin can assign at creation time (mirrors the editable roles in
-// User Management). Super Admin is managed separately and intentionally omitted.
-const ROLE_OPTIONS = ['Viewer', 'Admin'] as const;
-type RoleChoice = (typeof ROLE_OPTIONS)[number];
+// Assignable roles are fetched live from the roles table (Super Admin is excluded).
 
 const PASSWORD_RULES = [
   { label: 'At least 8 characters', test: (value: string) => value.length >= 8 },
@@ -98,11 +96,25 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
   const [departmentOptionsError, setDepartmentOptionsError] = useState('');
   const [site, setSite] = useState('');
-  const [roleChoice, setRoleChoice] = useState<RoleChoice>('Viewer');
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [roleSlug, setRoleSlug] = useState('viewer');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(0);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState<RegistrationStep>(0);
+
+  useEffect(() => {
+    let active = true;
+    roleService
+      .list()
+      .then((list) => {
+        if (active) setRoles(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -183,7 +195,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
       const user = await register({ email, password, fullName, department, site });
       // The register endpoint always creates a pending viewer; the admin's chosen
       // role rides back on the user object for the caller to apply on activation.
-      onSuccess?.({ ...user, role: roleChoice.toLowerCase() as UserRole });
+      onSuccess?.({ ...user, role: roleSlug as UserRole });
     } catch {
       // AuthContext surfaces the error via toast; keep the form open for retry.
     } finally {
@@ -270,10 +282,13 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
               <SelectInput
                 icon={ShieldCheck}
                 label="Role"
-                value={roleChoice}
-                onChange={(value) => setRoleChoice(value as RoleChoice)}
+                value={roles.find((role) => role.slug === roleSlug)?.name || ''}
+                onChange={(value) => {
+                  const match = roles.find((role) => role.name === value && role.slug !== 'super_admin');
+                  if (match) setRoleSlug(match.slug);
+                }}
                 placeholder="Select role"
-                options={[...ROLE_OPTIONS]}
+                options={roles.filter((role) => role.slug !== 'super_admin').map((role) => role.name)}
               />
             </motion.div>
           )}

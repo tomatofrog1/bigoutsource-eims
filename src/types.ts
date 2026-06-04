@@ -32,6 +32,10 @@ export interface AppUser {
   fullName?: string;
   department?: string;
   site: string;
+  /** Effective capabilities resolved server-side from the user's role. */
+  capabilities?: string[];
+  /** Per-account capability override; null/undefined means "inherit from role". */
+  capabilityOverrides?: string[] | null;
 }
 
 export interface AuditLog {

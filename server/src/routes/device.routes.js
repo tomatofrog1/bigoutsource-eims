@@ -1,21 +1,22 @@
 import { Router } from 'express';
 import { DeviceController } from '../controllers/device.controller.js';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requirePermission } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { assignDeviceValidator, createDeviceValidator, updateDeviceValidator } from '../validators/device.validator.js';
 
 const router = Router();
 const assignmentRouter = Router();
-const deviceManagers = ['super_admin', 'admin', 'it_admin'];
 
+// Reads stay open to any authenticated user (the Dashboard shows asset counts to everyone);
+// the IT Assets management page is gated on the frontend. Writes require assets.edit.
 router.get('/', DeviceController.list);
 router.get('/:id', DeviceController.get);
-router.post('/', requireRole(deviceManagers), validate(createDeviceValidator), DeviceController.create);
-router.put('/:id', requireRole(deviceManagers), validate(updateDeviceValidator), DeviceController.update);
-router.delete('/:id', requireRole(deviceManagers), DeviceController.remove);
+router.post('/', requirePermission('assets.edit'), validate(createDeviceValidator), DeviceController.create);
+router.put('/:id', requirePermission('assets.edit'), validate(updateDeviceValidator), DeviceController.update);
+router.delete('/:id', requirePermission('assets.edit'), DeviceController.remove);
 
-assignmentRouter.post('/', requireRole(deviceManagers), validate(assignDeviceValidator), DeviceController.assign);
-assignmentRouter.put('/:id/return', requireRole(deviceManagers), DeviceController.returnAssignment);
+assignmentRouter.post('/', requirePermission('assets.edit'), validate(assignDeviceValidator), DeviceController.assign);
+assignmentRouter.put('/:id/return', requirePermission('assets.edit'), DeviceController.returnAssignment);
 
 export { assignmentRouter };
 export default router;

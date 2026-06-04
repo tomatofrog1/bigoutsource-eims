@@ -1,17 +1,16 @@
 import { Router } from 'express';
 import { AccountController } from '../controllers/account.controller.js';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requirePermission } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createAccountValidator, updateAccountValidator } from '../validators/account.validator.js';
 
 const router = Router();
-const accountManagers = ['super_admin', 'admin', 'hr_admin'];
 
 router.get('/', AccountController.list);
 router.get('/recent', AccountController.recent);
-router.post('/', requireRole(accountManagers), validate(createAccountValidator), AccountController.create);
-router.put('/:id', requireRole(accountManagers), validate(updateAccountValidator), AccountController.update);
-router.delete('/:id', requireRole(accountManagers), AccountController.remove);
-router.post('/:id/touch', requireRole(accountManagers), AccountController.touch);
+router.post('/', requirePermission('departments.edit'), validate(createAccountValidator), AccountController.create);
+router.put('/:id', requirePermission('departments.edit'), validate(updateAccountValidator), AccountController.update);
+router.delete('/:id', requirePermission('departments.edit'), AccountController.remove);
+router.post('/:id/touch', requirePermission('departments.edit'), AccountController.touch);
 
 export default router;

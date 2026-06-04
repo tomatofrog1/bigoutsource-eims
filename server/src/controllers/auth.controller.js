@@ -32,7 +32,7 @@ export const AuthController = {
 
   async me(req, res, next) {
     try {
-      return success(res, AuthService.me(req.user));
+      return success(res, await AuthService.me(req.user));
     } catch (error) {
       return next(error);
     }

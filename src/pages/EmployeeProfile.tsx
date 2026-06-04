@@ -334,7 +334,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
 
 export default function EmployeeProfile() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [employee, setEmployee] = useState<EmployeeForm>(emptyEmployee);
   const [form, setForm] = useState<EmployeeForm>(emptyEmployee);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof EmployeeForm, string>>>({});
@@ -358,7 +358,9 @@ export default function EmployeeProfile() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [undoTargetLog, setUndoTargetLog] = useState<any | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
-  const canManageEmployee = user?.role !== 'viewer';
+  const canViewIT = can('employees.it.view');
+  const canViewSecrets = can('employees.secrets.view');
+  const canManageEmployee = can('employees.edit') || can('employees.it.edit') || can('employees.secrets.edit');
 
   const missingDataStatus = useMemo(() => {
     let criticalCount = 0;
@@ -898,6 +900,7 @@ export default function EmployeeProfile() {
                     <ProfileField label="BigOutsource Email" icon={Mail} editing={isEditing}>
                       {isEditing ? <GeneratedValue value={preview.boEmail} placeholder={accountBasedPreviewPlaceholder} /> : employee.boEmail || 'Not Assigned'}
                     </ProfileField>
+                    {canViewSecrets && (
                     <ProfileField label="Email Password" icon={Key} editing={isEditing}>
                       {isEditing ? (
                         <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. !k8#Rz$9&Yc@2T%" />
@@ -930,6 +933,7 @@ export default function EmployeeProfile() {
                         </div>
                       )}
                     </ProfileField>
+                    )}
                     <ProfileField label="LMS Account" icon={User} editing={isEditing}>
                       {isEditing ? (
                         <div className="px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563]">
@@ -1056,6 +1060,7 @@ export default function EmployeeProfile() {
                   </div>
                 </ProfileSection>
 
+                {canViewIT && (
                 <ProfileSection icon={Laptop} title="Device Assets" iconColorClass="text-purple-600 bg-purple-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                     <ProfileField label="PC Name" icon={Laptop} editing={isEditing}>
@@ -1131,9 +1136,11 @@ export default function EmployeeProfile() {
                     </AnimatePresence>
                   </div>
                 </ProfileSection>
+                )}
               </motion.div>
 
               <motion.div variants={itemVariants} className="lg:col-span-4 space-y-8 relative z-50">
+                {canViewIT && (
                 <ProfileSection icon={ShieldAlert} title="Security Compliance" compact iconColorClass="text-amber-600 bg-amber-50" className="relative z-50">
                   <div className="space-y-4">
                     <ComplianceField
@@ -1252,6 +1259,7 @@ export default function EmployeeProfile() {
                     </ComplianceField>
                   </div>
                 </ProfileSection>
+                )}
 
                 <ProfileSection icon={Phone} title="Contact & Location" compact iconColorClass="text-teal-600 bg-teal-50">
                   <div className="space-y-6">

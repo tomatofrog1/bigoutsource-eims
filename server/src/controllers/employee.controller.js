@@ -1,10 +1,12 @@
 import { EmployeeService } from '../services/employee.service.js';
 import { success } from '../utils/apiResponse.js';
+import { redactEmployeeForUser } from '../utils/employeeSecurity.js';
 
 export const EmployeeController = {
   async list(req, res, next) {
     try {
-      return success(res, await EmployeeService.list());
+      const employees = await EmployeeService.list();
+      return success(res, employees.map((employee) => redactEmployeeForUser(employee, req.user)));
     } catch (error) {
       return next(error);
     }
@@ -12,7 +14,8 @@ export const EmployeeController = {
 
   async get(req, res, next) {
     try {
-      return success(res, await EmployeeService.get(req.params.id));
+      const employee = await EmployeeService.get(req.params.id);
+      return success(res, redactEmployeeForUser(employee, req.user));
     } catch (error) {
       return next(error);
     }

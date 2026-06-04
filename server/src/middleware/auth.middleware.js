@@ -1,6 +1,8 @@
 import { supabaseAuth } from '../config/supabase.js';
 import { UserProfileModel } from '../models/userProfile.model.js';
 import { AppError } from '../utils/apiResponse.js';
+import { userHasCapability, userHasAnyCapability } from '../config/capabilities.js';
+import { RoleService } from '../services/role.service.js';
 
 export async function authenticate(req, res, next) {
   try {
@@ -34,6 +36,7 @@ export async function authenticate(req, res, next) {
       email: profile.email,
       fullName: profile.fullName || metaName,
       roles: [profile.role],
+      capabilities: await RoleService.resolveUserCapabilities(profile),
     };
 
     return next();
@@ -48,6 +51,29 @@ export function requireRole(roles) {
   return (req, res, next) => {
     if (!req.user) return next(new AppError('Authentication required', 401));
     if (!allowedRoles.includes(req.user.role)) return next(new AppError('You do not have permission to perform this action', 403));
+    return next();
+  };
+}
+
+/** Require a single capability. */
+export function requirePermission(capability) {
+  return (req, res, next) => {
+    if (!req.user) return next(new AppError('Authentication required', 401));
+    if (!userHasCapability(req.user, capability)) {
+      return next(new AppError('You do not have permission to perform this action', 403));
+    }
+    return next();
+  };
+}
+
+/** Require at least one of the given capabilities (e.g. any tier of employee editing). */
+export function requireAnyPermission(capabilities) {
+  const needed = Array.isArray(capabilities) ? capabilities : [capabilities];
+  return (req, res, next) => {
+    if (!req.user) return next(new AppError('Authentication required', 401));
+    if (!userHasAnyCapability(req.user, needed)) {
+      return next(new AppError('You do not have permission to perform this action', 403));
+    }
     return next();
   };
 }

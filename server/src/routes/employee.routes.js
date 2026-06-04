@@ -1,16 +1,21 @@
 import { Router } from 'express';
 import { EmployeeController } from '../controllers/employee.controller.js';
-import { requireRole } from '../middleware/auth.middleware.js';
+import { requirePermission, requireAnyPermission } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createEmployeeValidator, updateEmployeeValidator } from '../validators/employee.validator.js';
 
 const router = Router();
-const employeeManagers = ['super_admin', 'admin', 'hr_admin', 'it_admin'];
 
-router.get('/', EmployeeController.list);
-router.get('/:id', EmployeeController.get);
-router.post('/', requireRole(employeeManagers), validate(createEmployeeValidator), EmployeeController.create);
-router.put('/:id', requireRole(employeeManagers), validate(updateEmployeeValidator), EmployeeController.update);
-router.delete('/:id', requireRole(employeeManagers), EmployeeController.remove);
+router.get('/', requirePermission('employees.view'), EmployeeController.list);
+router.get('/:id', requirePermission('employees.view'), EmployeeController.get);
+router.post('/', requirePermission('employees.create'), validate(createEmployeeValidator), EmployeeController.create);
+// Any tier of edit may PATCH; the service filters the payload to the fields the user owns.
+router.put(
+  '/:id',
+  requireAnyPermission(['employees.edit', 'employees.it.edit', 'employees.secrets.edit']),
+  validate(updateEmployeeValidator),
+  EmployeeController.update
+);
+router.delete('/:id', requirePermission('employees.delete'), EmployeeController.remove);
 
 export default router;

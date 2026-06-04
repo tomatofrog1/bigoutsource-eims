@@ -3,6 +3,7 @@ import { AccountModel } from '../models/account.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { auditActor } from '../utils/auditActor.js';
+import { filterEmployeeWritePayload } from '../utils/employeeSecurity.js';
 import {
   buildCompanyEmail,
   buildEmployeeIdentifierBase,
@@ -151,6 +152,7 @@ export const EmployeeService = {
 
   async create(data, user, meta = {}) {
     const actor = auditActor(user);
+    data = filterEmployeeWritePayload(data, user);
 
     if (!data.employeeNumber && !data.employeeId && !data.id) {
       throw new AppError('id is required', 400);
@@ -181,6 +183,7 @@ export const EmployeeService = {
 
   async update(id, data, user, meta = {}) {
     const actor = auditActor(user);
+    data = filterEmployeeWritePayload(data, user);
     const before = await EmployeeModel.findById(id);
     if (!before) throw new AppError('Employee not found', 404);
 

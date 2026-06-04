@@ -1,13 +1,15 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { UserRole } from '@/src/types';
+import type { Capability } from '@/src/lib/permissions';
 
 interface ProtectedRouteProps {
   roles?: UserRole[];
+  capability?: Capability;
 }
 
-export default function ProtectedRoute({ roles }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+export default function ProtectedRoute({ roles, capability }: ProtectedRouteProps) {
+  const { user, loading, can } = useAuth();
 
   if (loading) {
     return (
@@ -23,6 +25,10 @@ export default function ProtectedRoute({ roles }: ProtectedRouteProps) {
   }
 
   if (roles && !roles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (capability && !can(capability)) {
     return <Navigate to="/" replace />;
   }
 

@@ -16,6 +16,7 @@ function normalize(row) {
     status: row.status || 'pending',
     department: row.department || 'Unassigned',
     site: row.site || 'HQ',
+    capabilityOverrides: Array.isArray(row.capability_overrides) ? row.capability_overrides : null,
     approvedBy: row.approved_by || null,
     approvedAt: row.approved_at || null,
     createdAt: row.created_at || '',
@@ -35,6 +36,8 @@ function toDatabasePayload(data) {
   if (data.site !== undefined) payload.site = String(data.site || 'HQ').trim() || 'HQ';
   if (data.approvedBy !== undefined) payload.approved_by = data.approvedBy;
   if (data.approvedAt !== undefined) payload.approved_at = data.approvedAt;
+  // `null` clears the override (account reverts to its role's capabilities).
+  if (data.capabilityOverrides !== undefined) payload.capability_overrides = data.capabilityOverrides;
 
   return payload;
 }

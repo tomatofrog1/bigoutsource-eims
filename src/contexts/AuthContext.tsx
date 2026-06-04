@@ -3,6 +3,7 @@ import { AppUser } from '../types';
 import toast from 'react-hot-toast';
 import { authService } from '../services/authService';
 import { clearAuthToken, getAuthToken } from '../services/api';
+import { userCan, type Capability } from '../lib/permissions';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -13,6 +14,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isIT: boolean;
   isHR: boolean;
+  can: (capability: Capability) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +36,7 @@ function toAppUser(apiUser: any): AppUser {
     status: apiUser.status,
     department: apiUser.department || 'Unassigned',
     site: apiUser.site || 'Unassigned',
+    capabilities: Array.isArray(apiUser.capabilities) ? apiUser.capabilities : [],
   };
 }
 
@@ -105,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAdmin: user?.role === 'super_admin' || user?.role === 'admin',
     isIT: user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'it_admin',
     isHR: user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'hr_admin',
+    can: (capability: Capability) => userCan(user, capability),
   };
 
   return (

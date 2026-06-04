@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldAlert, ShieldCheck, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldAlert, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -11,8 +11,10 @@ import { userService } from '@/src/services/userService';
 import { authService } from '@/src/services/authService';
 import { siteService } from '@/src/services/siteService';
 import RegisterForm from '@/src/components/auth/RegisterForm';
+import { roleService, type CapabilityItem, type Role } from '@/src/services/roleService';
+import { RolesPanel } from '@/src/components/roles/RolesPanel';
+import { CapabilityChecklist } from '@/src/components/roles/CapabilityChecklist';
 
-const EDITABLE_ROLES: UserRole[] = ['viewer', 'admin'];
 const EDITABLE_ACCOUNT_STATUSES = [
   { value: 'active' as const, label: 'Active' },
   { value: 'disabled' as const, label: 'Disabled' },
@@ -63,12 +65,7 @@ function normalizeSiteNames(value: any) {
 }
 
 function toEditDraft(user: AppUser): UserEditDraft {
-  let role: UserRole = 'viewer';
-  if (user.role === 'admin' || user.role === 'viewer') {
-    role = user.role;
-  } else if (user.role === 'hr_admin' || user.role === 'it_admin') {
-    role = 'admin';
-  }
+  const role: UserRole = user.role === 'super_admin' ? 'admin' : user.role;
   const status: EditableAccountStatus = user.status === 'active' ? 'active' : 'disabled';
 
   return {
@@ -106,6 +103,7 @@ export default function UserManagement() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<UserEditDraft | null>(null);
   const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [siteOptions, setSiteOptions] = useState<string[]>([]);
   const [disableUser, setDisableUser] = useState<AppUser | null>(null);
   const [enableUser, setEnableUser] = useState<AppUser | null>(null);
@@ -114,6 +112,11 @@ export default function UserManagement() {
   const [disapproveUserTarget, setDisapproveUserTarget] = useState<AppUser | null>(null);
   const [deleteInput, setDeleteInput] = useState('');
   const [showRegister, setShowRegister] = useState(false);
+  const [view, setView] = useState<'users' | 'roles'>('users');
+  const [capabilityCatalog, setCapabilityCatalog] = useState<CapabilityItem[]>([]);
+  const [permsTarget, setPermsTarget] = useState<AppUser | null>(null);
+  const [permsDraft, setPermsDraft] = useState<string[]>([]);
+  const [permsSaving, setPermsSaving] = useState(false);
 
   async function loadUsers() {
     setIsLoading(true);
@@ -148,13 +151,17 @@ export default function UserManagement() {
 
     async function loadOptions() {
       try {
-        const [departments, sites] = await Promise.all([
+        const [departments, sites, roleList, catalog] = await Promise.all([
           authService.internalDepartments(),
           siteService.list(),
+          roleService.list(),
+          roleService.capabilities(),
         ]);
 
         if (!isMounted) return;
 
+        setRoles(asArray(roleList));
+        setCapabilityCatalog(asArray(catalog));
         setDepartmentOptions(asArray(departments).map((name) => String(name).trim()).filter(Boolean));
         const names = normalizeSiteNames(sites);
         setSiteOptions(names.length ? names : ['HQ', 'Candelaria', 'WFH', 'Hybrid']);
@@ -365,9 +372,61 @@ export default function UserManagement() {
     return options;
   }, [siteOptions, editDraft?.site]);
 
+  const rolesBySlug = useMemo(() => {
+    const map = new Map<string, Role>();
+    roles.forEach((role) => map.set(role.slug, role));
+    return map;
+  }, [roles]);
+
+  const openPermissions = (account: AppUser) => {
+    const roleCaps = rolesBySlug.get(account.role)?.capabilities || [];
+    const effective = Array.isArray(account.capabilityOverrides) ? account.capabilityOverrides : roleCaps;
+    setPermsTarget(account);
+    setPermsDraft([...effective]);
+  };
+
+  const togglePerm = (key: string) => {
+    setPermsDraft((current) => (current.includes(key) ? current.filter((cap) => cap !== key) : [...current, key]));
+  };
+
+  const savePermissions = async (reset = false) => {
+    if (!permsTarget) return;
+    setPermsSaving(true);
+    try {
+      await userService.setCapabilities(permsTarget.uid, reset ? null : permsDraft);
+      toast.success(reset ? 'Reverted to role defaults' : 'Permissions updated');
+      setPermsTarget(null);
+      await loadUsers();
+    } catch (error: any) {
+      toast.error(error.message || 'Unable to update permissions');
+    } finally {
+      setPermsSaving(false);
+    }
+  };
+
   return (
     <PageLayout title="System Permissions & Users" contentClassName="w-full max-w-[1600px] mx-auto">
       <div className="flex flex-col gap-6">
+        <div className="inline-flex w-fit items-center gap-1 rounded-xl border p-1" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+          {(['users', 'roles'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setView(tab)}
+              className="rounded-lg px-4 py-2 text-sm font-bold transition-colors"
+              style={view === tab
+                ? { backgroundColor: 'var(--color-accent)', color: 'var(--color-surface)' }
+                : { color: 'var(--color-text-muted)' }}
+            >
+              {tab === 'users' ? 'Users' : 'Roles & Permissions'}
+            </button>
+          ))}
+        </div>
+
+        {view === 'roles' ? (
+          <RolesPanel />
+        ) : (
+        <>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-[300px]">
             <div className="relative flex-1">
@@ -538,7 +597,7 @@ export default function UserManagement() {
                                       current ? { ...current, role: val as UserRole } : current
                                     )
                                   }
-                                  options={EDITABLE_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))}
+                                  options={roles.filter((role) => role.slug !== 'super_admin').map((role) => ({ value: role.slug, label: role.name }))}
                                   disabled={busyId === user.uid}
                                   className="w-full"
                                 />
@@ -658,6 +717,17 @@ export default function UserManagement() {
                                   >
                                     <Pencil className="w-4 h-4" />
                                     <ActionTooltip label="Edit User" />
+                                  </button>
+                                )}
+                                {canEdit && user.status !== 'pending' && (
+                                  <button
+                                    onClick={() => openPermissions(user)}
+                                    disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null || approveUserTarget !== null || disapproveUserTarget !== null}
+                                    aria-label="Edit permissions"
+                                    className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#E5E7EB] text-[#4B5563] rounded-lg hover:bg-[#F9FAFB] disabled:opacity-50"
+                                  >
+                                    <SlidersHorizontal className="w-4 h-4" />
+                                    <ActionTooltip label="Permissions" />
                                   </button>
                                 )}
                                 {canEdit && user.status === 'pending' && (
@@ -787,8 +857,8 @@ export default function UserManagement() {
             </motion.div>
           )}
         </AnimatePresence>
-
-
+        </>
+        )}
       </div>
 
       <AnimatePresence>
@@ -1300,6 +1370,79 @@ export default function UserManagement() {
                   await loadUsers();
                 }}
               />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {permsTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
+            onClick={() => setPermsTarget(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4 border-b px-6 py-5" style={{ borderColor: 'var(--color-border)' }}>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-black" style={{ color: 'var(--color-text-primary)' }}>Account Permissions</h2>
+                  <p className="mt-1 truncate text-xs font-bold" style={{ color: 'var(--color-text-muted)' }}>
+                    {permsTarget.fullName || permsTarget.email} — {Array.isArray(permsTarget.capabilityOverrides) ? 'custom override' : `inheriting ${roleLabel(permsTarget.role)} defaults`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPermsTarget(null)}
+                  className="rounded-lg p-2 transition-colors hover:bg-[#F3F4F6]"
+                  style={{ color: 'var(--color-text-faint)' }}
+                  aria-label="Close permissions"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                <CapabilityChecklist catalog={capabilityCatalog} selected={permsDraft} onToggle={togglePerm} />
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t px-6 py-4" style={{ borderColor: 'var(--color-border)' }}>
+                <button
+                  type="button"
+                  onClick={() => savePermissions(true)}
+                  disabled={permsSaving || !Array.isArray(permsTarget.capabilityOverrides)}
+                  className="text-xs font-bold text-[#4B5563] underline transition-opacity hover:text-[#111827] disabled:no-underline disabled:opacity-40"
+                >
+                  Reset to role defaults
+                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPermsTarget(null)}
+                    disabled={permsSaving}
+                    className="rounded-xl border bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] disabled:opacity-50"
+                    style={{ borderColor: 'var(--color-border)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => savePermissions(false)}
+                    disabled={permsSaving}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-[#374151] disabled:opacity-60"
+                  >
+                    {permsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    Save
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

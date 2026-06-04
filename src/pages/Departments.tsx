@@ -115,9 +115,8 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function Departments() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const canManageDepartments =
-    user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'hr_admin';
+  const { can } = useAuth();
+  const canManageDepartments = can('departments.edit');
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);

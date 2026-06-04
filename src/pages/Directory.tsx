@@ -413,8 +413,9 @@ function compareEmployees(a: EmployeeRecord, b: EmployeeRecord, sortConfig: Sort
 export default function Directory() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
-  const canManageRecords = user?.role !== 'viewer';
+  const { can } = useAuth();
+  const canManageRecords =
+    can('employees.create') || can('employees.edit') || can('employees.it.edit') || can('employees.secrets.edit');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [sites, setSites] = useState<SiteOption[]>(mockSites);

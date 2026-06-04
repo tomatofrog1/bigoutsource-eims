@@ -14,25 +14,28 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import type { LucideIcon } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
+import type { Capability } from '@/src/lib/permissions';
 import logo from '../../public/logo-only-bigoutsource.svg';
 import { useState } from 'react';
 
-const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin', 'viewer'] },
-  { icon: Users, label: 'Employee Records', path: '/directory', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin', 'viewer'] },
-  { icon: Building2, label: 'Departments', path: '/departments', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin', 'viewer'] },
-  { icon: Laptop, label: 'IT Assets', path: '/assets', roles: ['super_admin', 'admin', 'it_admin', 'viewer'] },
-  { icon: FileText, label: 'Reports', path: '/reports', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin'] },
-  { icon: History, label: 'Audit Logs', path: '/logs', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin'] },
-  { icon: UsersRound, label: 'User Management', path: '/users', roles: ['super_admin'] },
-  { icon: Settings, label: 'Settings', path: '/settings', roles: ['super_admin', 'admin', 'hr_admin', 'it_admin', 'viewer'] },
+// `capability` gates visibility; items without one are shown to everyone.
+const navItems: { icon: LucideIcon; label: string; path: string; capability?: Capability }[] = [
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: Users, label: 'Employee Records', path: '/directory', capability: 'employees.view' },
+  { icon: Building2, label: 'Departments', path: '/departments', capability: 'departments.view' },
+  { icon: Laptop, label: 'IT Assets', path: '/assets', capability: 'assets.view' },
+  { icon: FileText, label: 'Reports', path: '/reports', capability: 'reports.view' },
+  { icon: History, label: 'Audit Logs', path: '/logs', capability: 'auditlogs.view' },
+  { icon: UsersRound, label: 'User Management', path: '/users', capability: 'users.manage' },
+  { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
 export function Sidebar() {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout, user, can } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isRetracted, setIsRetracted] = useState(() => {
@@ -101,7 +104,7 @@ export function Sidebar() {
           </div>
 
           <nav className="space-y-1">
-            {navItems.filter(item => item.roles.includes(user.role)).map((item) => {
+            {navItems.filter((item) => !item.capability || can(item.capability)).map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <Link
