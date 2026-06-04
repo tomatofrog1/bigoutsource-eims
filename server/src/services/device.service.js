@@ -28,13 +28,26 @@ export const DeviceService = {
   },
 
   async update(id, data, user, meta = {}) {
+    const before = await DeviceModel.findById(id);
     const device = await DeviceModel.update(id, data);
     if (!device) throw new AppError('Device not found', 404);
+
+    const trackedFields = ['pcName', 'biosDate', 'windowsKey', 'rustdeskId', 'remoteId', 'esetStatus', 'activityWatchStatus'];
+    const changes = trackedFields
+      .map(field => ({
+        field,
+        from: String(before?.[field] || ''),
+        to: String(device?.[field] || '')
+      }))
+      .filter(change => change.from !== change.to);
+
     await AuditLogModel.create({
       ...auditActor(user),
       action: 'device.update',
-      entityType: 'devices',
+      entityType: 'employees',
       entityId: id,
+      entityLabel: device.assigneeName || device.assetTag || id,
+      details: { changes },
       ipAddress: meta.ipAddress,
     });
     return device;

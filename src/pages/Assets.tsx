@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Laptop, Database, Cpu, Wifi, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronRight, CheckCircle2, Edit2, Save, X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -28,6 +28,33 @@ export default function Assets() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, Partial<any>>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const hasChanges = useMemo(() => {
+    return Object.entries(drafts).some(([id, draft]) => {
+      const original = devices.find(d => d.id === id);
+      if (!original) return false;
+      return Object.entries(draft).some(([key, val]) => original[key as keyof typeof original] !== val);
+    });
+  }, [drafts, devices]);
+
+  const changesPreview = useMemo(() => {
+    if (!isConfirmModalOpen) return [];
+    return Object.entries(drafts).map(([id, draft]) => {
+      const original = devices.find(d => d.id === id);
+      if (!original) return null;
+      
+      const changedFields = Object.entries(draft).filter(([key, val]) => original[key as keyof typeof original] !== val);
+      if (changedFields.length === 0) return null;
+
+      return {
+        id,
+        pcName: original.pcName || 'Unassigned',
+        assigneeName: original.assigneeName || 'Unassigned',
+        changes: changedFields
+      };
+    }).filter(Boolean);
+  }, [drafts, devices, isConfirmModalOpen]);
 
   const handleUpdateDraft = (id: string, field: string, value: any) => {
     setDrafts(prev => ({
@@ -47,14 +74,14 @@ export default function Assets() {
         setIsEditMode(false);
         return;
       }
-      
+
       const results = await Promise.allSettled(
         draftEntries.map(([id, payload]) => deviceService.update(id, payload))
       );
-      
+
       const successes: any[] = [];
       let failures = 0;
-      
+
       results.forEach((res, index) => {
         if (res.status === 'fulfilled') {
           successes.push({ id: draftEntries[index][0], updated: res.value });
@@ -62,20 +89,20 @@ export default function Assets() {
           failures++;
         }
       });
-      
+
       if (successes.length > 0) {
         setDevices(current => current.map(d => {
           const matched = successes.find(s => s.id === d.id);
           return matched ? { ...d, ...matched.updated } : d;
         }));
       }
-      
+
       if (failures > 0) {
         toast.error(`Failed to update ${failures} asset(s)`);
       } else {
         toast.success('Assets updated successfully');
       }
-      
+
       setDrafts({});
       setIsEditMode(false);
     } catch (err) {
@@ -166,7 +193,7 @@ export default function Assets() {
       result = [...result].sort((a, b) => {
         let aVal = a[sortConfig.key] || '';
         let bVal = b[sortConfig.key] || '';
-        
+
         if (typeof aVal === 'string') aVal = aVal.toLowerCase();
         if (typeof bVal === 'string') bVal = bVal.toLowerCase();
 
@@ -176,6 +203,12 @@ export default function Assets() {
       });
     } else {
       result = [...result].sort((a, b) => {
+        const aDate = new Date(a.createdAt || a.updatedAt || 0).getTime();
+        const bDate = new Date(b.createdAt || b.updatedAt || 0).getTime();
+        if (bDate !== aDate) {
+          return bDate - aDate; // Descending order
+        }
+        
         let aVal = String(a.assigneeName || '').toLowerCase();
         let bVal = String(b.assigneeName || '').toLowerCase();
         if (aVal < bVal) return -1;
@@ -235,34 +268,51 @@ export default function Assets() {
             />
           </div>
           <div className="flex gap-2">
-            {isEditMode ? (
-              <>
-                <button
-                  onClick={handleSaveChanges}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2.5 border border-transparent bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-colors disabled:opacity-50"
+            <AnimatePresence mode="wait" initial={false}>
+              {isEditMode ? (
+                <motion.div
+                  key="edit-actions"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex gap-2"
                 >
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Save Changes
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+                  <button
+                    onClick={() => setIsConfirmModalOpen(true)}
+                    disabled={isSaving || !hasChanges}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-transparent bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Changes
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:bg-[#F9FAFB] transition-colors disabled:opacity-50"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="view-actions"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setIsEditMode(true)}
-                className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:bg-[#F9FAFB] transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit Mode
-              </button>
-            )}
+                  <button
+                    onClick={() => setIsEditMode(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 border border-[#E5E7EB] bg-white rounded-xl text-sm font-bold text-[#4B5563] hover:bg-[#F9FAFB] transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Edit Mode
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -299,21 +349,21 @@ export default function Assets() {
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
             <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
-              <table className="w-full text-left border-collapse min-w-[900px]">
+              <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                     {[
-                      { key: 'pcName', label: 'Asset Identifier' },
-                      { key: 'assigneeName', label: 'Assignee' },
-                      { key: 'windowsKey', label: 'License Type' },
-                      { key: 'remoteId', label: 'Remote ID' },
-                      { key: 'rustdeskId', label: 'RustDesk ID' },
+                      { key: 'pcName', label: 'Asset Identifier', width: 'w-[16%]' },
+                      { key: 'assigneeName', label: 'Assignee', width: 'w-[24%]' },
+                      { key: 'windowsKey', label: 'License Type', width: 'w-[28%]' },
+                      { key: 'remoteId', label: 'Remote ID', width: 'w-[12%]' },
+                      { key: 'rustdeskId', label: 'RustDesk ID', width: 'w-[12%]' },
                     ].map((header) => {
                       const isActiveSort = sortConfig?.key === header.key;
                       const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                       return (
-                        <th key={header.key} className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-left">
+                        <th key={header.key} className={`px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
                           <button
                             type="button"
                             onClick={() => toggleSort(header.key)}
@@ -325,7 +375,7 @@ export default function Assets() {
                         </th>
                       );
                     })}
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest"></th>
+                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
                   </tr>
                 </thead>
                 <tbody className="">
@@ -357,21 +407,21 @@ export default function Assets() {
             </motion.div>
           ) : (
             <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[900px]">
+              <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                     {[
-                      { key: 'pcName', label: 'Asset Identifier' },
-                      { key: 'assigneeName', label: 'Assignee' },
-                      { key: 'windowsKey', label: 'License Type' },
-                      { key: 'remoteId', label: 'Remote ID' },
-                      { key: 'rustdeskId', label: 'RustDesk ID' },
+                      { key: 'pcName', label: 'Asset Identifier', width: 'w-[16%]' },
+                      { key: 'assigneeName', label: 'Assignee', width: 'w-[24%]' },
+                      { key: 'windowsKey', label: 'License Type', width: 'w-[28%]' },
+                      { key: 'remoteId', label: 'Remote ID', width: 'w-[12%]' },
+                      { key: 'rustdeskId', label: 'RustDesk ID', width: 'w-[12%]' },
                     ].map((header) => {
                       const isActiveSort = sortConfig?.key === header.key;
                       const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                       return (
-                        <th key={header.key} className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-left">
+                        <th key={header.key} className={`px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
                           <button
                             type="button"
                             onClick={() => toggleSort(header.key)}
@@ -383,7 +433,7 @@ export default function Assets() {
                         </th>
                       );
                     })}
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest"></th>
+                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
                   </tr>
                 </thead>
                 <tbody className="">
@@ -395,67 +445,79 @@ export default function Assets() {
                       transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
                       className="hover:bg-[#F9FAFB] transition-colors border-b border-[#F3F4F6] last:border-0"
                     >
-                      {isEditMode ? (
-                        <>
-                          <td className="px-6 py-4">
-                            <input type="text" value={drafts[device.id]?.pcName ?? (device.pcName || '')} onChange={(e) => handleUpdateDraft(device.id, 'pcName', e.target.value)} className="w-full text-sm font-black text-[#111827] font-mono border rounded px-2 py-1 outline-none focus:ring-2 focus:ring-[#2563EB]" placeholder="PC Name" />
-                            <input type="date" value={drafts[device.id]?.biosDate ?? (device.biosDate || '')} onChange={(e) => handleUpdateDraft(device.id, 'biosDate', e.target.value)} className="w-full text-[10px] text-[#9CA3AF] font-bold uppercase tracking-tighter mt-1 border rounded px-2 py-1 outline-none focus:ring-2 focus:ring-[#2563EB]" />
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-[#4B5563]">{device.assigneeName || 'Unassigned'}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <input type="text" value={drafts[device.id]?.windowsKey ?? (device.windowsKey || '')} onChange={(e) => handleUpdateDraft(device.id, 'windowsKey', e.target.value)} className="w-full text-xs font-bold text-[#111827] uppercase border rounded px-2 py-1 outline-none focus:ring-2 focus:ring-[#2563EB]" placeholder="License Key" />
-                          </td>
-                          <td className="px-6 py-4">
-                            <input type="text" value={drafts[device.id]?.remoteId ?? (device.remoteId || '')} onChange={(e) => handleUpdateDraft(device.id, 'remoteId', e.target.value)} className="w-full text-xs font-black text-[#111827] font-mono border rounded px-2 py-1 outline-none focus:ring-2 focus:ring-[#2563EB]" placeholder="Remote ID" />
-                          </td>
-                          <td className="px-6 py-4">
-                            <input type="text" value={drafts[device.id]?.rustdeskId ?? (device.rustdeskId || '')} onChange={(e) => handleUpdateDraft(device.id, 'rustdeskId', e.target.value)} className="w-full text-xs font-black text-[#111827] font-mono border rounded px-2 py-1 outline-none focus:ring-2 focus:ring-[#2563EB]" placeholder="RustDesk ID" />
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <Link to={`/employee/${device.assigneeId || device.id}`} className="text-[10px] font-black uppercase text-[#111827] hover:underline flex items-center justify-end gap-1">
-                              <ExternalLink className="w-3 h-3" /> Specs
-                            </Link>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-6 py-4">
+                      <AnimatedCell
+                        isEditMode={isEditMode}
+                        editContent={
+                          <>
+                            <p className="text-sm font-black text-[#111827] font-mono px-2 py-1">{device.pcName || 'Unassigned'}</p>
+                            <input type="date" value={drafts[device.id]?.biosDate ?? (device.biosDate || '')} onChange={(e) => handleUpdateDraft(device.id, 'biosDate', e.target.value)} className="w-full px-3 py-2.5 mt-2 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" />
+                          </>
+                        }
+                        viewContent={
+                          <>
                             <p className="text-sm font-black text-[#111827] font-mono">{device.pcName || 'Unassigned'}</p>
                             <p className="text-[10px] text-[#9CA3AF] font-bold uppercase tracking-tighter mt-0.5">BIOS: {device.biosDate || 'Not set'}</p>
-                          </td>
-                          <td className="px-6 py-4">
+                          </>
+                        }
+                      />
+                      <AnimatedCell
+                        isEditMode={isEditMode}
+                        editContent={
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-[#4B5563]">{device.assigneeName || 'Unassigned'}</span>
+                          </div>
+                        }
+                        viewContent={
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-[#4B5563]">{device.assigneeName || 'Unassigned'}</span>
+                            <Link to={`/employee/${device.assigneeId || device.id}`}><ExternalLink className="w-3 h-3 text-[#D1D5DB]" /></Link>
+                          </div>
+                        }
+                      />
+                      <AnimatedCell
+                        isEditMode={isEditMode}
+                        editContent={
+                          <NumericInput value={drafts[device.id]?.windowsKey ?? (device.windowsKey || '')} onChange={(val: string) => handleUpdateDraft(device.id, 'windowsKey', val)} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" placeholder="Windows License Key" />
+                        }
+                        viewContent={
+                          <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-[#4B5563]">{device.assigneeName || 'Unassigned'}</span>
-                              <Link to={`/employee/${device.assigneeId || device.id}`}><ExternalLink className="w-3 h-3 text-[#D1D5DB]" /></Link>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <Key className="w-3.5 h-3.5 text-[#9CA3AF]" />
+                              <Key className="w-3.5 h-3.5 text-[#9CA3AF] shrink-0" />
                               <span className="text-xs font-bold text-[#111827] uppercase">{device.windowsKey ? 'Windows / Assigned' : 'No Key'}</span>
                             </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="py-1 px-3 bg-[#F3F4F6] rounded-lg w-fit">
-                              <p className="text-xs font-black text-[#111827] font-mono">{device.remoteId || 'No remote ID'}</p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="py-1 px-3 bg-[#F3F4F6] rounded-lg w-fit">
-                              <p className="text-xs font-black text-[#111827] font-mono">{device.rustdeskId || 'No RustDesk ID'}</p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <Link to={`/employee/${device.assigneeId || device.id}`} className="text-[10px] font-black uppercase text-[#111827] hover:underline flex items-center justify-end gap-1">
-                              <ExternalLink className="w-3 h-3" /> Specs
-                            </Link>
-                          </td>
-                        </>
-                      )}
+                            {device.windowsKey && (
+                              <p className="text-[10px] text-[#9CA3AF] font-bold uppercase tracking-tighter mt-0.5 ml-[22px]">{device.windowsKey}</p>
+                            )}
+                          </div>
+                        }
+                      />
+                      <AnimatedCell
+                        isEditMode={isEditMode}
+                        editContent={
+                          <NumericInput value={drafts[device.id]?.remoteId ?? (device.remoteId || '')} onChange={(val: string) => handleUpdateDraft(device.id, 'remoteId', val)} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" placeholder="Remote ID" />
+                        }
+                        viewContent={
+                          <div className="py-1 px-3 bg-[#F3F4F6] rounded-lg w-fit">
+                            <p className="text-xs font-black text-[#111827] font-mono">{device.remoteId || 'No remote ID'}</p>
+                          </div>
+                        }
+                      />
+                      <AnimatedCell
+                        isEditMode={isEditMode}
+                        editContent={
+                          <NumericInput value={drafts[device.id]?.rustdeskId ?? (device.rustdeskId || '')} onChange={(val: string) => handleUpdateDraft(device.id, 'rustdeskId', val)} className="w-full px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-sm text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]" placeholder="RustDesk ID" />
+                        }
+                        viewContent={
+                          <div className="py-1 px-3 bg-[#F3F4F6] rounded-lg w-fit">
+                            <p className="text-xs font-black text-[#111827] font-mono">{device.rustdeskId || 'No RustDesk ID'}</p>
+                          </div>
+                        }
+                      />
+                      <td className="px-6 py-4 text-right">
+                        <Link to={`/employee/${device.assigneeId || device.id}`} className="text-[10px] font-black uppercase text-[#111827] hover:underline flex items-center justify-end gap-1">
+                          <ExternalLink className="w-3 h-3" /> Specs
+                        </Link>
+                      </td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -479,8 +541,180 @@ export default function Assets() {
             </motion.div>
           )}
         </AnimatePresence>
+
+      <AnimatePresence>
+        {isConfirmModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="w-full max-w-xl rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl flex flex-col max-h-full"
+            >
+              <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-5">
+                <h3 className="text-lg font-black text-[#111827]">Review Changes</h3>
+                <button
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  className="rounded-lg p-2 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#4B5563]"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="px-6 py-5 overflow-y-auto">
+                <p className="text-sm font-semibold text-[#4B5563] mb-4">You are about to modify the following IT Assets:</p>
+                <div className="space-y-3">
+                  {changesPreview.map((preview: any) => preview && (
+                    <div key={preview.id} className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Laptop className="w-4 h-4 text-[#4B5563]" />
+                        <span className="text-sm font-black text-[#111827]">{preview.assigneeName}</span>
+                        <span className="text-xs font-bold text-[#6B7280]">({preview.pcName})</span>
+                      </div>
+                      <div className="space-y-2">
+                        {preview.changes.map(([field, newVal]: [string, any]) => {
+                          const originalVal = devices.find(d => d.id === preview.id)?.[field as keyof typeof devices[0]];
+                          const formatVal = (v: any) => v || <span className="italic text-[#9CA3AF]">Empty</span>;
+                          const fieldLabels: Record<string, string> = {
+                            biosDate: 'BIOS Date',
+                            windowsKey: 'Windows License',
+                            remoteId: 'Remote ID',
+                            rustdeskId: 'RustDesk ID'
+                          };
+                          return (
+                            <div key={field} className="flex items-center gap-3 text-xs bg-white border border-[#E5E7EB] rounded-lg p-2 shadow-sm">
+                              <span className="font-bold text-[#4B5563] w-[100px] shrink-0">{fieldLabels[field] || field}</span>
+                              <div className="flex-1 flex items-center gap-2 min-w-0">
+                                <div className="flex-1 min-w-0 text-[#9CA3AF] truncate bg-[#F9FAFB] px-2 py-1 rounded line-through border border-transparent" title={String(originalVal)}>
+                                  {formatVal(originalVal)}
+                                </div>
+                                <ChevronRight className="w-3 h-3 text-[#D1D5DB] shrink-0" />
+                                <div className="flex-1 min-w-0 text-[#059669] font-bold truncate bg-[#ECFDF5] px-2 py-1 rounded border border-[#D1FAE5]" title={String(newVal)}>
+                                  {formatVal(newVal)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 border-t border-[#E5E7EB] px-6 py-5 bg-[#F9FAFB] rounded-b-2xl">
+                <button
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  disabled={isSaving}
+                  className="rounded-xl border border-[#E5E7EB] bg-white px-5 py-2.5 text-sm font-bold text-[#4B5563] transition-colors hover:bg-[#F3F4F6] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await handleSaveChanges();
+                    setIsConfirmModalOpen(false);
+                  }}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 rounded-xl bg-[#111827] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#374151] disabled:opacity-50 shadow-md"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Confirm & Save
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       </div>
     </PageLayout>
+  );
+}
+
+function AnimatedCell({ isEditMode, editContent, viewContent, className = '' }: any) {
+  return (
+    <td className={`px-6 py-4 align-top ${className}`}>
+      <AnimatePresence mode="wait">
+        {isEditMode ? (
+          <motion.div
+            key="edit"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            transition={{ duration: 0.15 }}
+          >
+            {editContent}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="view"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            transition={{ duration: 0.15 }}
+          >
+            {viewContent}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </td>
+  );
+}
+
+function NumericInput({ value, onChange, placeholder, className }: any) {
+  const [showHint, setShowHint] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    const numericValue = rawValue.replace(/\D/g, '');
+    
+    if (rawValue !== numericValue) {
+      setShowHint(true);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => setShowHint(false), 2000);
+    } else {
+      setShowHint(false);
+    }
+    
+    onChange(numericValue);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  return (
+    <div className="relative w-full">
+      <input
+        type="text"
+        value={value}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className={className}
+      />
+      <AnimatePresence>
+        {showHint && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            className="absolute left-0 top-full mt-1 text-[10px] font-bold text-red-500 z-10 whitespace-nowrap bg-white px-2 py-1 rounded shadow-sm border border-red-100 pointer-events-none"
+          >
+            Numbers only
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -505,9 +739,8 @@ function AnimatedSelect({
       >
         <span className="truncate">{selectedLabel}</span>
         <ChevronRight
-          className={`h-4 w-4 shrink-0 transition-transform text-[#9CA3AF] ${
-            isOpen ? 'rotate-90' : ''
-          }`}
+          className={`h-4 w-4 shrink-0 transition-transform text-[#9CA3AF] ${isOpen ? 'rotate-90' : ''
+            }`}
         />
       </button>
       <AnimatePresence>
@@ -530,9 +763,8 @@ function AnimatedSelect({
                       onChange(opt.value);
                       setIsOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[#F3F4F6] ${
-                      value === opt.value ? 'bg-[#EFF6FF]' : ''
-                    }`}
+                    className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[#F3F4F6] ${value === opt.value ? 'bg-[#EFF6FF]' : ''
+                      }`}
                   >
                     <span className={`truncate text-sm font-semibold ${value === opt.value ? 'text-[#2563EB]' : 'text-[#4B5563]'}`}>{opt.label}</span>
                     {value === opt.value && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563EB]" />}
