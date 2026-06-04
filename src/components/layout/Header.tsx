@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { settingsService } from '@/src/services/settingsService';
+import { systemAlertService, type SystemAlert } from '@/src/services/systemAlertService';
 import { userService } from '@/src/services/userService';
 import { AppUser } from '@/src/types';
 import { ImportIssuesButton } from '@/src/components/imports/ImportIssuesButton';
@@ -70,6 +71,7 @@ function NotificationBell() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [seenPendingIds, setSeenPendingIds] = useState<Set<string>>(() => readSeenPendingRegistrationIds());
   const [activeNotificationIds, setActiveNotificationIds] = useState<Set<string>>(new Set());
+  const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
 
   const isSuperAdmin = user?.role === 'super_admin';
 
@@ -85,17 +87,22 @@ function NotificationBell() {
     [accountRequestNotifications, seenPendingIds]
   );
 
-  const unreadCount = isSuperAdmin && notifyRegistrationAttempts ? unreadPendingUsers.length : 0;
+  const unreadCount = isSuperAdmin && notifyRegistrationAttempts 
+    ? unreadPendingUsers.length + systemAlerts.length 
+    : systemAlerts.length;
 
   const openNotifications = () => {
     setIsOpen(true);
 
-    if (!unreadPendingUsers.length) {
+    if (!unreadPendingUsers.length && !systemAlerts.length) {
       setActiveNotificationIds(new Set());
       return;
     }
 
-    const unreadIds = new Set(unreadPendingUsers.map((account) => String(account.uid)));
+    const unreadIds = new Set([
+      ...unreadPendingUsers.map((account) => String(account.uid)),
+      ...systemAlerts.map((alert) => String(alert.id))
+    ]);
     const nextSeenIds = new Set(seenPendingIds);
     unreadIds.forEach((id) => nextSeenIds.add(id));
     saveSeenPendingRegistrationIds(nextSeenIds);
@@ -104,9 +111,10 @@ function NotificationBell() {
   };
 
   useEffect(() => {
-    if (!isSuperAdmin) {
+    if (!isSuperAdmin && user?.role !== 'admin') {
       setNotifyRegistrationAttempts(false);
       setUsers([]);
+      setSystemAlerts([]);
       setActiveNotificationIds(new Set());
       return;
     }
@@ -126,6 +134,7 @@ function NotificationBell() {
 
         const nextUsers = accountListResult.status === 'fulfilled' && Array.isArray(accountListResult.value) ? accountListResult.value : [];
         setUsers(nextUsers);
+        setSystemAlerts(Array.isArray(alerts) ? alerts : []);
         window.dispatchEvent(new CustomEvent(USER_ACCOUNTS_REFRESHED_EVENT, { detail: { users: nextUsers } }));
       } catch (error) {
         if (!isMounted) return;
@@ -143,7 +152,7 @@ function NotificationBell() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, user?.role]);
 
   return (
     <>

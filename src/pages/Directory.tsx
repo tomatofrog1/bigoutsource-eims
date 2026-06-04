@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Circle,
   Download,
+  FolderPlus,
   Loader2,
   Search,
   Save,
@@ -426,6 +427,7 @@ export default function Directory() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFields, setSelectedFields] = useState<DirectoryFieldKey[] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showMissingDepartmentModal, setShowMissingDepartmentModal] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -1029,7 +1031,13 @@ export default function Directory() {
                   </button>
 
                   <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                      if (accounts.length === 0) {
+                        setShowMissingDepartmentModal(true);
+                      } else {
+                        setIsModalOpen(true);
+                      }
+                    }}
                     className="flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-black hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
                   >
                     <UserPlus className="w-4 h-4" />
@@ -1764,6 +1772,51 @@ export default function Directory() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showMissingDepartmentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            >
+              <div className="p-6">
+                <div className="mb-6 flex flex-col items-center text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                    <FolderPlus className="h-8 w-8" />
+                  </div>
+                  <h2 className="text-xl font-black text-[#111827]">Add Department First</h2>
+                  <p className="mt-2 text-sm text-[#4B5563]">
+                    You need to have at least one department created before you can add employee records.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowMissingDepartmentModal(false)}
+                    className="rounded-xl border border-[#D1D5DB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/departments')}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
+                  >
+                    Go to Departments
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageLayout>
   );
 }

@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import logoUrl from '../public/logo-only-bigoutsource.svg';
+import toast from 'react-hot-toast';
+import { systemAlertService } from '../services/systemAlertService';
 
 type AuthMode = 'login' | 'register';
 type RegistrationStep = 0 | 1 | 2;
@@ -101,6 +103,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [modalError, setModalError] = useState('');
+  const [showMissingDepartmentModal, setShowMissingDepartmentModal] = useState(false);
+  const [isNotifyingAdmin, setIsNotifyingAdmin] = useState(false);
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(0);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState<RegistrationStep>(0);
   const [isExiting, setIsExiting] = useState(false);
@@ -128,6 +132,12 @@ export default function Login() {
               .map((name) => name.trim())
           )
         ).sort((first, second) => first.localeCompare(second));
+
+        if (options.length === 0) {
+          setMode('login');
+          setShowMissingDepartmentModal(true);
+          return;
+        }
 
         setDepartmentOptions(options);
         setDepartmentOptionsError('');
@@ -649,6 +659,74 @@ export default function Login() {
             </motion.div>
           </motion.div>
         )}
+
+        <AnimatePresence>
+          {showMissingDepartmentModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/60 px-4 py-6 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                className="w-full max-w-md rounded-[28px] bg-white overflow-hidden shadow-2xl relative"
+              >
+                <div className="h-40 w-full absolute top-0 left-0 bg-gradient-to-b from-amber-500/10 to-transparent" />
+
+                <div className="px-8 pt-12 pb-10 relative z-10 flex flex-col items-center text-center">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full mb-6 shadow-xl bg-gradient-to-tr from-amber-400 to-amber-200 shadow-amber-500/20">
+                    <Building2 className="h-10 w-10 text-amber-900" />
+                  </div>
+                  
+                  <h2 className="text-[28px] font-black text-[#111827] mb-4 tracking-tight">
+                    No Department Found
+                  </h2>
+                  
+                  <p className="text-[15px] text-[#4B5563] leading-relaxed mb-10 max-w-[340px]">
+                    There are currently no departments set up. Please ask your admin to create a department first before registering.
+                  </p>
+
+                  <div className="flex w-full gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowMissingDepartmentModal(false)}
+                      className="flex-1 rounded-2xl py-4 text-[15px] font-bold text-[#4B5563] bg-[#F3F4F6] transition-all hover:bg-[#E5E7EB] active:scale-[0.98]"
+                    >
+                      Okay
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isNotifyingAdmin}
+                      onClick={async () => {
+                        setIsNotifyingAdmin(true);
+                        try {
+                          await systemAlertService.create('MISSING_DEPARTMENT', 'A user attempted to register but no departments exist.');
+                          toast.success('Admin notified successfully!');
+                          setShowMissingDepartmentModal(false);
+                        } catch (error) {
+                          toast.error('Failed to notify admin. Please try again.');
+                        } finally {
+                          setIsNotifyingAdmin(false);
+                        }
+                      }}
+                      className="flex-1 rounded-2xl py-4 text-[15px] font-bold text-white transition-all shadow-lg active:scale-[0.98] bg-[#111827] hover:bg-[#1F2937] shadow-gray-900/25 disabled:opacity-50 flex items-center justify-center"
+                    >
+                      {isNotifyingAdmin ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        'Notify Admin'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </AnimatePresence>
     </div>
   );
