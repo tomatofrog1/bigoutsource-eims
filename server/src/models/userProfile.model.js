@@ -15,7 +15,7 @@ function normalize(row) {
     roles: [row.role || 'viewer'],
     status: row.status || 'pending',
     department: row.department || 'Unassigned',
-    site: row.site || 'San Pablo City (HQ)',
+    site: row.site || 'HQ',
     approvedBy: row.approved_by || null,
     approvedAt: row.approved_at || null,
     createdAt: row.created_at || '',
@@ -32,7 +32,7 @@ function toDatabasePayload(data) {
   if (data.role !== undefined) payload.role = data.role;
   if (data.status !== undefined) payload.status = data.status;
   if (data.department !== undefined) payload.department = String(data.department || 'Unassigned').trim() || 'Unassigned';
-  if (data.site !== undefined) payload.site = String(data.site || 'San Pablo City (HQ)').trim() || 'San Pablo City (HQ)';
+  if (data.site !== undefined) payload.site = String(data.site || 'HQ').trim() || 'HQ';
   if (data.approvedBy !== undefined) payload.approved_by = data.approvedBy;
   if (data.approvedAt !== undefined) payload.approved_at = data.approvedAt;
 

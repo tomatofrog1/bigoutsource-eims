@@ -92,7 +92,7 @@ async function assertActiveProfile(userId) {
 }
 
 export const AuthService = {
-  async register({ email, password, fullName, department = 'Unassigned', site = 'San Pablo City (HQ)' }) {
+  async register({ email, password, fullName, department = 'Unassigned', site = 'HQ' }) {
     const normalizedEmail = normalizeEmail(email);
     const existingProfile = await UserProfileModel.findByEmail(normalizedEmail);
     if (existingProfile) throw new AppError('An account with this email already exists', 409);

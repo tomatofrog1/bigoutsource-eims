@@ -43,6 +43,6 @@ export const env = {
     password: process.env.SEED_SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || (useLocalSeedAdmin ? 'kamote123' : ''),
     fullName: process.env.SEED_SUPER_ADMIN_FULL_NAME || (useLocalSeedAdmin ? 'Local Super Admin' : 'System Administrator'),
     department: process.env.SEED_SUPER_ADMIN_DEPARTMENT || 'Administration',
-    site: process.env.SEED_SUPER_ADMIN_SITE || 'San Pablo City (HQ)',
+    site: process.env.SEED_SUPER_ADMIN_SITE || 'HQ',
   },
 };

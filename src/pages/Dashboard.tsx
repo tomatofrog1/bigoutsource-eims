@@ -34,7 +34,7 @@ function actionLabel(action: string) {
 const COLORS = ['#6366F1', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
 const SITE_COLORS: Record<string, string> = {
-  'San Pablo City (HQ)': '#6366F1',
+  'HQ': '#6366F1',
   'Candelaria': '#3B82F6',
   'WFH': '#10B981',
   'Hybrid': '#F59E0B',
@@ -222,7 +222,7 @@ export default function Dashboard() {
   }, [employees]);
 
   const siteDistribution = useMemo(() => {
-    const ORDER = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
+    const ORDER = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
     const counts = new Map<string, number>();
     
     // Pre-initialize standard sites to ensure they always show up
@@ -231,7 +231,7 @@ export default function Dashboard() {
     employees.forEach((employee) => {
       if (employee.status === 'active') {
         let siteName = employee.site || 'Unassigned';
-        if (siteName === 'HQ') siteName = 'San Pablo City (HQ)';
+        if (siteName === 'HQ') siteName = 'HQ';
         counts.set(siteName, (counts.get(siteName) || 0) + 1);
       }
     });
