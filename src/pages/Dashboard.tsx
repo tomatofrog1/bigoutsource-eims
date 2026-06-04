@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { employeeService } from '@/src/services/employeeService';
 import { deviceService } from '@/src/services/deviceService';
 import { auditLogService } from '@/src/services/auditLogService';
@@ -74,6 +75,7 @@ const CustomTooltip = ({ active, payload, label, chartType }: any) => {
 };
 
 export default function Dashboard() {
+  const { isDark } = useTheme();
   const [employees, setEmployees] = useState<any[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
@@ -351,7 +353,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                         <XAxis dataKey="month" label={{ value: 'Month & Year', position: 'bottom', fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} dy={10} />
                         <YAxis label={{ value: 'Employees', angle: -90, position: 'insideLeft', offset: -5, fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} />
-                        <RechartsTooltip content={<CustomTooltip chartType="growth" />} cursor={{ stroke: '#E5E7EB', strokeWidth: 2 }} wrapperStyle={{ zIndex: 9999 }} />
+                        <RechartsTooltip content={<CustomTooltip chartType="growth" />} cursor={{ stroke: isDark ? '#2D3344' : '#E5E7EB', strokeWidth: 2 }} wrapperStyle={{ zIndex: 9999 }} />
                         <Line type="monotone" dataKey="count" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, fill: '#6366F1', strokeWidth: 2, stroke: '#ffffff' }} activeDot={{ r: 6 }} />
                       </LineChart>
                     </ResponsiveContainer>
@@ -383,7 +385,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E5E7EB" />
                         <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} />
                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#111827', fontWeight: 'bold' }} width={90} />
-                        <RechartsTooltip content={<CustomTooltip chartType="department" />} cursor={{ fill: '#F9FAFB' }} wrapperStyle={{ zIndex: 9999 }} />
+                        <RechartsTooltip content={<CustomTooltip chartType="department" />} cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F9FAFB' }} wrapperStyle={{ zIndex: 9999 }} />
                         <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={24} />
                       </BarChart>
                     </ResponsiveContainer>

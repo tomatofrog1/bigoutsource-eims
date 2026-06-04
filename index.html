@@ -14,6 +14,15 @@
           document.documentElement.classList.add('dark');
         }
       } catch (e) {}
+      // Prevent flash of wrong text size by applying the root font-size synchronously
+      // (keep these values in sync with TextSizeContext's FONT_SIZES)
+      try {
+        var eimsTextSize = localStorage.getItem('eims_text_size');
+        var eimsFontSizes = { medium: '112.5%', large: '125%' };
+        if (eimsTextSize && eimsFontSizes[eimsTextSize]) {
+          document.documentElement.style.fontSize = eimsFontSizes[eimsTextSize];
+        }
+      } catch (e) {}
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

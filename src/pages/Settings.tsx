@@ -10,6 +10,7 @@ import {
   Moon,
   Save,
   Sun,
+  Type,
   UserCheck,
   X,
 } from 'lucide-react';
@@ -19,6 +20,7 @@ import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { useTextSize, type TextSize } from '@/src/contexts/TextSizeContext';
 import { AppUser } from '@/src/types';
 import { authService } from '@/src/services/authService';
 import { settingsService } from '@/src/services/settingsService';
@@ -41,6 +43,7 @@ function asArray(value: any) {
 export default function Settings() {
   const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { textSize, setTextSize } = useTextSize();
   const isSuperAdmin = user?.role === 'super_admin';
   const [activeTab, setActiveTab] = useState<SettingsTab | null>(null);
   const [companyName, setCompanyName] = useState('BigOutsource');
@@ -224,6 +227,25 @@ export default function Settings() {
                     Dark Mode
                   </span>
                   <DarkModeToggle isDark={isDark} onToggle={toggleTheme} />
+                </div>
+                <div
+                  className="flex min-h-24 w-full items-center justify-between rounded-2xl border px-5"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <span className="flex items-center gap-3 text-sm font-black">
+                    <Type className="h-5 w-5" />
+                    <span className="flex flex-col">
+                      Text Size
+                      <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                        Adjust the size of everything for easier reading
+                      </span>
+                    </span>
+                  </span>
+                  <TextSizeSelector value={textSize} onChange={setTextSize} />
                 </div>
               </div>
             </motion.aside>
@@ -591,5 +613,53 @@ function DarkModeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () =>
         </AnimatePresence>
       </motion.div>
     </button>
+  );
+}
+
+const TEXT_SIZE_OPTIONS: { level: TextSize; label: string; sample: string }[] = [
+  { level: 'small', label: 'Small', sample: '0.7rem' },
+  { level: 'medium', label: 'Medium', sample: '0.85rem' },
+  { level: 'large', label: 'Large', sample: '1rem' },
+];
+
+function TextSizeSelector({ value, onChange }: { value: TextSize; onChange: (size: TextSize) => void }) {
+  return (
+    <div
+      className="inline-flex shrink-0 items-stretch gap-1 rounded-full p-1"
+      style={{ backgroundColor: 'var(--color-surface-secondary)' }}
+      role="radiogroup"
+      aria-label="Text size"
+    >
+      {TEXT_SIZE_OPTIONS.map((opt) => {
+        const active = value === opt.level;
+        return (
+          <button
+            key={opt.level}
+            type="button"
+            onClick={() => onChange(opt.level)}
+            className="relative rounded-full px-3.5 py-1.5"
+            role="radio"
+            aria-checked={active}
+            aria-label={`${opt.label} text size`}
+          >
+            {active && (
+              <motion.span
+                layoutId="textSizePill"
+                transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                className="absolute inset-0 rounded-full"
+                style={{ backgroundColor: '#6366F1' }}
+              />
+            )}
+            <span
+              className="relative flex items-baseline gap-1.5 font-black leading-none"
+              style={{ color: active ? '#FFFFFF' : 'var(--color-text-muted)' }}
+            >
+              <span style={{ fontSize: opt.sample }}>A</span>
+              <span className="text-xs">{opt.label}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

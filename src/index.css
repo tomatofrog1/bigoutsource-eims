@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
+/* Make the `dark:` variant follow the `.dark` class toggled by ThemeContext,
+   instead of Tailwind v4's default `prefers-color-scheme` media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -45,12 +49,13 @@
   --color-surface: #1A1D27;
   --color-surface-secondary: #23272F;
   --color-surface-hover: #23272F;
-  --color-border: #2D3344;
-  --color-border-light: #23272F;
-  --color-text-primary: #F1F3F7;
-  --color-text-secondary: #A3ABBE;
-  --color-text-muted: #7B86A0;
-  --color-text-faint: #565F78;
+  --color-border: #3A4257;
+  --color-border-light: #2D3344;
+  /* Text tones tuned for high contrast / readability (WCAG AA–AAA on --color-bg) */
+  --color-text-primary: #F1F3F7;   /* ~17:1 */
+  --color-text-secondary: #C2C9D9; /* ~11:1 */
+  --color-text-muted: #9BA5BE;     /* ~7.6:1 (was 5.2:1) */
+  --color-text-faint: #7E8AA6;     /* ~5.5:1 (was 3.0:1 — failed AA) */
   --color-input-bg: #23272F;
   --color-input-bg-alt: #1A1D27;
   --color-accent: #E8ECFF;
@@ -154,6 +159,24 @@
   color: var(--color-text-faint) !important;
 }
 
+/* Blue link / accent text — brighten for legibility on dark bg (was ~3:1, now ~7:1).
+   Only targets the `text-` utility, so blue borders/backgrounds are untouched. */
+.dark .text-\[\#2563EB\] {
+  color: #60A5FA !important;
+}
+.dark .hover\:text-\[\#2563EB\]:hover,
+.dark .hover\:text-\[\#1D4ED8\]:hover {
+  color: #93C5FD !important;
+}
+
+/* Light-blue selection / hover tint (bg-[#EFF6FF]) → dark translucent blue,
+   so the brightened blue text above stays legible on it (~5:1) instead of
+   becoming light-blue-on-light-blue. */
+.dark .bg-\[\#EFF6FF\],
+.dark .hover\:bg-\[\#EFF6FF\]:hover {
+  background-color: rgba(96, 165, 250, 0.14) !important;
+}
+
 /* bg-[#111827] accent/dark backgrounds — invert for dark mode */
 .dark .bg-\[\#111827\] {
   background-color: var(--color-accent) !important;
@@ -255,6 +278,87 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-faint);
 }
+
+/* ───────────────────────────────────────
+   Semantic color palette in dark mode
+
+   The app uses soft accents everywhere: `bg-{color}-50/100` tints behind
+   icons/badges/status chips, and `text-{color}-500..800` for colored
+   icons and labels. Left alone these glare as bright pastels on the dark
+   UI. Here we:
+     • turn the light tint backgrounds into subtle translucent tints that
+       blend over whatever surface is behind them, and
+     • lift colored text/icons to the lighter `-400` shade for legible
+       contrast on dark.
+   Solid action colors (`bg-{color}-500/600/700`) are intentionally left
+   untouched so buttons and status dots stay vivid.
+   ─────────────────────────────────────── */
+
+/* red */
+.dark .bg-red-50, .dark .bg-red-100 { background-color: color-mix(in srgb, #ef4444 15%, transparent) !important; }
+.dark .text-red-500, .dark .text-red-600, .dark .text-red-700, .dark .text-red-800 { color: #f87171 !important; }
+.dark .border-red-100, .dark .border-red-200, .dark .border-red-300 { border-color: color-mix(in srgb, #ef4444 35%, transparent) !important; }
+
+/* orange */
+.dark .bg-orange-50, .dark .bg-orange-100 { background-color: color-mix(in srgb, #f97316 15%, transparent) !important; }
+.dark .text-orange-500, .dark .text-orange-600, .dark .text-orange-700, .dark .text-orange-800 { color: #fb923c !important; }
+.dark .border-orange-100, .dark .border-orange-200, .dark .border-orange-300 { border-color: color-mix(in srgb, #f97316 35%, transparent) !important; }
+
+/* amber */
+.dark .bg-amber-50, .dark .bg-amber-100 { background-color: color-mix(in srgb, #f59e0b 15%, transparent) !important; }
+.dark .text-amber-500, .dark .text-amber-600, .dark .text-amber-700, .dark .text-amber-800 { color: #fbbf24 !important; }
+.dark .border-amber-100, .dark .border-amber-200, .dark .border-amber-300 { border-color: color-mix(in srgb, #f59e0b 35%, transparent) !important; }
+
+/* green */
+.dark .bg-green-50, .dark .bg-green-100 { background-color: color-mix(in srgb, #22c55e 15%, transparent) !important; }
+.dark .text-green-500, .dark .text-green-600, .dark .text-green-700, .dark .text-green-800 { color: #4ade80 !important; }
+.dark .border-green-100, .dark .border-green-200, .dark .border-green-300, .dark .border-green-400 { border-color: color-mix(in srgb, #22c55e 40%, transparent) !important; }
+
+/* emerald */
+.dark .bg-emerald-50, .dark .bg-emerald-100 { background-color: color-mix(in srgb, #10b981 15%, transparent) !important; }
+.dark .text-emerald-500, .dark .text-emerald-600, .dark .text-emerald-700, .dark .text-emerald-800 { color: #34d399 !important; }
+.dark .border-emerald-100, .dark .border-emerald-200, .dark .border-emerald-300 { border-color: color-mix(in srgb, #10b981 35%, transparent) !important; }
+
+/* teal */
+.dark .bg-teal-50, .dark .bg-teal-100 { background-color: color-mix(in srgb, #14b8a6 15%, transparent) !important; }
+.dark .text-teal-500, .dark .text-teal-600, .dark .text-teal-700, .dark .text-teal-800 { color: #2dd4bf !important; }
+.dark .border-teal-100, .dark .border-teal-200, .dark .border-teal-300 { border-color: color-mix(in srgb, #14b8a6 35%, transparent) !important; }
+
+/* cyan */
+.dark .bg-cyan-50, .dark .bg-cyan-100 { background-color: color-mix(in srgb, #06b6d4 15%, transparent) !important; }
+.dark .text-cyan-500, .dark .text-cyan-600, .dark .text-cyan-700, .dark .text-cyan-800 { color: #22d3ee !important; }
+.dark .border-cyan-100, .dark .border-cyan-200, .dark .border-cyan-300 { border-color: color-mix(in srgb, #06b6d4 35%, transparent) !important; }
+
+/* blue */
+.dark .bg-blue-50, .dark .bg-blue-100 { background-color: color-mix(in srgb, #3b82f6 15%, transparent) !important; }
+.dark .text-blue-500, .dark .text-blue-600, .dark .text-blue-700, .dark .text-blue-800 { color: #60a5fa !important; }
+.dark .border-blue-100, .dark .border-blue-200, .dark .border-blue-300 { border-color: color-mix(in srgb, #3b82f6 35%, transparent) !important; }
+
+/* indigo */
+.dark .bg-indigo-50, .dark .bg-indigo-100 { background-color: color-mix(in srgb, #6366f1 15%, transparent) !important; }
+.dark .text-indigo-500, .dark .text-indigo-600, .dark .text-indigo-700, .dark .text-indigo-800 { color: #818cf8 !important; }
+.dark .border-indigo-100, .dark .border-indigo-200, .dark .border-indigo-300 { border-color: color-mix(in srgb, #6366f1 35%, transparent) !important; }
+
+/* violet */
+.dark .bg-violet-50, .dark .bg-violet-100 { background-color: color-mix(in srgb, #8b5cf6 15%, transparent) !important; }
+.dark .text-violet-500, .dark .text-violet-600, .dark .text-violet-700, .dark .text-violet-800 { color: #a78bfa !important; }
+.dark .border-violet-100, .dark .border-violet-200, .dark .border-violet-300 { border-color: color-mix(in srgb, #8b5cf6 35%, transparent) !important; }
+
+/* purple */
+.dark .bg-purple-50, .dark .bg-purple-100 { background-color: color-mix(in srgb, #a855f7 15%, transparent) !important; }
+.dark .text-purple-500, .dark .text-purple-600, .dark .text-purple-700, .dark .text-purple-800 { color: #c084fc !important; }
+.dark .border-purple-100, .dark .border-purple-200, .dark .border-purple-300 { border-color: color-mix(in srgb, #a855f7 35%, transparent) !important; }
+
+/* slate (neutral-cool accents) */
+.dark .bg-slate-50, .dark .bg-slate-100 { background-color: color-mix(in srgb, #64748b 18%, transparent) !important; }
+.dark .text-slate-500, .dark .text-slate-600, .dark .text-slate-700, .dark .text-slate-800 { color: #94a3b8 !important; }
+.dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300 { border-color: color-mix(in srgb, #64748b 35%, transparent) !important; }
+
+/* gray (neutral) — fold into the theme's neutral tokens for consistency */
+.dark .bg-gray-50 { background-color: var(--color-input-bg) !important; }
+.dark .text-gray-500, .dark .text-gray-600, .dark .text-gray-700 { color: var(--color-text-secondary) !important; }
+.dark .text-gray-400 { color: var(--color-text-faint) !important; }
+.dark .border-gray-100, .dark .border-gray-200 { border-color: var(--color-border) !important; }
 
 .data-grid-border {
   @apply border-[#E5E7EB];
