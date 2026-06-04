@@ -155,7 +155,7 @@ export default function UserManagement() {
 
         setDepartmentOptions(asArray(departments).map((name) => String(name).trim()).filter(Boolean));
         const names = normalizeSiteNames(sites);
-        setSiteOptions(names.length ? names : ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid']);
+        setSiteOptions(names.length ? names : ['HQ', 'Candelaria', 'WFH', 'Hybrid']);
       } catch (error: any) {
         if (isMounted) {
           toast.error(error.message || 'Unable to load department and site options');
@@ -584,7 +584,7 @@ export default function UserManagement() {
                               </motion.div>
                             ) : (
                               <motion.div key="view-site" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} transition={{ duration: 0.15 }}>
-                                <span className="text-xs font-bold text-[#4B5563]">{user.site || 'San Pablo City (HQ)'}</span>
+                                <span className="text-xs font-bold text-[#4B5563]">{user.site || 'HQ'}</span>
                               </motion.div>
                             )}
                           </AnimatePresence>

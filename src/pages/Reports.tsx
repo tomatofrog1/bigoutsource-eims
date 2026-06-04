@@ -377,7 +377,7 @@ async function generateWorkforceAnalytics(): Promise<ReportData> {
   employees.forEach(emp => {
     if (String(emp.status ?? '').toLowerCase() === 'active') {
       let siteName = emp.site || 'Unassigned';
-      if (siteName === 'HQ') siteName = 'San Pablo City (HQ)';
+      if (siteName === 'HQ') siteName = 'HQ';
       siteCounts.set(siteName, (siteCounts.get(siteName) || 0) + 1);
     }
   });

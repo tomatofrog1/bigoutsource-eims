@@ -1,7 +1,7 @@
 import { supabaseRequest } from '../config/supabase.js';
 import { generateLmsAccount } from '../utils/lmsAccount.js';
 
-export const SITE_OPTIONS = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
+export const SITE_OPTIONS = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
 export const STATUS_OPTIONS = ['active', 'inactive'];
 export const ESET_OPTIONS = ['active', 'inactive'];
 export const ACTIVITY_WATCH_OPTIONS = ['installed', 'missing'];
@@ -32,7 +32,7 @@ function normalizeSite(value) {
   if (next === 'can' || next === 'cand' || next === 'candelaria') return 'Candelaria';
   if (next === 'wfh/hybrid' || next === 'hybrid') return 'Hybrid';
   if (next === 'wfh') return 'WFH';
-  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo city (hq)') return 'San Pablo City (HQ)';
+  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo (hq)' || next === 'san pablo city (hq)') return 'HQ';
   
   const match = SITE_OPTIONS.find((option) => option.toLowerCase() === next);
   return match || value;

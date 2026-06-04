@@ -65,7 +65,7 @@ function normalizeSite(value) {
   if (next === 'can' || next === 'cand' || next === 'candelaria') return 'Candelaria';
   if (next === 'wfh/hybrid' || next === 'hybrid') return 'Hybrid';
   if (next === 'wfh') return 'WFH';
-  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo city (hq)') return 'San Pablo City (HQ)';
+  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo (hq)' || next === 'san pablo city (hq)') return 'HQ';
   return value || '';
 }
 
@@ -110,7 +110,14 @@ function validateRecord(record, duplicateKeys, existingIds = new Set()) {
   if (!record.fullName) issues.push({ code: 'missing_name', message: 'Missing employee name' });
   if (!record.boEmail) issues.push({ code: 'missing_email', message: 'Missing Bigoutsource email' });
   if (!record.accountAssignment) issues.push({ code: 'missing_account', message: 'Missing account' });
-  if (!record.siteName) issues.push({ code: 'missing_site', message: 'Missing site' });
+  
+  const validSites = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
+  if (!record.siteName) {
+    issues.push({ code: 'missing_site', message: 'Missing site' });
+  } else if (!validSites.includes(record.siteName)) {
+    issues.push({ code: 'invalid_site', message: 'Site is not recognized' });
+  }
+
   if (record.employeeNumber && duplicateKeys.has(record.employeeNumber)) {
     issues.push({ code: 'duplicate_id', message: `Duplicate employee ID ${record.employeeNumber}` });
   }

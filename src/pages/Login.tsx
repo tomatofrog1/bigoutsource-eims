@@ -19,7 +19,7 @@ const REGISTRATION_STEPS = [
   { title: 'Security', fields: ['password', 'confirmPassword'] },
 ] as const;
 
-const SITE_OPTIONS = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
+const SITE_OPTIONS = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
 
 const PASSWORD_RULES = [
   { label: 'At least 8 characters', test: (value: string) => value.length >= 8 },

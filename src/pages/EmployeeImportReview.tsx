@@ -53,7 +53,7 @@ type DeleteIntent = {
   ids: string[];
 };
 
-const siteOptions = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
+const siteOptions = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
 
 const importReviewCache: {
   rows: ImportRow[];
@@ -108,11 +108,8 @@ function normalizeSiteOption(value?: string) {
   const next = String(value || '').trim().toLowerCase();
   if (next === 'can' || next === 'cand' || next === 'candelaria') return 'Candelaria';
   if (next === 'wfh/hybrid' || next === 'hybrid') return 'Hybrid';
+  if (next === 'hq' || next === 'san pablo' || next === 'san pablo city' || next === 'san pablo (hq)' || next === 'san pablo city (hq)') return 'HQ';
   if (next === 'wfh') return 'WFH';
-  if (next === 'hq') return 'San Pablo City (HQ)';
-  if (next === 'san pablo') return 'San Pablo City (HQ)';
-  if (next === 'san pablo city') return 'San Pablo City (HQ)';
-  if (next === 'san pablo city (hq)') return 'San Pablo City (HQ)';
   return value || '';
 }
 
