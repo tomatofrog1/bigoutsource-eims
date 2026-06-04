@@ -8,7 +8,7 @@ interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<AppUser>;
   logout: () => Promise<void>;
   isAdmin: boolean;
   isIT: boolean;
@@ -80,8 +80,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (input: RegisterInput) => {
     try {
-      await authService.register(input);
-      toast.success('Account request submitted for approval');
+      const apiUser = await authService.register(input);
+      // Note: registration does not affect the current session. The caller is
+      // responsible for success messaging (the flow differs by context).
+      return toAppUser(apiUser);
     } catch (error: any) {
       toast.error(error.message || 'Registration failed');
       throw error;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldAlert, ShieldCheck, Trash2, UserX, UsersRound, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldAlert, ShieldCheck, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -10,6 +10,7 @@ import { AppUser, UserRole } from '@/src/types';
 import { userService } from '@/src/services/userService';
 import { authService } from '@/src/services/authService';
 import { siteService } from '@/src/services/siteService';
+import RegisterForm from '@/src/components/auth/RegisterForm';
 
 const EDITABLE_ROLES: UserRole[] = ['viewer', 'admin'];
 const EDITABLE_ACCOUNT_STATUSES = [
@@ -112,6 +113,7 @@ export default function UserManagement() {
   const [approveUserTarget, setApproveUserTarget] = useState<AppUser | null>(null);
   const [disapproveUserTarget, setDisapproveUserTarget] = useState<AppUser | null>(null);
   const [deleteInput, setDeleteInput] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
 
   async function loadUsers() {
     setIsLoading(true);
@@ -403,6 +405,14 @@ export default function UserManagement() {
               />
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowRegister(true)}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#111827] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#374151] active:scale-[0.98]"
+          >
+            <UserPlus className="h-4 w-4" />
+            Register Account
+          </button>
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
@@ -1246,6 +1256,50 @@ export default function UserManagement() {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showRegister && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
+            onClick={() => setShowRegister(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[28px] border border-[#E5E7EB] bg-white p-8 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setShowRegister(false)}
+                className="absolute right-4 top-4 z-10 rounded-lg p-2 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#4B5563]"
+                aria-label="Close registration"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <RegisterForm
+                onSuccess={async (newUser) => {
+                  setShowRegister(false);
+                  try {
+                    // Accounts created by an admin are activated immediately with the
+                    // chosen role (update also records this admin as the approver).
+                    await userService.update(newUser.uid, { role: newUser.role, status: 'active' });
+                    toast.success(`Account created and activated as ${roleLabel(newUser.role)}`);
+                  } catch (error: any) {
+                    toast.error(error?.message || 'Account created, but activation failed — approve it manually.');
+                  }
+                  await loadUsers();
+                }}
+              />
             </motion.div>
           </motion.div>
         )}
