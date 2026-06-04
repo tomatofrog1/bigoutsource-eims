@@ -512,10 +512,10 @@ export default function Departments() {
         )}
       </div>
 
-      <AnimatePresence>
-      {isAddModalOpen && (
-        <Modal onClose={closeAddModal} maxWidth="max-w-lg">
-          <ModalHeader
+      <Modal isOpen={isAddModalOpen} onClose={closeAddModal} maxWidth="max-w-lg">
+        {isAddModalOpen && (
+          <>
+            <ModalHeader
             title="New Department"
             subtitle="Departments become account choices in Employee Records."
             onClose={closeAddModal}
@@ -585,21 +585,31 @@ export default function Departments() {
                 Department Type
               </span>
               <div className="grid grid-cols-2 gap-2">
-                {(['internal', 'external'] as DepartmentType[]).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setDeptType(type)}
-                    className={cn(
-                      'rounded-xl border px-4 py-2.5 text-xs font-black capitalize transition-all',
-                      deptType === type
-                        ? 'border-[#111827] bg-[#111827] text-white'
-                        : 'border-[#E5E7EB] bg-white text-[#4B5563] hover:bg-[#F9FAFB]'
-                    )}
-                  >
-                    {type === 'internal' ? 'Internal' : 'External'}
-                  </button>
-                ))}
+                {(['internal', 'external'] as DepartmentType[]).map((type) => {
+                  const isActive = deptType === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setDeptType(type)}
+                      className={cn(
+                        'relative rounded-xl border px-4 py-2.5 text-xs font-black capitalize transition-colors z-10',
+                        isActive
+                          ? 'border-[#111827] text-white'
+                          : 'border-[#E5E7EB] text-[#4B5563] hover:bg-[#F9FAFB]'
+                      )}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="deptTypeBgBlack"
+                          className="absolute inset-0 z-[-1] rounded-xl bg-[#111827]"
+                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                      {type === 'internal' ? 'Internal' : 'External'}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -617,14 +627,14 @@ export default function Departments() {
               </button>
             </ModalFooter>
           </form>
-        </Modal>
-      )}
-      </AnimatePresence>
+          </>
+        )}
+      </Modal>
 
-      <AnimatePresence>
-      {isEditModalOpen && selectedDepartment && (
-        <Modal onClose={closeEditModal} maxWidth="max-w-lg">
-          <ModalHeader
+      <Modal isOpen={isEditModalOpen && !!selectedDepartment} onClose={closeEditModal} maxWidth="max-w-lg">
+        {selectedDepartment && (
+          <>
+            <ModalHeader
             title="Edit Department"
             subtitle="Update the name and code used across employee records."
             onClose={closeEditModal}
@@ -692,14 +702,14 @@ export default function Departments() {
               </button>
             </ModalFooter>
           </form>
-        </Modal>
-      )}
-      </AnimatePresence>
+          </>
+        )}
+      </Modal>
 
-      <AnimatePresence>
-      {isDeleteModalOpen && selectedDepartment && (
-        <Modal onClose={closeDeleteModal} maxWidth="max-w-md">
-          <ModalHeader
+      <Modal isOpen={isDeleteModalOpen && !!selectedDepartment} onClose={closeDeleteModal} maxWidth="max-w-md">
+        {selectedDepartment && (
+          <>
+            <ModalHeader
             title="Delete Department"
             subtitle="This action is permanent and cannot be undone."
             onClose={closeDeleteModal}
@@ -768,9 +778,9 @@ export default function Departments() {
               </button>
             </ModalFooter>
           </div>
-        </Modal>
-      )}
-      </AnimatePresence>
+          </>
+        )}
+      </Modal>
 
       <style>{`
         .form-input {
@@ -852,22 +862,26 @@ function StatCard({
 }
 
 function Modal({
+  isOpen,
   children,
   onClose,
   maxWidth = 'max-w-lg',
 }: {
+  isOpen: boolean;
   children: React.ReactNode;
   onClose: () => void;
   maxWidth?: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/50 px-4 py-6 backdrop-blur-sm"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/50 px-4 py-6 backdrop-blur-sm"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -876,8 +890,10 @@ function Modal({
         className={cn('w-full rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl', maxWidth)}
       >
         {children}
+        </motion.div>
       </motion.div>
-    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
