@@ -350,6 +350,19 @@ function normalizePhoneInput(value = '') {
   return value.replace(/\D/g, '').slice(0, 11);
 }
 
+function getTodayDateInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function clampToToday(value = '') {
+  const today = getTodayDateInputValue();
+  return value > today ? today : value;
+}
+
 function applyCharacterLimit(field: keyof AddEmployeeForm, value: string) {
   const limit = fieldCharacterLimits[field];
   return limit ? value.slice(0, limit) : value;
@@ -585,6 +598,8 @@ export default function Directory() {
           ? normalizePhoneInput(value)
         : field === 'firstName' || field === 'middleName' || field === 'lastName'
           ? capitalizeNameInput(value)
+        : field === 'biosDate'
+          ? clampToToday(value)
           : applyCharacterLimit(field, value);
 
     setForm((current) => ({ ...current, [field]: formattedValue }));
@@ -1542,7 +1557,7 @@ export default function Directory() {
                               </Select>
                             </Field>
                             <Field label="BIOS Date">
-                              <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
+                              <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} max={getTodayDateInputValue()} />
                             </Field>
                             <Field label="ActivityWatch">
                               <Select value={form.activityWatchStatus} onChange={(value) => updateForm('activityWatchStatus', value)}>
@@ -1704,7 +1719,7 @@ export default function Directory() {
                               </Select>
                             </Field>
                             <Field label="BIOS Date">
-                              <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} />
+                              <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} max={getTodayDateInputValue()} />
                             </Field>
                             <Field label="ActivityWatch">
                               <Select value={form.activityWatchStatus} onChange={(value) => updateForm('activityWatchStatus', value)}>
@@ -2114,18 +2129,21 @@ function Input({
   placeholder,
   type = 'text',
   error = false,
+  max,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
   error?: boolean;
+  max?: string;
 }) {
   return (
     <input
       type={type}
       value={value}
       placeholder={placeholder}
+      max={max}
       onChange={(event) => onChange(event.target.value)}
       className={cn(
         'w-full rounded-xl border bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition-all placeholder:text-[#9CA3AF] focus:ring-2 focus:ring-[#2563EB]',

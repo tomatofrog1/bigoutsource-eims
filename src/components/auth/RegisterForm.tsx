@@ -72,7 +72,7 @@ function getStepHasErrors(errors: RegistrationErrors, step: RegistrationStep) {
 }
 
 interface RegisterFormProps {
-  /** Called after a successful registration request, with the newly created (pending) account. */
+  /** Called after a successful registration request, with the newly created account. */
   onSuccess?: (user: AppUser) => void;
   /** Render the logo + heading block (matches the logged-out screen). Default true. */
   showHeader?: boolean;
@@ -81,7 +81,7 @@ interface RegisterFormProps {
 /**
  * Self-contained registration wizard. Renders exactly like the logged-out
  * registration screen, but can be embedded anywhere (e.g. the "Register
- * Account" modal in User Management). Creates a pending account via the shared
+ * Account" modal in User Management). Creates an account via the shared
  * auth context; the caller's session is unaffected.
  */
 export default function RegisterForm({ onSuccess, showHeader = true }: RegisterFormProps) {
@@ -193,8 +193,8 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
     setIsLoading(true);
     try {
       const user = await register({ email, password, fullName, department, site });
-      // The register endpoint always creates a pending viewer; the admin's chosen
-      // role rides back on the user object for the caller to apply on activation.
+      // The register endpoint creates the base account; the admin's chosen role
+      // rides back on the user object for the caller to apply immediately.
       onSuccess?.({ ...user, role: roleSlug as UserRole });
     } catch {
       // AuthContext surfaces the error via toast; keep the form open for retry.
@@ -353,7 +353,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
             type="button"
             onClick={() => setRegistrationStep((current) => Math.max(current - 1, 0) as RegistrationStep)}
             disabled={registrationStep === 0 || isLoading}
-            className="rounded-xl bg-[#F3F4F6] py-3 text-sm font-bold text-[#374151] transition-all hover:bg-[#E5E7EB] disabled:opacity-50"
+            className="min-h-12 rounded-xl bg-[#F3F4F6] px-4 py-3 text-sm font-bold text-[#374151] transition-all hover:bg-[#E5E7EB] disabled:opacity-50"
           >
             Back
           </button>
@@ -362,7 +362,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
               type="button"
               onClick={handleNextStep}
               disabled={currentStepHasErrors || isLoading}
-              className="rounded-2xl bg-[#111827] py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50"
+              className="min-h-12 rounded-2xl bg-[#111827] px-4 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50"
             >
               Next
             </button>
@@ -370,12 +370,12 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
             <button
               type="submit"
               disabled={isLoading || !canSubmit}
-              className="rounded-2xl bg-[#111827] py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#111827] px-4 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                'Submit Request'
+                'Create Account'
               )}
             </button>
           )}

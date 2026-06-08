@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldAlert, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
@@ -108,8 +108,6 @@ export default function UserManagement() {
   const [disableUser, setDisableUser] = useState<AppUser | null>(null);
   const [enableUser, setEnableUser] = useState<AppUser | null>(null);
   const [deleteUser, setDeleteUser] = useState<AppUser | null>(null);
-  const [approveUserTarget, setApproveUserTarget] = useState<AppUser | null>(null);
-  const [disapproveUserTarget, setDisapproveUserTarget] = useState<AppUser | null>(null);
   const [deleteInput, setDeleteInput] = useState('');
   const [showRegister, setShowRegister] = useState(false);
   const [view, setView] = useState<'users' | 'roles'>('users');
@@ -180,7 +178,6 @@ export default function UserManagement() {
 
   const summary = useMemo(
     () => ({
-      pending: users.filter((user) => user.status === 'pending').length,
       active: users.filter((user) => user.status === 'active').length,
       admins: users.filter((user) => user.role === 'admin' && user.status === 'active').length,
       superAdmins: users.filter((user) => user.role === 'super_admin' && user.status === 'active').length,
@@ -238,34 +235,6 @@ export default function UserManagement() {
       key,
       direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
     }));
-  };
-
-  const approveUserAction = async (id: string) => {
-    setBusyId(id);
-    try {
-      await userService.approve(id);
-      toast.success('User approved');
-      setApproveUserTarget(null);
-      await loadUsers();
-    } catch (error: any) {
-      toast.error(error.message || 'Unable to approve user');
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const disapproveUserAction = async (id: string) => {
-    setBusyId(id);
-    try {
-      await userService.remove(id);
-      toast.success('User rejected and removed');
-      setDisapproveUserTarget(null);
-      await loadUsers();
-    } catch (error: any) {
-      toast.error(error.message || 'Unable to reject user');
-    } finally {
-      setBusyId(null);
-    }
   };
 
   const confirmDisableUser = async (id: string) => {
@@ -413,7 +382,7 @@ export default function UserManagement() {
               key={tab}
               type="button"
               onClick={() => setView(tab)}
-              className="rounded-lg px-4 py-2 text-sm font-bold transition-colors"
+              className="min-h-10 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
               style={view === tab
                 ? { backgroundColor: 'var(--color-accent)', color: 'var(--color-surface)' }
                 : { color: 'var(--color-text-muted)' }}
@@ -457,7 +426,6 @@ export default function UserManagement() {
                 options={[
                   { value: '', label: 'All Statuses' },
                   { value: 'active', label: 'Active' },
-                  { value: 'pending', label: 'Pending' },
                   { value: 'disabled', label: 'Inactive' },
                 ]}
                 className="min-w-[140px]"
@@ -467,7 +435,7 @@ export default function UserManagement() {
           <button
             type="button"
             onClick={() => setShowRegister(true)}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#111827] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#374151] active:scale-[0.98]"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#111827] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#374151] active:scale-[0.98]"
           >
             <UserPlus className="h-4 w-4" />
             Register Account
@@ -477,20 +445,9 @@ export default function UserManagement() {
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
             <motion.div key="skeleton-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="flex flex-col lg:flex-row gap-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:w-2/5">
-                {[...Array(2)].map((_, i) => (
-                  <div key={`sk-group1-${i}`} className="p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-sm flex items-center gap-4 animate-pulse">
-                    <div className="w-11 h-11 rounded-xl bg-gray-200" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-24 bg-gray-200 rounded" />
-                      <div className="h-3 w-16 bg-gray-200 rounded" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:w-3/5">
-                {[...Array(3)].map((_, i) => (
-                  <div key={`sk-group2-${i}`} className="p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-sm flex items-center gap-4 animate-pulse">
+              <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={`sk-summary-${i}`} className="p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-sm flex items-center gap-4 animate-pulse">
                     <div className="w-11 h-11 rounded-xl bg-gray-200" />
                     <div className="flex-1 space-y-2">
                       <div className="h-4 w-24 bg-gray-200 rounded" />
@@ -501,16 +458,11 @@ export default function UserManagement() {
               </div>
             </motion.div>
           ) : (
-            <motion.div key="content-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="flex flex-col lg:flex-row gap-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:w-2/5">
+            <motion.div key="content-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 <SummaryCard label="Active Accounts" count={summary.active} icon={UsersRound} color="text-green-700" bg="bg-green-50" />
-                <SummaryCard label="Pending Requests" count={summary.pending} icon={ShieldAlert} color="text-amber-700" bg="bg-amber-50" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 lg:w-3/5">
                 <SummaryCard label="Super Admins" count={summary.superAdmins} icon={ShieldCheck} color="text-[#111827]" bg="bg-[#F3F4F6]" />
                 <SummaryCard label="Admins" count={summary.admins} icon={ShieldCheck} color="text-blue-700" bg="bg-blue-50" />
                 <SummaryCard label="Viewers" count={summary.viewers} icon={UsersRound} color="text-purple-700" bg="bg-purple-50" />
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -522,11 +474,11 @@ export default function UserManagement() {
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                     <SortableHeader label="User" sortKey="fullName" currentSort={sortConfig} onSort={handleSort} className="w-[22%]" />
-                    <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} className="w-[18%]" />
-                    <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} className="w-[19%]" />
-                    <SortableHeader label="Site" sortKey="site" currentSort={sortConfig} onSort={handleSort} className="w-[17%]" />
+                    <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} className="w-[16%]" />
+                    <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} className="w-[18%]" />
+                    <SortableHeader label="Site" sortKey="site" currentSort={sortConfig} onSort={handleSort} className="w-[15%]" />
                     <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} className="w-[12%]" />
-                    <th className="px-6 py-4 w-[12%] text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-right"></th>
+                    <th className="px-4 py-4 w-[17%] text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-right"></th>
                   </tr>
                 </thead>
                 <tbody className="">
@@ -555,11 +507,11 @@ export default function UserManagement() {
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                     <SortableHeader label="User" sortKey="fullName" currentSort={sortConfig} onSort={handleSort} className="w-[22%]" />
-                    <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} className="w-[18%]" />
-                    <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} className="w-[19%]" />
-                    <SortableHeader label="Site" sortKey="site" currentSort={sortConfig} onSort={handleSort} className="w-[17%]" />
+                    <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} className="w-[16%]" />
+                    <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} className="w-[18%]" />
+                    <SortableHeader label="Site" sortKey="site" currentSort={sortConfig} onSort={handleSort} className="w-[15%]" />
                     <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} className="w-[12%]" />
-                    <th className="px-6 py-4 w-[12%] text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-right"></th>
+                    <th className="px-4 py-4 w-[17%] text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-right"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F3F4F6]">
@@ -575,7 +527,7 @@ export default function UserManagement() {
                         transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
                         className="hover:bg-[#F9FAFB] transition-colors border-b border-[#F3F4F6] last:border-0"
                       >
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[10px] font-black text-[#111827] border border-[#E5E7EB]">
                               {getInitials(user.fullName || '', user.email)}
@@ -691,7 +643,7 @@ export default function UserManagement() {
                                   onClick={() => saveUser(user.uid)}
                                   disabled={busyId === user.uid}
                                   aria-label="Save changes"
-                                  className="group relative inline-flex items-center justify-center w-9 h-9 bg-[#111827] text-white rounded-lg hover:bg-[#374151] disabled:opacity-50"
+                                  className="group relative inline-flex h-10 w-10 min-w-10 shrink-0 items-center justify-center bg-[#111827] text-white rounded-lg hover:bg-[#374151] disabled:opacity-50"
                                 >
                                   {busyId === user.uid ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                                   <ActionTooltip label="Save Changes" />
@@ -700,7 +652,7 @@ export default function UserManagement() {
                                   onClick={cancelEditing}
                                   disabled={busyId === user.uid}
                                   aria-label="Cancel editing"
-                                  className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#E5E7EB] text-[#4B5563] rounded-lg hover:bg-[#F9FAFB] disabled:opacity-50"
+                                  className="group relative inline-flex h-10 w-10 min-w-10 shrink-0 items-center justify-center bg-white border border-[#E5E7EB] text-[#4B5563] rounded-lg hover:bg-[#F9FAFB] disabled:opacity-50"
                                 >
                                   <X className="w-4 h-4" />
                                   <ActionTooltip label="Cancel" />
@@ -708,47 +660,27 @@ export default function UserManagement() {
                               </>
                             ) : (
                               <>
-                                {canEdit && user.status !== 'pending' && (
+                                {canEdit && (
                                   <button
                                     onClick={() => startEditing(user)}
-                                    disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null || approveUserTarget !== null || disapproveUserTarget !== null}
+                                    disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null}
                                     aria-label="Edit user"
-                                    className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#E5E7EB] text-[#4B5563] rounded-lg hover:bg-[#F9FAFB] disabled:opacity-50"
+                                    className="group relative inline-flex h-10 w-10 min-w-10 shrink-0 items-center justify-center bg-white border border-[#E5E7EB] text-[#4B5563] rounded-lg hover:bg-[#F9FAFB] disabled:opacity-50"
                                   >
                                     <Pencil className="w-4 h-4" />
                                     <ActionTooltip label="Edit User" />
                                   </button>
                                 )}
-                                {canEdit && user.status !== 'pending' && (
+                                {canEdit && (
                                   <button
                                     onClick={() => openPermissions(user)}
-                                    disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null || approveUserTarget !== null || disapproveUserTarget !== null}
+                                    disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null}
                                     aria-label="Edit permissions"
-                                    className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#E5E7EB] text-[#4B5563] rounded-lg hover:bg-[#F9FAFB] disabled:opacity-50"
+                                    className="group relative inline-flex h-10 w-10 min-w-10 shrink-0 items-center justify-center bg-white border border-[#E5E7EB] text-[#4B5563] rounded-lg hover:bg-[#F9FAFB] disabled:opacity-50"
                                   >
                                     <SlidersHorizontal className="w-4 h-4" />
                                     <ActionTooltip label="Permissions" />
                                   </button>
-                                )}
-                                {canEdit && user.status === 'pending' && (
-                                  <>
-                                    <button
-                                      onClick={() => setApproveUserTarget(user)}
-                                      disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null || approveUserTarget !== null || disapproveUserTarget !== null}
-                                      className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#D1FAE5] text-[#059669] rounded-lg hover:bg-[#ECFDF5] disabled:opacity-50"
-                                    >
-                                      <CheckCircle2 className="w-4 h-4" />
-                                      <ActionTooltip label="Approve User" />
-                                    </button>
-                                    <button
-                                      onClick={() => setDisapproveUserTarget(user)}
-                                      disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null || approveUserTarget !== null || disapproveUserTarget !== null}
-                                      className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#FEE2E2] text-[#B91C1C] rounded-lg hover:bg-[#FEF2F2] disabled:opacity-50"
-                                    >
-                                      <X className="w-4 h-4" />
-                                      <ActionTooltip label="Disapprove User" />
-                                    </button>
-                                  </>
                                 )}
                                 {user.status === 'active' && canEdit && (
                                   <button
@@ -757,7 +689,7 @@ export default function UserManagement() {
                                       setDisableUser(user);
                                     }}
                                     disabled={busyId === user.uid || editingId !== null || disableUser !== null}
-                                    className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#FEE2E2] text-[#B91C1C] rounded-lg hover:bg-[#FEF2F2] disabled:opacity-50"
+                                    className="group relative inline-flex h-10 w-10 min-w-10 shrink-0 items-center justify-center bg-white border border-[#FEE2E2] text-[#B91C1C] rounded-lg hover:bg-[#FEF2F2] disabled:opacity-50"
                                   >
                                     <UserX className="w-4 h-4" />
                                     <ActionTooltip label="Disable User" />
@@ -767,22 +699,22 @@ export default function UserManagement() {
                                   <button
                                     onClick={() => setEnableUser(user)}
                                     disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null}
-                                    className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#D1FAE5] text-[#059669] rounded-lg hover:bg-[#ECFDF5] disabled:opacity-50"
+                                    className="group relative inline-flex h-10 w-10 min-w-10 shrink-0 items-center justify-center bg-white border border-[#D1FAE5] text-[#059669] rounded-lg hover:bg-[#ECFDF5] disabled:opacity-50"
                                   >
                                     <ShieldCheck className="w-4 h-4" />
                                     <ActionTooltip label="Enable User" />
                                   </button>
                                 )}
-                                {canEdit && user.status !== 'pending' && (
+                                {canEdit && (
                                   <button
                                     onClick={() => {
                                       setDisableUser(null);
                                       setDeleteUser(user);
                                       setDeleteInput('');
                                     }}
-                                    disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null || approveUserTarget !== null || disapproveUserTarget !== null}
+                                    disabled={busyId === user.uid || editingId !== null || disableUser !== null || enableUser !== null}
                                     aria-label="Delete user"
-                                    className="group relative inline-flex items-center justify-center w-9 h-9 bg-white border border-[#FEE2E2] text-[#B91C1C] rounded-lg hover:bg-[#FEF2F2] disabled:opacity-50"
+                                    className="group relative inline-flex h-10 w-10 min-w-10 shrink-0 items-center justify-center bg-white border border-[#FEE2E2] text-[#B91C1C] rounded-lg hover:bg-[#FEF2F2] disabled:opacity-50"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                     <ActionTooltip label="Delete User" />
@@ -955,7 +887,7 @@ export default function UserManagement() {
                       setDeleteInput('');
                     }}
                     disabled={busyId === deleteUser.uid}
-                    className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827] hover:bg-[#F9FAFB] disabled:opacity-50"
+                    className="min-h-11 whitespace-nowrap rounded-xl border border-[#E5E7EB] bg-white px-5 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827] hover:bg-[#F9FAFB] disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -963,7 +895,7 @@ export default function UserManagement() {
                     type="button"
                     onClick={deleteUserAccount}
                     disabled={busyId === deleteUser.uid || deleteInput !== 'CONFIRM'}
-                    className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-red-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 disabled:opacity-60"
                   >
                     {busyId === deleteUser.uid && <Loader2 className="h-4 w-4 animate-spin" />}
                     Delete Permanently
@@ -1044,7 +976,7 @@ export default function UserManagement() {
                     type="button"
                     onClick={() => setDisableUser(null)}
                     disabled={busyId === disableUser.uid}
-                    className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827] hover:bg-[#F9FAFB] disabled:opacity-50"
+                    className="min-h-11 whitespace-nowrap rounded-xl border border-[#E5E7EB] bg-white px-5 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827] hover:bg-[#F9FAFB] disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -1052,7 +984,7 @@ export default function UserManagement() {
                     type="button"
                     onClick={() => confirmDisableUser(disableUser.uid)}
                     disabled={busyId === disableUser.uid}
-                    className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-orange-600/20 transition-all hover:bg-orange-700 disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-orange-600/20 transition-all hover:bg-orange-700 disabled:opacity-60"
                   >
                     {busyId === disableUser.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="w-4 h-4" />}
                     Suspend Account
@@ -1133,7 +1065,7 @@ export default function UserManagement() {
                     type="button"
                     onClick={() => setEnableUser(null)}
                     disabled={busyId === enableUser.uid}
-                    className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827] hover:bg-[#F9FAFB] disabled:opacity-50"
+                    className="min-h-11 whitespace-nowrap rounded-xl border border-[#E5E7EB] bg-white px-5 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827] hover:bg-[#F9FAFB] disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -1141,188 +1073,10 @@ export default function UserManagement() {
                     type="button"
                     onClick={() => enableUserAccount(enableUser.uid)}
                     disabled={busyId === enableUser.uid}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#059669] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-[#047857] disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#059669] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-[#047857] disabled:opacity-60"
                   >
                     {busyId === enableUser.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                     Restore Account
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {approveUserTarget && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              className="w-full max-w-md rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl"
-            >
-              <div className="flex items-start gap-4 border-b border-[#E5E7EB] px-6 py-5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-black text-[#111827]">Approve User</h2>
-                  <p className="mt-1 text-xs font-bold text-[#6B7280]">Grant the user access to the system.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setApproveUserTarget(null)}
-                  className="rounded-lg p-2 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#4B5563]"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-5 p-6">
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                  <div className="flex items-center gap-2 text-emerald-700">
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span className="text-xs font-black uppercase tracking-wide">Application Approval</span>
-                  </div>
-                  <ul className="mt-2 space-y-1 pl-6 text-[11px] font-medium leading-relaxed text-emerald-700 list-disc">
-                    <li>This user will be granted active access to the system.</li>
-                    <li>They will be assigned the Viewer role by default.</li>
-                    <li>You can modify their role and department later.</li>
-                  </ul>
-                </div>
-
-                <div className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] p-4">
-                  <p className="text-sm font-bold text-[#111827] mb-0.5">{approveUserTarget.fullName || 'No Name'}</p>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-3">{approveUserTarget.email}</p>
-                  <div className="grid grid-cols-2 gap-y-2 text-xs">
-                    <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Role</span>
-                      <span className="font-bold text-[#4B5563]">{roleLabel(approveUserTarget.role)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Department</span>
-                      <span className="font-bold text-[#4B5563]">{approveUserTarget.department || 'Unassigned'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-sm text-[#4B5563]">
-                  You are about to approve the application for <span className="font-black text-[#111827]">&ldquo;{approveUserTarget.fullName || approveUserTarget.email}&rdquo;</span>.
-                </p>
-
-                <div className="flex items-center justify-end gap-3 border-t border-[#F3F4F6] pt-5">
-                  <button
-                    type="button"
-                    onClick={() => setApproveUserTarget(null)}
-                    disabled={busyId === approveUserTarget.uid}
-                    className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827] hover:bg-[#F9FAFB] disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => approveUserAction(approveUserTarget.uid)}
-                    disabled={busyId === approveUserTarget.uid}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#059669] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-[#047857] disabled:opacity-60"
-                  >
-                    {busyId === approveUserTarget.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    Approve Account
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {disapproveUserTarget && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              className="w-full max-w-md rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl"
-            >
-              <div className="flex items-start gap-4 border-b border-[#E5E7EB] px-6 py-5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-                  <X className="h-5 w-5 text-red-600" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-black text-[#111827]">Disapprove User</h2>
-                  <p className="mt-1 text-xs font-bold text-[#6B7280]">Reject this user's application.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setDisapproveUserTarget(null)}
-                  className="rounded-lg p-2 text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#4B5563]"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-5 p-6">
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <X className="h-4 w-4 shrink-0" />
-                    <span className="text-xs font-black uppercase tracking-wide">Application Rejection</span>
-                  </div>
-                  <ul className="mt-2 space-y-1 pl-6 text-[11px] font-medium leading-relaxed text-red-700 list-disc">
-                    <li>This will permanently remove the user's application from the system.</li>
-                    <li>The user will not be notified of this action.</li>
-                    <li>They will need to register again if they wish to re-apply.</li>
-                  </ul>
-                </div>
-
-                <div className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] p-4">
-                  <p className="text-sm font-bold text-[#111827] mb-0.5">{disapproveUserTarget.fullName || 'No Name'}</p>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-3">{disapproveUserTarget.email}</p>
-                  <div className="grid grid-cols-2 gap-y-2 text-xs">
-                    <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Role</span>
-                      <span className="font-bold text-[#4B5563]">{roleLabel(disapproveUserTarget.role)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Department</span>
-                      <span className="font-bold text-[#4B5563]">{disapproveUserTarget.department || 'Unassigned'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-sm text-[#4B5563]">
-                  You are about to reject the application for <span className="font-black text-[#111827]">&ldquo;{disapproveUserTarget.fullName || disapproveUserTarget.email}&rdquo;</span>. This will permanently remove their application from the system.
-                </p>
-
-                <div className="flex items-center justify-end gap-3 border-t border-[#F3F4F6] pt-5">
-                  <button
-                    type="button"
-                    onClick={() => setDisapproveUserTarget(null)}
-                    disabled={busyId === disapproveUserTarget.uid}
-                    className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827] hover:bg-[#F9FAFB] disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => disapproveUserAction(disapproveUserTarget.uid)}
-                    disabled={busyId === disapproveUserTarget.uid}
-                    className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 disabled:opacity-60"
-                  >
-                    {busyId === disapproveUserTarget.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="w-4 h-4" />}
-                    Disapprove
                   </button>
                 </div>
               </div>
@@ -1427,7 +1181,7 @@ export default function UserManagement() {
                     type="button"
                     onClick={() => setPermsTarget(null)}
                     disabled={permsSaving}
-                    className="rounded-xl border bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] disabled:opacity-50"
+                    className="min-h-11 whitespace-nowrap rounded-xl border bg-white px-5 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] disabled:opacity-50"
                     style={{ borderColor: 'var(--color-border)' }}
                   >
                     Cancel
@@ -1436,7 +1190,7 @@ export default function UserManagement() {
                     type="button"
                     onClick={() => savePermissions(false)}
                     disabled={permsSaving}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-[#374151] disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-[#374151] disabled:opacity-60"
                   >
                     {permsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     Save
@@ -1501,7 +1255,7 @@ function AnimatedSelect({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] hover:bg-[#F9FAFB] focus:ring-2 focus:ring-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#4B5563] outline-none transition-all hover:border-[#CBD5E1] hover:bg-[#F9FAFB] focus:ring-2 focus:ring-[#111827] disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className="truncate">{selectedLabel}</span>
         <ChevronRight
