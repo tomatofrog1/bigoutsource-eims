@@ -515,7 +515,7 @@ export default function Assets() {
                       />
                       <td className="px-6 py-4 text-right">
                         <Link to={`/employee/${device.assigneeId || device.id}`} className="text-[10px] font-black uppercase text-[#111827] hover:underline flex items-center justify-end gap-1">
-                          <ExternalLink className="w-3 h-3" /> Specs
+                          <ExternalLink className="w-3 h-3" /> Details
                         </Link>
                       </td>
                     </motion.tr>
