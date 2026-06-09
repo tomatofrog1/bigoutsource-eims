@@ -28,7 +28,7 @@ export function SkeletonLoadingMessage({ message, delayMs = 1000 }: SkeletonLoad
           className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center justify-center px-4 py-2 rounded-full bg-white/90 backdrop-blur-sm border border-[#E5E7EB] text-[#111827] shadow-sm pointer-events-none"
         >
           <div className="w-1.5 h-1.5 rounded-full bg-[#111827] animate-pulse mr-2.5" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#4B5563]">{message}</span>
+          <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#4B5563]">{message}</span>
         </motion.div>
       )}
     </AnimatePresence>

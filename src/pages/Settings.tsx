@@ -310,7 +310,7 @@ export default function Settings() {
                   <div className="mt-6 grid gap-3 md:grid-cols-2">
                     {systemAlerts.map((alert) => (
                       <div key={alert.title} className="rounded-xl border border-[#E5E7EB] p-4">
-                        <span className={`mb-3 inline-flex rounded-lg px-2 py-1 text-[10px] font-black uppercase ${alert.tone}`}>Alert</span>
+                        <span className={`mb-3 inline-flex rounded-lg px-2 py-1 text-[0.625rem] font-black uppercase ${alert.tone}`}>Alert</span>
                         <h3 className="text-sm font-black text-[#111827]">{alert.title}</h3>
                         <p className="mt-1 text-xs font-bold text-[#6B7280]">{alert.detail}</p>
                       </div>
@@ -360,11 +360,11 @@ export default function Settings() {
                           className={`h-1.5 flex-1 rounded-full ${rule.test(newPassword) ? newPasswordStrengthColor : 'bg-[#E5E7EB]'}`}
                         />
                       ))}
-                      <span className="ml-2 text-[10px] font-black uppercase tracking-wider text-[#6B7280]">
+                      <span className="ml-2 text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280]">
                         {newPasswordStrength}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 gap-1 text-[11px] text-[#6B7280]">
+                    <div className="grid grid-cols-1 gap-1 text-[0.6875rem] text-[#6B7280]">
                       {PASSWORD_RULES.map((rule) => {
                         const passed = rule.test(newPassword);
                         return (
@@ -469,7 +469,7 @@ function TabButton({
         <Icon className="h-5 w-5" />
         {label}
       </span>
-      {Boolean(badge) && <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">{badge}</span>}
+      {Boolean(badge) && <span className="rounded-full bg-amber-100 px-2 py-1 text-[0.625rem] font-black text-amber-800">{badge}</span>}
     </button>
   );
 }

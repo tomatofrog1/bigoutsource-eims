@@ -62,7 +62,7 @@ const CustomTooltip = ({ active, payload, label, chartType }: any) => {
 
     return (
       <div className="bg-white p-3 border border-[#E5E7EB] rounded-xl shadow-lg shadow-[#11182714] min-w-[140px]">
-        <p className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF] mb-2 border-b border-[#F3F4F6] pb-2">{title}</p>
+        <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF] mb-2 border-b border-[#F3F4F6] pb-2">{title}</p>
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color || entry.payload.fill || '#111827' }} />
           <span className="text-xs font-bold text-[#4B5563]">{valueLabel}:</span>
@@ -302,7 +302,7 @@ export default function Dashboard() {
                       <stat.icon className="w-5 h-5" />
                     </div>
                     
-                      <div className={`flex items-center gap-1 text-[10px] font-bold uppercase ${stat.color}`}>
+                      <div className={`flex items-center gap-1 text-[0.625rem] font-bold uppercase ${stat.color}`}>
                         Live
                         <ArrowUpRight className="w-3 h-3" />
                       </div>
@@ -336,8 +336,8 @@ export default function Dashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={growthTrend} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                        <XAxis dataKey="month" label={{ value: 'Month & Year', position: 'bottom', fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} dy={10} />
-                        <YAxis label={{ value: 'Employees', angle: -90, position: 'insideLeft', offset: -5, fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} />
+                        <XAxis dataKey="month" label={{ value: 'Month & Year', position: 'bottom', fill: '#9CA3AF', fontSize: '0.6875rem', fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: '0.75rem', fill: '#6B7280', fontWeight: 'bold' }} dy={10} />
+                        <YAxis label={{ value: 'Employees', angle: -90, position: 'insideLeft', offset: -5, fill: '#9CA3AF', fontSize: '0.6875rem', fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: '0.75rem', fill: '#6B7280', fontWeight: 'bold' }} />
                         <RechartsTooltip content={<CustomTooltip chartType="growth" />} cursor={{ stroke: isDark ? '#2D3344' : '#E5E7EB', strokeWidth: 2 }} wrapperStyle={{ zIndex: 9999 }} />
                         <Line type="monotone" dataKey="count" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, fill: '#6366F1', strokeWidth: 2, stroke: '#ffffff' }} activeDot={{ r: 6 }} />
                       </LineChart>
@@ -368,8 +368,8 @@ export default function Dashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={departmentDistribution} layout="vertical" margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E5E7EB" />
-                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280', fontWeight: 'bold' }} />
-                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#111827', fontWeight: 'bold' }} width={90} />
+                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: '0.75rem', fill: '#6B7280', fontWeight: 'bold' }} />
+                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: '0.6875rem', fill: '#111827', fontWeight: 'bold' }} width={90} />
                         <RechartsTooltip content={<CustomTooltip chartType="department" />} cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F9FAFB' }} wrapperStyle={{ zIndex: 9999 }} />
                         <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={24} />
                       </BarChart>
@@ -422,7 +422,7 @@ export default function Dashboard() {
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
                         <span className="text-3xl font-black text-[#111827]">{totalPersonnel}</span>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#6B7280]">Total</span>
+                        <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280]">Total</span>
                       </div>
                     </>
                   ) : (
@@ -467,12 +467,12 @@ export default function Dashboard() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-bold text-[#111827] truncate">{emp.fullName || 'Unnamed Employee'}</p>
-                            <p className="text-[10px] font-black uppercase tracking-wider text-[#6B7280] truncate mt-0.5">{emp.department || 'Unassigned Dept'}</p>
+                            <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280] truncate mt-0.5">{emp.department || 'Unassigned Dept'}</p>
                           </div>
                         </div>
                         <div className="text-right shrink-0 ml-3">
                           <p className="text-xs font-bold text-[#111827]">{formatTime(emp.createdAt || emp.created_at)}</p>
-                          <p className="text-[9px] font-black uppercase text-[#10B981] tracking-wider mt-1 bg-green-50 px-2 py-0.5 rounded-full inline-block">Joined</p>
+                          <p className="text-[0.5625rem] font-black uppercase text-[#10B981] tracking-wider mt-1 bg-green-50 px-2 py-0.5 rounded-full inline-block">Joined</p>
                         </div>
                       </div>
                     ))
@@ -518,7 +518,7 @@ export default function Dashboard() {
                             {log.userEmail || 'System'} <span className="font-medium text-[#6B7280]">{actionLabel(log.action).toLowerCase()}</span>
                           </p>
                           <p className="text-xs text-[#4B5563] mt-1">{log.details?.fullName || log.details?.employeeNumber || log.entityType}</p>
-                          <p className="text-[10px] text-[#9CA3AF] uppercase font-bold mt-1">{formatTime(log.createdAt)}</p>
+                          <p className="text-[0.625rem] text-[#9CA3AF] uppercase font-bold mt-1">{formatTime(log.createdAt)}</p>
                         </div>
                       </div>
                     ))
@@ -551,11 +551,11 @@ export default function Dashboard() {
                           <AlertTriangle className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>{alert.label}</p>
+                          <p className="text-[0.625rem] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>{alert.label}</p>
                           <p className="text-lg font-black" style={{ color: alert.color }}>{alert.value} Devices</p>
                         </div>
                       </div>
-                      <Link to="/assets" className="text-[10px] font-black uppercase hover:underline px-2 py-1 rounded transition-colors" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-primary)' }}>Fix</Link>
+                      <Link to="/assets" className="text-[0.625rem] font-black uppercase hover:underline px-2 py-1 rounded transition-colors" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-primary)' }}>Fix</Link>
                     </div>
                   ))}
                 </div>

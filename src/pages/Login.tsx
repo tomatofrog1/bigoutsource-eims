@@ -76,10 +76,10 @@ export default function Login() {
 
           <div className="flex flex-col items-center mb-8 relative z-10">
             <img src={logoUrl} alt="Big Outsource" className="w-20 h-auto mb-6 relative z-10 object-contain" />
-            <h1 className="text-[32px] font-black text-[#111827] tracking-tight text-center">
+            <h1 className="text-[2rem] font-black text-[#111827] tracking-tight text-center">
               Welcome Back
             </h1>
-            <p className="text-[#6B7280] text-[15px] mt-3 text-center text-balance leading-relaxed">
+            <p className="text-[#6B7280] text-[0.9375rem] mt-3 text-center text-balance leading-relaxed">
               Enter your credentials to access your dashboard.
             </p>
           </div>
@@ -104,7 +104,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading || !canSubmit}
-              className="w-full bg-[#111827] text-white py-3.5 rounded-2xl font-bold text-[15px] shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-[#111827] text-white py-3.5 rounded-2xl font-bold text-[0.9375rem] shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -115,10 +115,10 @@ export default function Login() {
           </form>
 
           <div className="mt-8 pt-8 border-t border-[#F3F4F6] text-center">
-            <p className="text-[10px] text-[#9CA3AF] uppercase tracking-widest font-bold">
+            <p className="text-[0.625rem] text-[#9CA3AF] uppercase tracking-widest font-bold">
               © 2026 BIG OUTSOURCE
             </p>
-            <p className="mt-2 text-[10px] text-[#9CA3AF]">
+            <p className="mt-2 text-[0.625rem] text-[#9CA3AF]">
               Secure access for authorized users
             </p>
           </div>
@@ -156,11 +156,11 @@ export default function Login() {
                   )}
                 </div>
 
-                <h2 className="text-[28px] font-black text-[#111827] mb-4 tracking-tight">
+                <h2 className="text-[1.75rem] font-black text-[#111827] mb-4 tracking-tight">
                   {authStatusError.type === 'pending' ? 'Pending Approval' : 'Access Revoked'}
                 </h2>
 
-                <p className="text-[15px] text-[#4B5563] leading-relaxed mb-10 max-w-[340px]">
+                <p className="text-[0.9375rem] text-[#4B5563] leading-relaxed mb-10 max-w-[340px]">
                   {authStatusError.type === 'pending'
                     ? 'Your account has been created successfully, but requires administrator approval before you can log in.'
                     : 'Your account access has been revoked. If you believe this is a mistake, please contact your IT administrator.'}
@@ -169,7 +169,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setAuthStatusError(null)}
-                  className={`w-full rounded-2xl py-4 text-[15px] font-bold text-white transition-all shadow-lg active:scale-[0.98] ${
+                  className={`w-full rounded-2xl py-4 text-[0.9375rem] font-bold text-white transition-all shadow-lg active:scale-[0.98] ${
                     authStatusError.type === 'pending'
                       ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/25'
                       : 'bg-[#DC2626] hover:bg-[#B91C1C] shadow-red-600/25'

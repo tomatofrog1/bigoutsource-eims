@@ -49,7 +49,7 @@ export function CapabilityChecklist({
     <div className="space-y-5">
       {grouped.map((group) => (
         <div key={group.domain}>
-          <h4 className="mb-2 text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--color-text-faint)' }}>
+          <h4 className="mb-2 text-[0.6875rem] font-black uppercase tracking-widest" style={{ color: 'var(--color-text-faint)' }}>
             {group.label}
           </h4>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

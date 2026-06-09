@@ -38,7 +38,7 @@ export function AuthInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="peer w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-[15px] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 transition-all outline-none placeholder:text-gray-400 shadow-sm shadow-gray-900/5"
+          className="peer w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-[0.9375rem] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 transition-all outline-none placeholder:text-gray-400 shadow-sm shadow-gray-900/5"
         />
       </div>
       <AnimatePresence initial={false}>
@@ -92,7 +92,7 @@ export function SelectInput({
           type="button"
           disabled={disabled}
           onClick={() => setIsOpen((current) => !current)}
-          className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-gray-50 py-3.5 pl-11 pr-4 text-left text-[15px] outline-none transition-all shadow-sm shadow-gray-900/5 focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 disabled:cursor-not-allowed disabled:opacity-60 ${error ? 'border-[#DC2626] ring-4 ring-red-500/10 bg-red-50' : 'border-gray-200'
+          className={`flex w-full items-center justify-between gap-3 rounded-2xl border bg-gray-50 py-3.5 pl-11 pr-4 text-left text-[0.9375rem] outline-none transition-all shadow-sm shadow-gray-900/5 focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 disabled:cursor-not-allowed disabled:opacity-60 ${error ? 'border-[#DC2626] ring-4 ring-red-500/10 bg-red-50' : 'border-gray-200'
             }`}
         >
           <span className={`truncate ${!value ? 'text-gray-400' : 'text-[#111827]'}`}>
@@ -192,7 +192,7 @@ export function PasswordInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="peer w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-[15px] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 transition-all outline-none placeholder:text-gray-400 shadow-sm shadow-gray-900/5"
+          className="peer w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-[0.9375rem] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 transition-all outline-none placeholder:text-gray-400 shadow-sm shadow-gray-900/5"
         />
         <button
           type="button"

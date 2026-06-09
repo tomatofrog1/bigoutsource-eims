@@ -208,7 +208,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
       {showHeader && (
         <div className="flex flex-col items-center mb-8">
           <img src={logoUrl} alt="Big Outsource" className="w-16 h-auto mb-5 object-contain" />
-          <h1 className="text-[26px] font-black text-[#111827] tracking-tight text-center">Create an Account</h1>
+          <h1 className="text-[1.625rem] font-black text-[#111827] tracking-tight text-center">Create an Account</h1>
           <p className="text-[#6B7280] text-sm mt-2 text-center leading-relaxed">
             Fill in the details to request system access.
           </p>
@@ -319,11 +319,11 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
                       className={`h-1.5 flex-1 rounded-full ${rule.test(password) ? passwordStrengthColor : 'bg-[#E5E7EB]'}`}
                     />
                   ))}
-                  <span className="ml-2 text-[10px] font-black uppercase tracking-wider text-[#6B7280]">
+                  <span className="ml-2 text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280]">
                     {passwordStrength}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 gap-1 text-[11px] text-[#6B7280]">
+                <div className="grid grid-cols-1 gap-1 text-[0.6875rem] text-[#6B7280]">
                   {PASSWORD_RULES.map((rule) => {
                     const passed = rule.test(password);
                     return (
@@ -362,7 +362,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
               type="button"
               onClick={handleNextStep}
               disabled={currentStepHasErrors || isLoading}
-              className="min-h-12 rounded-2xl bg-[#111827] px-4 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50"
+              className="min-h-12 rounded-2xl bg-[#111827] px-4 py-3.5 text-[0.9375rem] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50"
             >
               Next
             </button>
@@ -370,7 +370,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
             <button
               type="submit"
               disabled={isLoading || !canSubmit}
-              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#111827] px-4 py-3.5 text-[15px] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50"
+              className="flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#111827] px-4 py-3.5 text-[0.9375rem] font-bold text-white shadow-lg shadow-[#111827]/20 transition-all hover:bg-[#1F2937] active:scale-[0.98] disabled:opacity-50"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -412,7 +412,7 @@ function RegistrationProgress({
                 aria-label={`${isComplete ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'} step ${index + 1}: ${step.title}`}
               >
                 <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-[11px] font-black transition-all ${isCurrent
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-[0.6875rem] font-black transition-all ${isCurrent
                     ? 'border-[#111827] bg-white text-[#111827] ring-4 ring-[#11182714]'
                     : isComplete
                       ? 'border-[#111827] bg-[#111827] text-white group-hover:bg-[#374151]'
@@ -422,7 +422,7 @@ function RegistrationProgress({
                   {isComplete ? <Check className="h-3.5 w-3.5" /> : index + 1}
                 </span>
                 <span
-                  className={`text-[10px] font-black uppercase leading-tight tracking-wider ${isCurrent ? 'text-[#111827]' : isComplete ? 'text-[#374151]' : 'text-[#9CA3AF]'
+                  className={`text-[0.625rem] font-black uppercase leading-tight tracking-wider ${isCurrent ? 'text-[#111827]' : isComplete ? 'text-[#374151]' : 'text-[#9CA3AF]'
                     }`}
                 >
                   {step.title}

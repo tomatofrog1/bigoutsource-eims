@@ -166,7 +166,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
           {incomplete && (
             <div
               className={cn(
-                'group relative flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 cursor-help border shadow-sm',
+                'group relative flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[0.625rem] font-black shrink-0 cursor-help border shadow-sm',
                 incomplete.type === 'critical' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'
               )}
             >
@@ -198,7 +198,7 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     render: (emp) => (
       <span
         className={cn(
-          'px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter',
+          'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
           emp.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'
         )}
       >
@@ -1079,14 +1079,14 @@ export default function Directory() {
         <aside className="sticky top-0 hidden self-start rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block min-h-[80vh]">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
+              <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
               <p className="mt-1 text-xs font-bold text-[#4B5563]">{isCustomFieldView ? `${visibleFieldKeys.length}/4 selected` : 'Default fields shown'}</p>
             </div>
             <button
               type="button"
               onClick={resetFields}
               disabled={!isCustomFieldView}
-              className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[10px] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[0.625rem] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Reset
             </button>
@@ -1229,11 +1229,11 @@ export default function Directory() {
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       {visibleFields.map((field) => (
-                        <th key={field.key} className={cn('h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
+                        <th key={field.key} className={cn('h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
                           <div className="truncate">{field.label}</div>
                         </th>
                       ))}
-                      <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
+                      <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
                     </tr>
                   </thead>
                   <tbody className="">
@@ -1253,7 +1253,7 @@ export default function Directory() {
                 </table>
                 <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+                    <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest">
                       Total Personnel: {filteredEmployees.length}
                     </p>
                     <p className="mt-1 text-xs font-black text-[#111827]">
@@ -1284,7 +1284,7 @@ export default function Directory() {
                           <th
                             key={field.key}
                             className={cn(
-                              'h-14 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle',
+                              'h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle',
                               field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
                             )}
                           >
@@ -1307,7 +1307,7 @@ export default function Directory() {
                           </th>
                         );
                       })}
-                      <th className="h-14 px-4 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
+                      <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
                     </tr>
                   </thead>
                   <tbody className="">
@@ -1364,7 +1364,7 @@ export default function Directory() {
 
                 <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+                    <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest">
                       Total Personnel: {filteredEmployees.length}
                     </p>
                     <p className="mt-1 text-xs font-black text-[#111827]">
@@ -1399,7 +1399,7 @@ export default function Directory() {
             >
               <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] bg-white px-6 py-5">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[#2563EB]">Onboarding Workflow</p>
+                  <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#2563EB]">Onboarding Workflow</p>
                   <h2 className="mt-1 text-xl font-black text-[#111827]">Add Employee Record</h2>
                 </div>
                 <button type="button" onClick={closeModal} className="rounded-xl p-2 text-[#9CA3AF] transition-all hover:bg-[#F3F4F6] hover:text-[#111827]">
@@ -1435,7 +1435,7 @@ export default function Directory() {
                         >
                           <StepIcon className={cn('h-5 w-5 shrink-0', isCurrent ? 'text-[#2563EB]' : isComplete ? 'text-[#16A34A]' : 'text-[#CBD5E1]')} />
                           <span className="min-w-0">
-                            <span className={cn('block text-[10px] font-black uppercase tracking-widest', isCurrent ? 'text-[#2563EB]' : 'text-[#6B7280]')}>
+                            <span className={cn('block text-[0.625rem] font-black uppercase tracking-widest', isCurrent ? 'text-[#2563EB]' : 'text-[#6B7280]')}>
                               Step {index + 1}
                             </span>
                             <span className="block truncate text-sm font-black text-[#111827]">{step.title}</span>
@@ -1970,7 +1970,7 @@ function SectionCard({
     <section className="h-full rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-lg shadow-[#1118270D]">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-[#2563EB]">{eyebrow}</p>
+          <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#2563EB]">{eyebrow}</p>
           <h3 className="mt-1 text-lg font-black text-[#111827]">{title}</h3>
           {description && <p className="mt-1 text-sm font-semibold leading-6 text-[#6B7280]">{description}</p>}
         </div>
@@ -1978,7 +1978,7 @@ function SectionCard({
           {status && (
             <span
               className={cn(
-                'rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider border',
+                'rounded-full px-2.5 py-1 text-[0.625rem] font-black uppercase tracking-wider border',
                 status === 'complete' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'
               )}
             >
@@ -2014,9 +2014,9 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#6B7280]">
+      <span className="flex items-center gap-2 text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">
         {label}
-        {required && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[9px] text-red-600 border border-red-100">Required</span>}
+        {required && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[0.5625rem] text-red-600 border border-red-100">Required</span>}
       </span>
       {children}
       {error && <span className="text-xs font-bold text-red-600">{error}</span>}
@@ -2037,7 +2037,7 @@ function AccountDropdownGroup({
 
   return (
     <div className="border-b border-[#F3F4F6] last:border-b-0">
-      <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+      <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
         {title}
       </div>
       {accounts.map((account) => (
@@ -2189,7 +2189,7 @@ export function AccountFilterDropdown({
               </div>
               {internalAccounts.length > 0 && (
                 <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
-                  <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                  <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
                     Internal
                   </div>
                   {internalAccounts.map((account) => renderOption(account.name, account.name))}
@@ -2197,7 +2197,7 @@ export function AccountFilterDropdown({
               )}
               {externalAccounts.length > 0 && (
                 <div className="border-b border-[#F3F4F6] last:border-b-0 pb-1">
-                  <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                  <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
                     External
                   </div>
                   {externalAccounts.map((account) => renderOption(account.name, account.name))}
@@ -2274,16 +2274,16 @@ function EditableGeneratedValue({
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Sparkles className={cn('h-3.5 w-3.5 shrink-0', isReady ? 'text-[#2563EB]' : 'text-[#9CA3AF]')} />
-          <p className="truncate text-[10px] font-black uppercase tracking-widest text-[#6B7280]">{label}</p>
+          <p className="truncate text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">{label}</p>
         </div>
         <div className="flex items-center gap-1.5">
           {isEdited && (
-            <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-500 animate-fade-in">
+            <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[0.5625rem] font-black uppercase tracking-widest text-amber-700 dark:text-amber-500 animate-fade-in">
               Modified
             </span>
           )}
           {isReady && !isEdited && (
-            <span className="rounded-full bg-white dark:bg-gray-800 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-[#2563EB] dark:text-blue-400">
+            <span className="rounded-full bg-white dark:bg-gray-800 px-2 py-0.5 text-[0.5625rem] font-black uppercase tracking-widest text-[#2563EB] dark:text-blue-400">
               Suggested
             </span>
           )}
@@ -2311,7 +2311,7 @@ function EditableGeneratedValue({
           )}
         />
       </div>
-      {error && <p className="mt-1.5 text-[10px] font-bold text-red-600">{error}</p>}
+      {error && <p className="mt-1.5 text-[0.625rem] font-bold text-red-600">{error}</p>}
     </div>
   );
 }
@@ -2330,9 +2330,9 @@ function GeneratedValue({
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Sparkles className={cn('h-3.5 w-3.5 shrink-0', isReady ? 'text-[#2563EB]' : 'text-[#9CA3AF]')} />
-          <p className="truncate text-[10px] font-black uppercase tracking-widest text-[#6B7280]">{label}</p>
+          <p className="truncate text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">{label}</p>
         </div>
-        {isReady && <span className="rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase tracking-widest text-[#2563EB]">Generated</span>}
+        {isReady && <span className="rounded-full bg-white px-2 py-1 text-[0.5625rem] font-black uppercase tracking-widest text-[#2563EB]">Generated</span>}
       </div>
       <p
         className={cn(
@@ -2378,7 +2378,7 @@ function ReviewGrid({ items }: { items: Array<[string, string]> }) {
     <dl className="grid grid-cols-1 gap-3">
       {items.map(([label, value]) => (
         <div key={label} className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3">
-          <dt className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">{label}</dt>
+          <dt className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">{label}</dt>
           <dd className="mt-1 break-words text-sm font-black text-[#111827]">{value}</dd>
         </div>
       ))}

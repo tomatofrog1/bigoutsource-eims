@@ -1255,7 +1255,7 @@ export default function EmployeeProfile() {
                   {canViewSecrets && (
                   <div className="mt-10 p-5 bg-[#F9FAFB] rounded-2xl border border-[#E5E7EB] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex-1">
-                      <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
+                      <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">Windows License Key</p>
                       <AnimatePresence mode="popLayout" initial={false}>
                         {editingSecrets ? (
                           <motion.div
@@ -1500,7 +1500,7 @@ export default function EmployeeProfile() {
                                   <div className="flex flex-col gap-1 mb-3">
                                     <div className="flex items-center justify-between">
                                       <p className="text-sm font-black text-[#111827]">{actionLabel(log.action)}</p>
-                                      <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-wider">{formatDate(log.createdAt)}</p>
+                                      <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-wider">{formatDate(log.createdAt)}</p>
                                     </div>
                                     <p className="text-xs font-bold text-[#6B7280]">by {actorLabel(log)}</p>
                                   </div>
@@ -1796,7 +1796,7 @@ function ProfileField({
 
   return (
     <div className={cn("group rounded-xl transition-colors duration-200", !editing && "-mx-3 px-3 py-2 hover:bg-[#F9FAFB]")}>
-      <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">{label}</p>
+      <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest mb-1.5">{label}</p>
       <AnimatePresence mode="popLayout" initial={false}>
         {editing ? (
           <motion.div
@@ -1845,7 +1845,7 @@ function ComplianceField({
 }) {
   return (
     <div className="group p-4 rounded-xl border border-[#E5E7EB] hover:border-[#CBD5E1] hover:shadow-md transition-all duration-300">
-      <p className="text-[10px] font-bold text-[#9CA3AF] uppercase mb-1.5 group-hover:text-[#6B7280] transition-colors">{label}</p>
+      <p className="text-[0.625rem] font-bold text-[#9CA3AF] uppercase mb-1.5 group-hover:text-[#6B7280] transition-colors">{label}</p>
       <AnimatePresence mode="popLayout" initial={false}>
         {editing ? (
           <motion.div
@@ -1878,7 +1878,7 @@ function ComplianceField({
 function Field({ label, required, children, error }: { label: string; required?: boolean; children: ReactNode; error?: string }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+      <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
         {label} {required && <span className="text-red-500">*</span>}
       </span>
       {children}
@@ -1957,7 +1957,7 @@ function AccountDropdownGroup({
 
   return (
     <div className="border-b border-[#F3F4F6] last:border-b-0">
-      <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+      <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
         {title}
       </div>
       {accounts.map((account) => {

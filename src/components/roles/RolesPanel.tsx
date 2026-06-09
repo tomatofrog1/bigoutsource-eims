@@ -141,7 +141,7 @@ export function RolesPanel() {
                   </div>
                   <div>
                     <h3 className="text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>{role.name}</h3>
-                    <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-faint)' }}>
+                    <span className="text-[0.625rem] font-black uppercase tracking-wider" style={{ color: 'var(--color-text-faint)' }}>
                       {role.isSystem ? 'Built-in' : 'Custom'}
                     </span>
                   </div>
