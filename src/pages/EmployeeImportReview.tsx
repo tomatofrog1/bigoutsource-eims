@@ -436,11 +436,11 @@ export default function EmployeeImportReview() {
               <table className="w-full min-w-[920px] text-left border-collapse">
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Status</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Row</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Employee</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Issues</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]"></th>
+                    <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Status</th>
+                    <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Row</th>
+                    <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Employee</th>
+                    <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Issues</th>
+                    <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]"></th>
                   </tr>
                 </thead>
                 <tbody className="">
@@ -613,7 +613,7 @@ function Metric({ label, value, tone }: { label: string; value: number; tone: 'g
 
   return (
     <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm">
-      <p className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">{label}</p>
+      <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">{label}</p>
       <p className={cn('mt-3 w-fit rounded-xl px-3 py-1 text-2xl font-black', tones[tone])}>{value}</p>
     </div>
   );
@@ -691,7 +691,7 @@ function DuplicateGroup({
                   <p className="mt-1 text-sm font-black text-[#111827]">{score}/{fieldLabels.length} fields filled</p>
                 </div>
                 {isMoreComplete && (
-                  <span className="rounded-lg bg-green-50 px-2 py-1 text-[10px] font-black uppercase text-green-700">
+                  <span className="rounded-lg bg-green-50 px-2 py-1 text-[0.625rem] font-black uppercase text-green-700">
                     More complete
                   </span>
                 )}
@@ -905,7 +905,7 @@ function FieldGrid({ row }: { row: ImportRow }) {
     <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
       {fieldLabels.map(([key, label]) => (
         <div key={key} className="min-w-0 rounded-lg bg-white px-3 py-2">
-          <p className="text-[10px] font-black uppercase text-[#9CA3AF]">{label}</p>
+          <p className="text-[0.625rem] font-black uppercase text-[#9CA3AF]">{label}</p>
           <p className="truncate text-xs font-bold text-[#111827]">{String(row.normalizedData?.[key] ?? '') || '-'}</p>
         </div>
       ))}
@@ -928,13 +928,13 @@ function IssueTable({
     <table className="w-full min-w-[900px] text-left">
       <thead className="bg-[#F9FAFB]">
         <tr>
-          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Row</th>
-          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">ID</th>
-          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Name</th>
-          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Email</th>
-          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Status</th>
-          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">{ready ? 'Completeness' : 'Issue'}</th>
-          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]"></th>
+          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Row</th>
+          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">ID</th>
+          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Name</th>
+          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Email</th>
+          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Status</th>
+          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">{ready ? 'Completeness' : 'Issue'}</th>
+          <th className="px-4 py-3 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]"></th>
         </tr>
       </thead>
       <tbody className="">
@@ -1277,7 +1277,7 @@ function ProfileSection({
 function Field({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5 w-full text-left">
-      <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+      <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
         {label} {required && <span className="text-red-500">*</span>}
       </span>
       {children}
@@ -1339,7 +1339,7 @@ function SelectDropdown({
 
   return (
     <div className="flex flex-col gap-1.5 w-full relative text-left" ref={dropdownRef}>
-      <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+      <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
         {label} {required && <span className="text-red-500">*</span>}
       </span>
       <button

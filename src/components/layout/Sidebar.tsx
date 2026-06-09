@@ -166,7 +166,7 @@ export function Sidebar() {
           <div className={cn(isRetracted ? "flex justify-center" : "px-3")}>
             <div className={cn("flex items-center", isRetracted ? "justify-center" : "gap-3")}>
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0 relative group cursor-help"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[0.625rem] font-bold border shrink-0 relative group cursor-help"
                 style={{ backgroundColor: 'var(--color-surface-secondary)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}
               >
                 {user.email.substring(0, 2).toUpperCase()}
@@ -176,7 +176,7 @@ export function Sidebar() {
                     <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
                     <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl flex flex-col items-start">
                       <span className="truncate">{user.email}</span>
-                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{user.role.replace('_', ' ')}</span>
+                      <span className="text-[0.5625rem] text-gray-400 font-bold uppercase tracking-wider">{user.role.replace('_', ' ')}</span>
                     </div>
                   </div>
                 )}
@@ -190,7 +190,7 @@ export function Sidebar() {
                     className="min-w-0 overflow-hidden"
                   >
                     <p className="text-xs font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{user.email}</p>
-                    <p className="text-[10px] uppercase font-bold tracking-tighter truncate" style={{ color: 'var(--color-text-muted)' }}>{user.role.replace('_', ' ')}</p>
+                    <p className="text-[0.625rem] uppercase font-bold tracking-tighter truncate" style={{ color: 'var(--color-text-muted)' }}>{user.role.replace('_', ' ')}</p>
                   </motion.div>
                 )}
               </AnimatePresence>

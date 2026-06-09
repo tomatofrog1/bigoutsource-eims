@@ -577,7 +577,7 @@ export default function Departments() {
             </FormField>
 
             <div>
-              <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+              <span className="mb-2 block text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
                 Department Type
               </span>
               <div className="grid grid-cols-2 gap-2">
@@ -685,7 +685,7 @@ export default function Departments() {
             </FormField>
 
             <div>
-              <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+              <span className="mb-2 block text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
                 Department Type
               </span>
               <div className="grid grid-cols-2 gap-2">
@@ -752,7 +752,7 @@ export default function Departments() {
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <span className="text-xs font-black uppercase tracking-wide">Permanent Deletion Warning</span>
               </div>
-              <ul className="mt-2 space-y-1 pl-6 text-[11px] font-medium leading-relaxed text-red-600">
+              <ul className="mt-2 space-y-1 pl-6 text-[0.6875rem] font-medium leading-relaxed text-red-600">
                 <li>All department data will be permanently removed.</li>
                 <li>Departments with active employees cannot be deleted.</li>
                 <li>Historical records may reference this department.</li>
@@ -884,7 +884,7 @@ function StatCard({
       </div>
       <div>
         <p className={cn('text-2xl font-black leading-none', colors.num)}>{value}</p>
-        <p className="mt-0.5 text-[11px] font-semibold text-[#9CA3AF]">{label}</p>
+        <p className="mt-0.5 text-[0.6875rem] font-semibold text-[#9CA3AF]">{label}</p>
       </div>
     </div>
   );
@@ -990,7 +990,7 @@ function FormField({
 
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+      <span className="mb-1.5 block text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
         {label}
       </span>
       {children}
@@ -1030,7 +1030,7 @@ function DepartmentGroup({
       <div className="flex items-center gap-2">
         <div className="h-3.5 w-0.5 rounded-full bg-[#111827]" />
         <h2 className="text-xs font-black uppercase tracking-widest text-[#6B7280]">{title}</h2>
-        <span className="rounded-full border border-[#E5E7EB] bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-black text-[#6B7280]">
+        <span className="rounded-full border border-[#E5E7EB] bg-[#F3F4F6] px-2 py-0.5 text-[0.625rem] font-black text-[#6B7280]">
           {departments.length}
         </span>
       </div>
@@ -1143,13 +1143,13 @@ function DepartmentCard({
 
         <div className="mt-auto grid grid-cols-2 gap-3 border-t border-[#F9FAFB] pt-4">
           <div>
-            <p className="mb-0.5 text-[9px] font-black uppercase tracking-widest text-[#9CA3AF]">Code</p>
+            <p className="mb-0.5 text-[0.5625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Code</p>
             <p className="text-sm font-bold text-[#111827]">
               {department.departmentCode || '—'}
             </p>
           </div>
           <div>
-            <p className="mb-0.5 text-[9px] font-black uppercase tracking-widest text-[#9CA3AF]">Active Staff</p>
+            <p className="mb-0.5 text-[0.5625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Active Staff</p>
             <div className="flex items-center gap-1.5">
               <p className="text-sm font-black text-[#111827]">{count}</p>
             </div>
