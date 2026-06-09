@@ -88,7 +88,12 @@ export const AccountService = {
       throw new AppError('Department code already exists. Enter a unique letters-only code.', 409);
     }
 
-    const account = await AccountModel.update(id, { name, departmentCode });
+    const hasAccountTypeInput = data.accountType !== undefined || data.account_type !== undefined;
+    const accountType = hasAccountTypeInput
+      ? normalizeType(data.accountType ?? data.account_type)
+      : before.accountType;
+
+    const account = await AccountModel.update(id, { name, departmentCode, accountType });
     if (!account) throw new AppError('Account not found', 404);
 
     if (before.name !== account.name || before.departmentCode !== account.departmentCode) {
@@ -103,8 +108,8 @@ export const AccountService = {
       entityType: 'accounts',
       entityId: account.id,
       details: {
-        from: { name: before.name, departmentCode: before.departmentCode },
-        to: { name: account.name, departmentCode: account.departmentCode },
+        from: { name: before.name, departmentCode: before.departmentCode, accountType: before.accountType },
+        to: { name: account.name, departmentCode: account.departmentCode, accountType: account.accountType },
       },
       ipAddress: meta.ipAddress,
     });

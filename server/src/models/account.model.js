@@ -106,9 +106,13 @@ export const AccountModel = {
 
   async update(id, data) {
     const payload = {
-      name: blankToNull(data.name),
       updated_at: new Date().toISOString(),
     };
+    if (data.name !== undefined) payload.name = blankToNull(data.name);
+
+    const accountType = data.accountType ?? data.account_type;
+    if (accountType !== undefined) payload.account_type = normalizeType(accountType);
+
     const departmentCode = data.departmentCode ?? data.department_code;
     if (departmentCode !== undefined) payload.department_code = sanitizeDepartmentCode(departmentCode);
 

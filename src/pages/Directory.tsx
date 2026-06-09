@@ -16,6 +16,7 @@ import {
   Sparkles,
   UserPlus,
   X,
+  RotateCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -292,7 +293,7 @@ function normalizeEmployee(emp: any): EmployeeRecord | null {
     accountAssignment: emp.accountAssignment || '',
     boEmail: emp.boEmail || '',
     emailPassword: emp.emailPassword || '',
-    lmsAccount: generateLmsAccount(emp.fullName || '') || emp.lmsAccount || '',
+    lmsAccount: emp.lmsAccount || generateLmsAccount(emp.fullName || '') || '',
     pcName: emp.pcName || '',
     biosDate: emp.biosDate ? String(emp.biosDate).slice(0, 10) : '',
     windowsKey: emp.windowsKey || '',
@@ -471,6 +472,26 @@ export default function Directory() {
   const [isDraftRestored, setIsDraftRestored] = useState(false);
   const [isReviewConfirmed, setIsReviewConfirmed] = useState(false);
 
+  const [isBoEmailEdited, setIsBoEmailEdited] = useState(false);
+  const [isLmsAccountEdited, setIsLmsAccountEdited] = useState(false);
+  const [isPcNameEdited, setIsPcNameEdited] = useState(false);
+
+  const regenerateField = (field: 'boEmail' | 'lmsAccount' | 'pcName') => {
+    const account = accounts.find((acc) => acc.name === form.accountAssignment);
+    const suggestions = generatedPreview(form, account);
+
+    if (field === 'boEmail') {
+      setIsBoEmailEdited(false);
+      setForm((current) => ({ ...current, boEmail: suggestions.boEmail }));
+    } else if (field === 'lmsAccount') {
+      setIsLmsAccountEdited(false);
+      setForm((current) => ({ ...current, lmsAccount: suggestions.lmsAccount }));
+    } else if (field === 'pcName') {
+      setIsPcNameEdited(false);
+      setForm((current) => ({ ...current, pcName: suggestions.pcName }));
+    }
+  };
+
   const loadAccounts = async () => {
     const allResult = await accountService.list().catch(() => null);
 
@@ -602,7 +623,35 @@ export default function Directory() {
           ? clampToToday(value)
           : applyCharacterLimit(field, value);
 
-    setForm((current) => ({ ...current, [field]: formattedValue }));
+    if (field === 'boEmail') {
+      setIsBoEmailEdited(true);
+    } else if (field === 'lmsAccount') {
+      setIsLmsAccountEdited(true);
+    } else if (field === 'pcName') {
+      setIsPcNameEdited(true);
+    }
+
+    setForm((current) => {
+      const nextForm = { ...current, [field]: formattedValue };
+      
+      const account = accounts.find((acc) => acc.name === nextForm.accountAssignment);
+      const suggestions = generatedPreview(nextForm, account);
+
+      if (field === 'firstName' || field === 'lastName' || field === 'accountAssignment') {
+        if (!isBoEmailEdited) {
+          nextForm.boEmail = suggestions.boEmail;
+        }
+        if (!isLmsAccountEdited) {
+          nextForm.lmsAccount = suggestions.lmsAccount;
+        }
+        if (!isPcNameEdited) {
+          nextForm.pcName = suggestions.pcName;
+        }
+      }
+
+      return nextForm;
+    });
+
     setIsReviewConfirmed(false);
     setFormErrors((current) => {
       if (!current[field]) return current;
@@ -616,11 +665,20 @@ export default function Directory() {
     if (!rawDraft) return;
 
     try {
-      const draft = JSON.parse(rawDraft) as { form?: AddEmployeeForm; savedAt?: string };
+      const draft = JSON.parse(rawDraft) as {
+        form?: AddEmployeeForm;
+        savedAt?: string;
+        isBoEmailEdited?: boolean;
+        isLmsAccountEdited?: boolean;
+        isPcNameEdited?: boolean;
+      };
       if (!draft.form) return;
       setForm({ ...initialForm, ...draft.form });
       setDraftSavedAt(draft.savedAt || null);
       setIsDraftRestored(true);
+      setIsBoEmailEdited(draft.isBoEmailEdited ?? false);
+      setIsLmsAccountEdited(draft.isLmsAccountEdited ?? false);
+      setIsPcNameEdited(draft.isPcNameEdited ?? false);
     } catch {
       localStorage.removeItem(draftStorageKey);
     }
@@ -633,11 +691,20 @@ export default function Directory() {
     if (!rawDraft) return;
 
     try {
-      const draft = JSON.parse(rawDraft) as { form?: AddEmployeeForm; savedAt?: string };
+      const draft = JSON.parse(rawDraft) as {
+        form?: AddEmployeeForm;
+        savedAt?: string;
+        isBoEmailEdited?: boolean;
+        isLmsAccountEdited?: boolean;
+        isPcNameEdited?: boolean;
+      };
       if (!draft.form) return;
       setForm({ ...initialForm, ...draft.form });
       setDraftSavedAt(draft.savedAt || null);
       setIsDraftRestored(true);
+      setIsBoEmailEdited(draft.isBoEmailEdited ?? false);
+      setIsLmsAccountEdited(draft.isLmsAccountEdited ?? false);
+      setIsPcNameEdited(draft.isPcNameEdited ?? false);
     } catch {
       localStorage.removeItem(draftStorageKey);
     }
@@ -648,13 +715,19 @@ export default function Directory() {
 
     const timer = window.setTimeout(() => {
       const savedAt = new Date().toISOString();
-      localStorage.setItem(draftStorageKey, JSON.stringify({ form, savedAt }));
+      localStorage.setItem(draftStorageKey, JSON.stringify({
+        form,
+        savedAt,
+        isBoEmailEdited,
+        isLmsAccountEdited,
+        isPcNameEdited
+      }));
       setDraftSavedAt(savedAt);
       setIsDraftRestored(false);
     }, 2500);
 
     return () => window.clearTimeout(timer);
-  }, [form, isModalOpen]);
+  }, [form, isModalOpen, isBoEmailEdited, isLmsAccountEdited, isPcNameEdited]);
 
   const selectedAccount = accounts.find((account) => account.name === form.accountAssignment);
   const preview = generatedPreview(form, selectedAccount);
@@ -785,7 +858,13 @@ export default function Directory() {
     if (isSaving) return;
     if (hasDraftData(form)) {
       const savedAt = new Date().toISOString();
-      localStorage.setItem(draftStorageKey, JSON.stringify({ form, savedAt }));
+      localStorage.setItem(draftStorageKey, JSON.stringify({
+        form,
+        savedAt,
+        isBoEmailEdited,
+        isLmsAccountEdited,
+        isPcNameEdited
+      }));
       setDraftSavedAt(savedAt);
     }
     setIsModalOpen(false);
@@ -794,6 +873,9 @@ export default function Directory() {
     setActiveStep(0);
     setFormErrors({});
     setIsReviewConfirmed(false);
+    setIsBoEmailEdited(false);
+    setIsLmsAccountEdited(false);
+    setIsPcNameEdited(false);
   };
 
   const validationForStep = (step: number, requireAll = false): FormErrors => {
@@ -841,7 +923,13 @@ export default function Directory() {
 
   const saveDraft = () => {
     const savedAt = new Date().toISOString();
-    localStorage.setItem(draftStorageKey, JSON.stringify({ form, savedAt }));
+    localStorage.setItem(draftStorageKey, JSON.stringify({
+      form,
+      savedAt,
+      isBoEmailEdited,
+      isLmsAccountEdited,
+      isPcNameEdited
+    }));
     setDraftSavedAt(savedAt);
     setIsDraftRestored(false);
     toast.success('Draft saved locally');
@@ -860,6 +948,9 @@ export default function Directory() {
     setActiveStep(0);
     setFormErrors({});
     setIsReviewConfirmed(false);
+    setIsBoEmailEdited(false);
+    setIsLmsAccountEdited(false);
+    setIsPcNameEdited(false);
     toast.success('Draft cleared');
   };
 
@@ -920,6 +1011,9 @@ export default function Directory() {
         accountAssignment: form.accountAssignment.trim(),
         phone: form.phone.trim() || undefined,
         address: form.address.trim() || undefined,
+        boEmail: form.boEmail.trim() || undefined,
+        lmsAccount: form.lmsAccount.trim() || undefined,
+        pcName: form.pcName.trim() || undefined,
         emailPassword: form.emailPassword.trim() || undefined,
         status: form.status,
         siteId: selectedSite && selectedSite.id !== selectedSite.name ? selectedSite.id : undefined,
@@ -945,6 +1039,9 @@ export default function Directory() {
       localStorage.removeItem(draftStorageKey);
       setDraftSavedAt(null);
       setIsDraftRestored(false);
+      setIsBoEmailEdited(false);
+      setIsLmsAccountEdited(false);
+      setIsPcNameEdited(false);
       toast.success('Employee record added');
       setIsModalOpen(false);
       setIsAccountDropdownOpen(false);
@@ -1446,14 +1543,24 @@ export default function Directory() {
 
                         <SectionCard title="Generated Access" eyebrow="Auto">
                           <div className="flex flex-col gap-4">
-                            <GeneratedValue
+                            <EditableGeneratedValue
                               label="Bigoutsource Email"
-                              value={preview.boEmail}
+                              value={form.boEmail}
+                              onChange={(value) => updateForm('boEmail', value)}
+                              onRegenerate={() => regenerateField('boEmail')}
+                              isEdited={isBoEmailEdited}
+                              placeholder="Pending generation"
+                              error={formErrors.boEmail}
                             />
 
-                            <GeneratedValue
+                            <EditableGeneratedValue
                               label="LMS Account"
-                              value={preview.lmsAccount}
+                              value={form.lmsAccount}
+                              onChange={(value) => updateForm('lmsAccount', value)}
+                              onRegenerate={() => regenerateField('lmsAccount')}
+                              isEdited={isLmsAccountEdited}
+                              placeholder="Pending generation"
+                              error={formErrors.lmsAccount}
                             />
                           </div>
                           {selectedAccountMissingCode && (
@@ -1539,7 +1646,15 @@ export default function Directory() {
                     {activeStep === 3 && (
                       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <SectionCard title="Device Identity" eyebrow="Auto">
-                          <GeneratedValue label="PC Name" value={preview.pcName} />
+                          <EditableGeneratedValue
+                            label="PC Name"
+                            value={form.pcName}
+                            onChange={(value) => updateForm('pcName', value)}
+                            onRegenerate={() => regenerateField('pcName')}
+                            isEdited={isPcNameEdited}
+                            placeholder="Pending generation"
+                            error={formErrors.pcName}
+                          />
                         </SectionCard>
 
                         <SectionCard title="IT Assets" eyebrow="Manual">
@@ -1639,14 +1754,48 @@ export default function Directory() {
                             <Field label="Password">
                               <Input value={form.emailPassword} onChange={(value) => updateForm('emailPassword', value)} placeholder="e.g. P@ssw0rd123" />
                             </Field>
-                            <Field label="Bigoutsource Email">
-                              <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
-                                {preview.boEmail || 'Pending generation'}
+                            <Field label="Bigoutsource Email" error={formErrors.boEmail}>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1">
+                                  <Input
+                                    value={form.boEmail}
+                                    onChange={(value) => updateForm('boEmail', value)}
+                                    placeholder="Pending generation"
+                                    error={Boolean(formErrors.boEmail)}
+                                  />
+                                </div>
+                                {isBoEmailEdited && (
+                                  <button
+                                    type="button"
+                                    onClick={() => regenerateField('boEmail')}
+                                    className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                    title="Reset to generated default"
+                                  >
+                                    <RotateCcw className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                             </Field>
-                            <Field label="LMS Account">
-                              <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
-                                {preview.lmsAccount || 'Pending generation'}
+                            <Field label="LMS Account" error={formErrors.lmsAccount}>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1">
+                                  <Input
+                                    value={form.lmsAccount}
+                                    onChange={(value) => updateForm('lmsAccount', value)}
+                                    placeholder="Pending generation"
+                                    error={Boolean(formErrors.lmsAccount)}
+                                  />
+                                </div>
+                                {isLmsAccountEdited && (
+                                  <button
+                                    type="button"
+                                    onClick={() => regenerateField('lmsAccount')}
+                                    className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                    title="Reset to generated default"
+                                  >
+                                    <RotateCcw className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                             </Field>
                           </div>
@@ -1701,9 +1850,26 @@ export default function Directory() {
                         </SectionCard>
                         <SectionCard title="IT Assets" eyebrow="Review" status="complete">
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <Field label="PC Name">
-                              <div className="flex min-h-[42px] items-center rounded-xl border border-[#D1D5DB] bg-[#F9FAFB] px-3 text-sm font-bold text-[#4B5563]">
-                                {preview.pcName || 'Pending generation'}
+                            <Field label="PC Name" error={formErrors.pcName}>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1">
+                                  <Input
+                                    value={form.pcName}
+                                    onChange={(value) => updateForm('pcName', value)}
+                                    placeholder="Pending generation"
+                                    error={Boolean(formErrors.pcName)}
+                                  />
+                                </div>
+                                {isPcNameEdited && (
+                                  <button
+                                    type="button"
+                                    onClick={() => regenerateField('pcName')}
+                                    className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                                    title="Reset to generated default"
+                                  >
+                                    <RotateCcw className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                             </Field>
                             <Field label="RustDesk ID">
@@ -2150,6 +2316,81 @@ function Input({
         error ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20' : 'border-[#D1D5DB]'
       )}
     />
+  );
+}
+
+function EditableGeneratedValue({
+  label,
+  value,
+  onChange,
+  onRegenerate,
+  isEdited,
+  placeholder,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onRegenerate: () => void;
+  isEdited: boolean;
+  placeholder?: string;
+  error?: string;
+}) {
+  const isReady = Boolean(value);
+
+  return (
+    <div className={cn(
+      'rounded-2xl border p-4 transition-all',
+      error
+        ? 'border-red-300 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20'
+        : isEdited
+          ? 'border-amber-300 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/10'
+          : isReady
+            ? 'border-[#BFDBFE] dark:border-[#2563EB]/20 bg-[#F8FAFF] dark:bg-[#2563EB]/10'
+            : 'border-[#E5E7EB] bg-[#F9FAFB]'
+    )}>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Sparkles className={cn('h-3.5 w-3.5 shrink-0', isReady ? 'text-[#2563EB]' : 'text-[#9CA3AF]')} />
+          <p className="truncate text-[10px] font-black uppercase tracking-widest text-[#6B7280]">{label}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {isEdited && (
+            <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-500 animate-fade-in">
+              Modified
+            </span>
+          )}
+          {isReady && !isEdited && (
+            <span className="rounded-full bg-white dark:bg-gray-800 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-[#2563EB] dark:text-blue-400">
+              Suggested
+            </span>
+          )}
+          {isEdited && (
+            <button
+              type="button"
+              onClick={onRegenerate}
+              className="rounded-lg p-1 text-[#6B7280] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-all flex items-center justify-center animate-fade-in"
+              title="Reset to generated default"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="relative flex items-center">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder || 'Pending generation'}
+          className={cn(
+            'w-full min-h-11 rounded-xl border px-3 py-2.5 text-sm font-bold bg-white text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#2563EB]',
+            error ? 'border-red-300 focus:ring-red-500' : 'border-[#D1D5DB] focus:border-[#2563EB]'
+          )}
+        />
+      </div>
+      {error && <p className="mt-1.5 text-[10px] font-bold text-red-600">{error}</p>}
+    </div>
   );
 }
 

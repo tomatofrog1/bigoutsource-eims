@@ -138,6 +138,7 @@ export default function Departments() {
 
   const [editName, setEditName] = useState('');
   const [editCode, setEditCode] = useState('');
+  const [editType, setEditType] = useState<DepartmentType>('internal');
   const [isEditCodeEdited, setIsEditCodeEdited] = useState(false);
   const [isEditSaving, setIsEditSaving] = useState(false);
 
@@ -249,6 +250,7 @@ export default function Departments() {
     setSelectedDepartment(dept);
     setEditName(dept.name);
     setEditCode(dept.departmentCode || suggestDepartmentCode(dept.name));
+    setEditType(dept.accountType);
     setIsEditCodeEdited(true);
     setIsEditModalOpen(true);
   };
@@ -324,6 +326,7 @@ export default function Departments() {
       const updated = await accountService.update(selectedDepartment.id, {
         name,
         departmentCode: editCode,
+        accountType: editType,
       });
       const dept = normalizeDepartment(updated);
       if (!dept) throw new Error('Server did not return the updated department.');
@@ -681,6 +684,39 @@ export default function Departments() {
                 </span>
               </div>
             </FormField>
+
+            <div>
+              <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                Department Type
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {(['internal', 'external'] as DepartmentType[]).map((type) => {
+                  const isActive = editType === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setEditType(type)}
+                      className={cn(
+                        'relative rounded-xl border px-4 py-2.5 text-xs font-black capitalize transition-colors z-10',
+                        isActive
+                          ? 'border-[#111827] text-white'
+                          : 'border-[#E5E7EB] text-[#4B5563] hover:bg-[#F9FAFB]'
+                      )}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="editDeptTypeBgBlack"
+                          className="absolute inset-0 z-[-1] rounded-xl bg-[#111827]"
+                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                      {type === 'internal' ? 'Internal' : 'External'}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <ModalFooter>
               <button type="button" onClick={closeEditModal} disabled={isEditSaving} className="btn-secondary">

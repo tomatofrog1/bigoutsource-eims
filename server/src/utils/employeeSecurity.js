@@ -51,16 +51,22 @@ export function redactEmployeeForUser(employee, user) {
  * Drops any incoming fields the user isn't allowed to write, so e.g. an IT Admin
  * can't change HR fields and an HR Admin can't change IT fields or secrets.
  */
-export function filterEmployeeWritePayload(data, user) {
+export function filterEmployeeWritePayload(data, user, isCreate = false) {
   if (!data || typeof data !== 'object') return data;
   const caps = userCapabilities(user);
 
   const allowed = new Set();
-  if (caps.includes('employees.edit') || caps.includes('employees.create')) {
+  if (isCreate && caps.includes('employees.create')) {
     HR_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
+  } else {
+    if (caps.includes('employees.edit') || caps.includes('employees.create')) {
+      HR_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    }
+    if (caps.includes('employees.it.edit')) IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    if (caps.includes('employees.secrets.edit')) SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
   }
-  if (caps.includes('employees.it.edit')) IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
-  if (caps.includes('employees.secrets.edit')) SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
 
   const filtered = {};
   for (const [key, value] of Object.entries(data)) {

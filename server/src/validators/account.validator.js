@@ -11,6 +11,7 @@ export const createAccountValidator = {
 
 export const updateAccountValidator = {
   name: { required: true, type: 'string', min: 2 },
+  accountType: { required: false, type: 'string', enum: ['internal', 'external'] },
   departmentCode: {
     required: false,
     type: 'string',

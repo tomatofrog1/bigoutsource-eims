@@ -59,7 +59,9 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   const name = blankToNull(valueFrom(data, 'name', 'fullName'));
   const account = blankToNull(valueFrom(data, 'account', 'accountAssignment'));
   const site = blankToNull(valueFrom(data, 'site', 'siteName', 'siteId'));
-  const lmsAccount = name !== undefined ? generateLmsAccount(name || '') : blankToNull(valueFrom(data, 'lmsAccount', 'lms_account'));
+  const lmsAccount = valueFrom(data, 'lmsAccount', 'lms_account') !== undefined
+    ? blankToNull(valueFrom(data, 'lmsAccount', 'lms_account'))
+    : (name !== undefined ? generateLmsAccount(name || '') : undefined);
 
   if (includeId || id !== undefined) payload.id = id;
   if (name !== undefined) payload.name = name;
