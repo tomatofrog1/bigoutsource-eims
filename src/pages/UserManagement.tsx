@@ -481,7 +481,7 @@ export default function UserManagement() {
                     <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} className="w-[18%]" />
                     <SortableHeader label="Site" sortKey="site" currentSort={sortConfig} onSort={handleSort} className="w-[15%]" />
                     <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} className="w-[12%]" />
-                    <th className="px-4 py-4 w-[17%] text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-right"></th>
+                    <th className="px-4 py-4 w-[17%] text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-right"></th>
                   </tr>
                 </thead>
                 <tbody className="">
@@ -514,7 +514,7 @@ export default function UserManagement() {
                     <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} className="w-[18%]" />
                     <SortableHeader label="Site" sortKey="site" currentSort={sortConfig} onSort={handleSort} className="w-[15%]" />
                     <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} className="w-[12%]" />
-                    <th className="px-4 py-4 w-[17%] text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-right"></th>
+                    <th className="px-4 py-4 w-[17%] text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-right"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F3F4F6]">
@@ -532,12 +532,12 @@ export default function UserManagement() {
                       >
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[10px] font-black text-[#111827] border border-[#E5E7EB]">
+                            <div className="w-9 h-9 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[0.625rem] font-black text-[#111827] border border-[#E5E7EB]">
                               {getInitials(user.fullName || '', user.email)}
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-bold text-[#111827] truncate">{user.fullName || user.email}</p>
-                              <p className="text-[10px] text-[#9CA3AF] font-bold tracking-tighter uppercase">{user.email}</p>
+                              <p className="text-[0.625rem] text-[#9CA3AF] font-bold tracking-tighter uppercase">{user.email}</p>
                             </div>
                           </div>
                         </td>
@@ -631,7 +631,7 @@ export default function UserManagement() {
                               </motion.div>
                             ) : (
                               <motion.div key="view-status" initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} transition={{ duration: 0.15 }}>
-                                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-tighter ${statusClass(user.status)}`}>
+                                <span className={`px-2 py-0.5 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter ${statusClass(user.status)}`}>
                                   {statusLabel(user.status)}
                                 </span>
                               </motion.div>
@@ -837,7 +837,7 @@ export default function UserManagement() {
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span className="text-xs font-black uppercase tracking-wide">Permanent Deletion Warning</span>
                   </div>
-                  <ul className="mt-2 space-y-1 pl-6 text-[11px] font-medium leading-relaxed text-red-600 list-disc">
+                  <ul className="mt-2 space-y-1 pl-6 text-[0.6875rem] font-medium leading-relaxed text-red-600 list-disc">
                     <li>All user data and access will be permanently removed.</li>
                     <li>The user will be immediately logged out of all sessions.</li>
                     <li>Historical audit logs will retain the user's ID.</li>
@@ -846,14 +846,14 @@ export default function UserManagement() {
 
                 <div className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] p-4">
                   <p className="text-sm font-bold text-[#111827] mb-0.5">{deleteUser.fullName || 'No Name'}</p>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-3">{deleteUser.email}</p>
+                  <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-wider mb-3">{deleteUser.email}</p>
                   <div className="grid grid-cols-2 gap-y-2 text-xs">
                     <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Role</span>
+                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[0.625rem]">Role</span>
                       <span className="font-bold text-[#4B5563]">{roleLabel(deleteUser.role)}</span>
                     </div>
                     <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Department</span>
+                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[0.625rem]">Department</span>
                       <span className="font-bold text-[#4B5563]">{deleteUser.department || 'Unassigned'}</span>
                     </div>
                   </div>
@@ -879,7 +879,7 @@ export default function UserManagement() {
                           : 'border-[#E5E7EB] focus:ring-2 focus:ring-[#111827]'
                       }`}
                   />
-                  <p className="text-[11px] font-bold text-[#6B7280] mt-2">Type "CONFIRM" to enable the Delete button.</p>
+                  <p className="text-[0.6875rem] font-bold text-[#6B7280] mt-2">Type "CONFIRM" to enable the Delete button.</p>
                 </div>
 
                 <div className="flex items-center justify-end gap-3 border-t border-[#F3F4F6] pt-5">
@@ -948,7 +948,7 @@ export default function UserManagement() {
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span className="text-xs font-black uppercase tracking-wide">Account Suspension Warning</span>
                   </div>
-                  <ul className="mt-2 space-y-1 pl-6 text-[11px] font-medium leading-relaxed text-orange-700 list-disc">
+                  <ul className="mt-2 space-y-1 pl-6 text-[0.6875rem] font-medium leading-relaxed text-orange-700 list-disc">
                     <li>User will immediately lose all access to the system.</li>
                     <li>Active sessions will be terminated.</li>
                     <li>You can re-enable this account at any time.</li>
@@ -957,14 +957,14 @@ export default function UserManagement() {
 
                 <div className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] p-4">
                   <p className="text-sm font-bold text-[#111827] mb-0.5">{disableUser.fullName || 'No Name'}</p>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-3">{disableUser.email}</p>
+                  <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-wider mb-3">{disableUser.email}</p>
                   <div className="grid grid-cols-2 gap-y-2 text-xs">
                     <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Role</span>
+                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[0.625rem]">Role</span>
                       <span className="font-bold text-[#4B5563]">{roleLabel(disableUser.role)}</span>
                     </div>
                     <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Department</span>
+                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[0.625rem]">Department</span>
                       <span className="font-bold text-[#4B5563]">{disableUser.department || 'Unassigned'}</span>
                     </div>
                   </div>
@@ -1037,7 +1037,7 @@ export default function UserManagement() {
                     <ShieldCheck className="h-4 w-4 shrink-0" />
                     <span className="text-xs font-black uppercase tracking-wide">Account Restoration</span>
                   </div>
-                  <ul className="mt-2 space-y-1 pl-6 text-[11px] font-medium leading-relaxed text-emerald-700 list-disc">
+                  <ul className="mt-2 space-y-1 pl-6 text-[0.6875rem] font-medium leading-relaxed text-emerald-700 list-disc">
                     <li>User will regain their previous access permissions.</li>
                     <li>They will be able to log in using their existing credentials.</li>
                     <li>You can disable this account again if necessary.</li>
@@ -1046,14 +1046,14 @@ export default function UserManagement() {
 
                 <div className="rounded-xl border border-[#F3F4F6] bg-[#F9FAFB] p-4">
                   <p className="text-sm font-bold text-[#111827] mb-0.5">{enableUser.fullName || 'No Name'}</p>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-3">{enableUser.email}</p>
+                  <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-wider mb-3">{enableUser.email}</p>
                   <div className="grid grid-cols-2 gap-y-2 text-xs">
                     <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Role</span>
+                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[0.625rem]">Role</span>
                       <span className="font-bold text-[#4B5563]">{roleLabel(enableUser.role)}</span>
                     </div>
                     <div>
-                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[10px]">Department</span>
+                      <span className="text-[#9CA3AF] font-bold block mb-0.5 uppercase tracking-wider text-[0.625rem]">Department</span>
                       <span className="font-bold text-[#4B5563]">{enableUser.department || 'Unassigned'}</span>
                     </div>
                   </div>
@@ -1319,7 +1319,7 @@ function SortableHeader({
   const SortIcon = isActiveSort ? (currentSort?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
   return (
-    <th className={`h-14 px-6 py-0 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest align-middle ${className || ''}`}>
+    <th className={`h-14 px-6 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle ${className || ''}`}>
       <button
         type="button"
         onClick={() => onSort(sortKey)}

@@ -156,7 +156,7 @@ function NotificationBell() {
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#EF4444] px-1 text-[10px] font-black text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#EF4444] px-1 text-[0.625rem] font-black text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -232,13 +232,13 @@ function NotificationBell() {
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>Account request pending</p>
                             {activeNotificationIds.has(String(account.uid)) && (
-                              <span className="rounded-full px-2 py-0.5 text-[10px] font-black uppercase" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}>
+                              <span className="rounded-full px-2 py-0.5 text-[0.625rem] font-black uppercase" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}>
                                 New
                               </span>
                             )}
                           </div>
                           <p className="mt-1 truncate text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>{account.fullName || account.email}</p>
-                          <p className="mt-0.5 truncate text-[11px] font-bold" style={{ color: 'var(--color-text-muted)' }}>{account.email}</p>
+                          <p className="mt-0.5 truncate text-[0.6875rem] font-bold" style={{ color: 'var(--color-text-muted)' }}>{account.email}</p>
                         </div>
                       </div>
                     </Link>

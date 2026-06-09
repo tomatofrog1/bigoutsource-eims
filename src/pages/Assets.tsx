@@ -300,14 +300,14 @@ export default function Assets() {
         <aside className="sticky top-0 hidden self-start rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block min-h-[80vh]">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
+              <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
               <p className="mt-1 text-xs font-bold text-[#4B5563]">{isCustomFieldView ? `${visibleFieldKeys.length - 1}/${maxVisibleFieldCount - 1} selected` : 'Default fields shown'}</p>
             </div>
             <button
               type="button"
               onClick={() => setSelectedFields(null)}
               disabled={!isCustomFieldView}
-              className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[10px] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[0.625rem] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Reset
             </button>
@@ -441,7 +441,7 @@ export default function Assets() {
                     <div className={`p-2 rounded-xl bg-[#F9FAFB] ${stat.color}`}>
                       <stat.icon className="w-5 h-5" />
                     </div>
-                    <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-wider">{stat.label}</p>
                   </div>
                   <p className="text-2xl font-black text-[#111827]">{stat.value}</p>
                 </div>
@@ -461,7 +461,7 @@ export default function Assets() {
                       const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                       return (
-                        <th key={header.key} className={`px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
+                        <th key={header.key} className={`px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
                           <button
                             type="button"
                             onClick={() => toggleSort(header.key)}
@@ -473,7 +473,7 @@ export default function Assets() {
                         </th>
                       );
                     })}
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
+                    <th className="px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
                   </tr>
                 </thead>
                 <tbody className="">
@@ -490,7 +490,7 @@ export default function Assets() {
 
               <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+                  <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest">
                     Total Assets: {filteredDevices.length}
                   </p>
                   <p className="mt-1 text-xs font-black text-[#111827]">
@@ -511,7 +511,7 @@ export default function Assets() {
                       const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                       return (
-                        <th key={header.key} className={`px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
+                        <th key={header.key} className={`px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
                           <button
                             type="button"
                             onClick={() => toggleSort(header.key)}
@@ -523,7 +523,7 @@ export default function Assets() {
                         </th>
                       );
                     })}
-                    <th className="px-6 py-4 text-[10px] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
+                    <th className="px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
                   </tr>
                 </thead>
                 <tbody className="">
@@ -581,7 +581,7 @@ export default function Assets() {
                                   <span className="text-xs font-bold text-[#111827] uppercase">{device.windowsKey ? 'Windows / Assigned' : 'No Key'}</span>
                                 </div>
                                 {device.windowsKey && (
-                                  <p className="text-[10px] text-[#9CA3AF] font-bold uppercase tracking-tighter mt-0.5 ml-[22px]">{device.windowsKey}</p>
+                                  <p className="text-[0.625rem] text-[#9CA3AF] font-bold uppercase tracking-tighter mt-0.5 ml-[22px]">{device.windowsKey}</p>
                                 )}
                               </div>
                             ) : field.key === 'rustdeskId' ? (
@@ -590,14 +590,14 @@ export default function Assets() {
                               </div>
                             ) : field.key === 'activityWatchStatus' ? (
                               <span className={cn(
-                                'px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter',
+                                'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
                                 device.activityWatchStatus === 'installed' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'
                               )}>
                                 {device.activityWatchStatus || 'Missing'}
                               </span>
                             ) : field.key === 'esetStatus' ? (
                               <span className={cn(
-                                'px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter',
+                                'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
                                 device.esetStatus === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'
                               )}>
                                 {device.esetStatus || 'Inactive'}
@@ -607,7 +607,7 @@ export default function Assets() {
                         />
                       ))}
                       <td className="px-6 py-4 text-right">
-                        <Link to={`/employee/${device.assigneeId || device.id}`} className="text-[10px] font-black uppercase text-[#111827] hover:underline flex items-center justify-end gap-1">
+                        <Link to={`/employee/${device.assigneeId || device.id}`} className="text-[0.625rem] font-black uppercase text-[#111827] hover:underline flex items-center justify-end gap-1">
                           <ExternalLink className="w-3 h-3" /> Details
                         </Link>
                       </td>
@@ -622,7 +622,7 @@ export default function Assets() {
 
               <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+                  <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest">
                     Total Assets: {filteredDevices.length}
                   </p>
                   <p className="mt-1 text-xs font-black text-[#111827]">
@@ -801,7 +801,7 @@ function NumericInput({ value, onChange, placeholder, className }: any) {
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="absolute left-0 top-full mt-1 text-[10px] font-bold text-red-500 z-10 whitespace-nowrap bg-white px-2 py-1 rounded shadow-sm border border-red-100 pointer-events-none"
+            className="absolute left-0 top-full mt-1 text-[0.625rem] font-bold text-red-500 z-10 whitespace-nowrap bg-white px-2 py-1 rounded shadow-sm border border-red-100 pointer-events-none"
           >
             Numbers only
           </motion.div>

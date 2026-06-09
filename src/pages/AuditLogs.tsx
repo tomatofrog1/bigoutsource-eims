@@ -365,20 +365,20 @@ export default function AuditLogs() {
                 <table className="w-full min-w-[1000px] text-left border-collapse">
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                      <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[15%] h-14">
+                      <th className="px-6 py-0 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[15%] h-14">
                         <div className="py-2 text-left w-full">Timestamp</div>
                       </th>
-                      <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[25%] h-14">
+                      <th className="px-6 py-0 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[25%] h-14">
                         <div className="py-2 text-left w-full">Operator</div>
                       </th>
-                      <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[15%] h-14">
+                      <th className="px-6 py-0 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[15%] h-14">
                         <div className="py-2 text-left w-full">Action</div>
                       </th>
-                      <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[20%] h-14">
+                      <th className="px-6 py-0 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[20%] h-14">
                         <div className="py-2 text-left w-full">Target Entity</div>
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[20%]">Details</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[5%]"></th>
+                      <th className="px-6 py-4 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[20%]">Details</th>
+                      <th className="px-4 py-4 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[5%]"></th>
                     </tr>
                   </thead>
                   <tbody className="">
@@ -408,28 +408,28 @@ export default function AuditLogs() {
                 <table className="w-full min-w-[1000px] text-left border-collapse">
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                      <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[15%] h-14">
+                      <th className="px-6 py-0 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[15%] h-14">
                         <button type="button" onClick={() => toggleSort('createdAt')} className="flex items-center gap-1.5 py-2 hover:text-[#111827] transition-colors uppercase tracking-widest text-left w-full">
                           Timestamp {renderSortIcon('createdAt')}
                         </button>
                       </th>
-                      <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[25%] h-14">
+                      <th className="px-6 py-0 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[25%] h-14">
                         <button type="button" onClick={() => toggleSort('actor')} className="flex items-center gap-1.5 py-2 hover:text-[#111827] transition-colors uppercase tracking-widest text-left w-full">
                           Operator {renderSortIcon('actor')}
                         </button>
                       </th>
-                      <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[15%] h-14">
+                      <th className="px-6 py-0 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[15%] h-14">
                         <button type="button" onClick={() => toggleSort('action')} className="flex items-center gap-1.5 py-2 hover:text-[#111827] transition-colors uppercase tracking-widest text-left w-full">
                           Action {renderSortIcon('action')}
                         </button>
                       </th>
-                      <th className="px-6 py-0 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[20%] h-14">
+                      <th className="px-6 py-0 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[20%] h-14">
                         <button type="button" onClick={() => toggleSort('target')} className="flex items-center gap-1.5 py-2 hover:text-[#111827] transition-colors uppercase tracking-widest text-left w-full">
                           Target Entity {renderSortIcon('target')}
                         </button>
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[20%]">Details</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-[#6B7280] uppercase tracking-widest w-[5%]"></th>
+                      <th className="px-6 py-4 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[20%]">Details</th>
+                      <th className="px-4 py-4 text-[0.625rem] font-black text-[#6B7280] uppercase tracking-widest w-[5%]"></th>
                     </tr>
                   </thead>
                   <tbody className="">
@@ -445,11 +445,11 @@ export default function AuditLogs() {
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <p className="text-sm font-bold text-[#111827]">{date}</p>
-                            <p className="text-[10px] font-black text-[#9CA3AF] uppercase tracking-wider mt-1">{time}</p>
+                            <p className="text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-wider mt-1">{time}</p>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-white border border-[#E5E7EB] shadow-sm flex items-center justify-center text-[10px] font-black text-[#111827] shrink-0 group-hover:border-[#D1D5DB] transition-colors">
+                              <div className="w-9 h-9 rounded-full bg-white border border-[#E5E7EB] shadow-sm flex items-center justify-center text-[0.625rem] font-black text-[#111827] shrink-0 group-hover:border-[#D1D5DB] transition-colors">
                                 {actorLabel(log).substring(0, 2).toUpperCase()}
                               </div>
                               <div className="min-w-0">
@@ -459,13 +459,13 @@ export default function AuditLogs() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white border border-[#E5E7EB] text-[#4B5563] shadow-sm">
+                            <div className="inline-flex items-center px-3 py-1 rounded-full text-[0.625rem] font-black uppercase tracking-wider bg-white border border-[#E5E7EB] text-[#4B5563] shadow-sm">
                               {cleanString(log.action)}
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <p className="text-sm font-bold text-[#111827] truncate">{log.details?.fullName || log.details?.employeeNumber || cleanString(log.entityType)}</p>
-                            <p className="text-[10px] font-black uppercase tracking-wider text-[#9CA3AF] mt-1">{cleanString(log.entityType)}</p>
+                            <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] mt-1">{cleanString(log.entityType)}</p>
                           </td>
                           <td className="px-6 py-4">
                             <AuditDetails details={log.details} />
@@ -509,7 +509,7 @@ export default function AuditLogs() {
         {sortedLogs.length > 0 && !isLoading && (
           <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-widest">
+              <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest">
                 Total Logs: {sortedLogs.length}
               </p>
               <p className="mt-1 text-xs font-black text-[#111827]">
@@ -603,7 +603,7 @@ function AuditDetails({ details }: { details: any }) {
     <div className="flex flex-col gap-2.5 w-full max-w-sm">
       {items.map((item: any, index: number) => (
         <div key={index} className="flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#6B7280]">{item.field}</span>
+          <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">{item.field}</span>
           {'to' in item ? (
             <div className="flex items-center gap-2 text-xs">
               <span className="font-bold text-[#111827] truncate flex-1">{item.from}</span>
@@ -637,7 +637,7 @@ function ExpandableArrayValue({ items }: { items: string[] }) {
         <button 
           type="button"
           onClick={() => setExpanded(false)}
-          className="ml-2 text-[10px] font-black uppercase tracking-wider text-[#2563EB] hover:text-[#1D4ED8] transition-colors inline-block"
+          className="ml-2 text-[0.625rem] font-black uppercase tracking-wider text-[#2563EB] hover:text-[#1D4ED8] transition-colors inline-block"
         >
           Show less
         </button>
@@ -651,7 +651,7 @@ function ExpandableArrayValue({ items }: { items: string[] }) {
       <button 
         type="button"
         onClick={() => setExpanded(true)}
-        className="ml-2 text-[10px] font-black uppercase tracking-wider text-[#2563EB] hover:text-[#1D4ED8] transition-colors inline-block"
+        className="ml-2 text-[0.625rem] font-black uppercase tracking-wider text-[#2563EB] hover:text-[#1D4ED8] transition-colors inline-block"
       >
         and {items.length - 5} more
       </button>

@@ -726,7 +726,7 @@ export default function Reports() {
                     <div className={`p-3 rounded-2xl transition-all duration-300 border ${report.color}`}>
                       <report.icon className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px] font-black uppercase px-2 py-1 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg text-[#6B7280] tracking-widest">
+                    <span className="text-[0.625rem] font-black uppercase px-2 py-1 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg text-[#6B7280] tracking-widest">
                       XLSX / CSV
                     </span>
                   </div>
@@ -838,7 +838,7 @@ export default function Reports() {
 
                           {departments.some(d => d.type === 'internal') && (
                             <div className="border-b border-[#F3F4F6] last:border-b-0">
-                              <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                              <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
                                 Specific Internal
                               </div>
                               {departments.filter(d => d.type === 'internal').map(d => (
@@ -857,7 +857,7 @@ export default function Reports() {
 
                           {departments.some(d => d.type === 'external') && (
                             <div className="border-b border-[#F3F4F6] last:border-b-0">
-                              <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
+                              <div className="sticky top-0 bg-[#F9FAFB] px-3 py-2 text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">
                                 Specific External
                               </div>
                               {departments.filter(d => d.type === 'external').map(d => (

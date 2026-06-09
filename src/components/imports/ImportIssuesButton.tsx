@@ -51,7 +51,7 @@ export function ImportIssuesButton() {
     >
       <AlertTriangle className="h-4 w-4 shrink-0" />
       <span className="whitespace-nowrap">Import Issues</span>
-      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white">
+      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[0.625rem] font-black text-white">
         {count > 99 ? '99+' : count}
       </span>
     </Link>
