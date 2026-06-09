@@ -335,7 +335,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     address: emp?.address || '',
     boEmail: emp?.boEmail || '',
     emailPassword: emp?.emailPassword || '',
-    lmsAccount: generateLmsAccount(formatEmployeeName(nameParts.firstName, nameParts.middleName, nameParts.lastName, '')) || emp?.lmsAccount || '',
+    lmsAccount: emp?.lmsAccount || generateLmsAccount(formatEmployeeName(nameParts.firstName, nameParts.middleName, nameParts.lastName, '')) || '',
     status: emp?.status || 'active',
     siteId: emp?.siteId === 'HQ' ? 'HQ' : emp?.siteId || '',
     site: emp?.site === 'HQ' ? 'HQ' : emp?.site || '',
@@ -376,6 +376,36 @@ export default function EmployeeProfile() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [undoTargetLog, setUndoTargetLog] = useState<any | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
+
+  const [isBoEmailEdited, setIsBoEmailEdited] = useState(false);
+  const [isLmsAccountEdited, setIsLmsAccountEdited] = useState(false);
+  const [isPcNameEdited, setIsPcNameEdited] = useState(false);
+
+  const generatedPreviewWithLms = (f: EmployeeForm, account?: AccountOption) => {
+    const nameForLms = formatEmployeeName(f.firstName, f.lastName, '', '');
+    const suggestions = generatedPreview(formatEmployeeName(f.firstName, f.middleName, f.lastName, f.suffix), account);
+    return {
+      boEmail: suggestions.boEmail,
+      pcName: suggestions.pcName,
+      lmsAccount: generateLmsAccount(nameForLms) || '',
+    };
+  };
+
+  const regenerateField = (field: 'boEmail' | 'lmsAccount' | 'pcName') => {
+    const account = accounts.find((acc) => acc.name === form.accountAssignment);
+    const suggestions = generatedPreviewWithLms(form, account);
+
+    if (field === 'boEmail') {
+      setIsBoEmailEdited(false);
+      setForm((current) => ({ ...current, boEmail: suggestions.boEmail }));
+    } else if (field === 'lmsAccount') {
+      setIsLmsAccountEdited(false);
+      setForm((current) => ({ ...current, lmsAccount: suggestions.lmsAccount }));
+    } else if (field === 'pcName') {
+      setIsPcNameEdited(false);
+      setForm((current) => ({ ...current, pcName: suggestions.pcName }));
+    }
+  };
   const canViewIT = can('employees.it.view');
   const canViewSecrets = can('employees.secrets.view');
   const canEditHR = can('employees.edit');
@@ -502,7 +532,35 @@ export default function EmployeeProfile() {
       value = applyCharacterLimit(field, value);
     }
 
-    setForm((current) => ({ ...current, [field]: value }));
+    if (field === 'boEmail') {
+      setIsBoEmailEdited(true);
+    } else if (field === 'lmsAccount') {
+      setIsLmsAccountEdited(true);
+    } else if (field === 'pcName') {
+      setIsPcNameEdited(true);
+    }
+
+    setForm((current) => {
+      const nextForm = { ...current, [field]: value };
+      
+      const account = accounts.find((acc) => acc.name === nextForm.accountAssignment);
+      const suggestions = generatedPreviewWithLms(nextForm, account);
+
+      if (field === 'firstName' || field === 'lastName' || field === 'accountAssignment') {
+        if (!isBoEmailEdited) {
+          nextForm.boEmail = suggestions.boEmail;
+        }
+        if (!isLmsAccountEdited) {
+          nextForm.lmsAccount = suggestions.lmsAccount;
+        }
+        if (!isPcNameEdited) {
+          nextForm.pcName = suggestions.pcName;
+        }
+      }
+
+      return nextForm;
+    });
+
     setFormErrors((current) => {
       if (!current[field]) return current;
       const { [field]: _removed, ...nextErrors } = current;
@@ -521,6 +579,14 @@ export default function EmployeeProfile() {
   const startEditing = () => {
     if (!canManageEmployee) return;
     setForm(employee);
+    
+    const account = accounts.find((acc) => acc.name === employee.accountAssignment);
+    const suggestions = generatedPreviewWithLms(employee, account);
+    
+    setIsBoEmailEdited(Boolean(employee.boEmail && employee.boEmail !== suggestions.boEmail));
+    setIsLmsAccountEdited(Boolean(employee.lmsAccount && employee.lmsAccount !== suggestions.lmsAccount));
+    setIsPcNameEdited(Boolean(employee.pcName && employee.pcName !== suggestions.pcName));
+    
     setIsEditing(true);
   };
 
@@ -565,6 +631,9 @@ export default function EmployeeProfile() {
         accountAssignment: form.accountAssignment.trim(),
         phone: form.phone.trim() || undefined,
         address: form.address.trim() || undefined,
+        boEmail: form.boEmail.trim() || undefined,
+        lmsAccount: form.lmsAccount.trim() || undefined,
+        pcName: form.pcName.trim() || undefined,
         emailPassword: form.emailPassword.trim() || undefined,
         status: form.status,
         siteId: selectedSite?.id,
@@ -922,7 +991,29 @@ export default function EmployeeProfile() {
                       )}
                     </ProfileField>
                     <ProfileField label="BigOutsource Email" icon={Mail} editing={editingHR}>
-                      {editingHR ? <GeneratedValue value={preview.boEmail} placeholder={accountBasedPreviewPlaceholder} /> : employee.boEmail || 'Not Assigned'}
+                      {editingHR ? (
+                        <div className="flex items-center gap-2 w-full">
+                          <div className="flex-1">
+                            <Input
+                              value={form.boEmail}
+                              onChange={(value) => updateForm('boEmail', value)}
+                              placeholder={accountBasedPreviewPlaceholder}
+                            />
+                          </div>
+                          {isBoEmailEdited && (
+                            <button
+                              type="button"
+                              onClick={() => regenerateField('boEmail')}
+                              className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                              title="Reset to generated default"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        employee.boEmail || 'Not Assigned'
+                      )}
                     </ProfileField>
                     {canViewSecrets && (
                     <ProfileField label="Email Password" icon={Key} editing={editingSecrets}>
@@ -960,8 +1051,24 @@ export default function EmployeeProfile() {
                     )}
                     <ProfileField label="LMS Account" icon={User} editing={editingHR}>
                       {editingHR ? (
-                        <div className="px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm font-bold text-[#4B5563]">
-                          {generateLmsAccount(formatEmployeeName(form.firstName, form.lastName, '', '')) || 'Generated after name is entered'}
+                        <div className="flex items-center gap-2 w-full">
+                          <div className="flex-1">
+                            <Input
+                              value={form.lmsAccount}
+                              onChange={(value) => updateForm('lmsAccount', value)}
+                              placeholder="Generated after name is entered"
+                            />
+                          </div>
+                          {isLmsAccountEdited && (
+                            <button
+                              type="button"
+                              onClick={() => regenerateField('lmsAccount')}
+                              className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                              title="Reset to generated default"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         employee.lmsAccount || 'Not Assigned'
@@ -1088,7 +1195,29 @@ export default function EmployeeProfile() {
                 <ProfileSection icon={Laptop} title="Device Assets" iconColorClass="text-purple-600 bg-purple-50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                     <ProfileField label="PC Name" icon={Laptop} editing={editingIT}>
-                      {editingIT ? <GeneratedValue value={preview.pcName} placeholder={accountBasedPreviewPlaceholder} /> : employee.pcName || 'Not Assigned'}
+                      {editingIT ? (
+                        <div className="flex items-center gap-2 w-full">
+                          <div className="flex-1">
+                            <Input
+                              value={form.pcName}
+                              onChange={(value) => updateForm('pcName', value)}
+                              placeholder={accountBasedPreviewPlaceholder}
+                            />
+                          </div>
+                          {isPcNameEdited && (
+                            <button
+                              type="button"
+                              onClick={() => regenerateField('pcName')}
+                              className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] hover:text-[#2563EB] hover:border-[#93C5FD] hover:bg-[#EFF6FF] transition-all shadow-sm flex items-center justify-center shrink-0"
+                              title="Reset to generated default"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        employee.pcName || 'Not Assigned'
+                      )}
                     </ProfileField>
                     <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
                       {editingIT ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : 'Not Set'}

@@ -107,19 +107,31 @@ async function withGeneratedIdentity(data, existing = null) {
   const account = await resolveAccount(merged, existing);
   const allEmployees = await EmployeeModel.findAll();
   const used = collectUsedValues(allEmployees, existing?.id);
-  const lmsAccount = withNumericSuffix(buildLmsUsernameBase(name), used.lmsUsernames);
+  const defaultLmsAccount = withNumericSuffix(buildLmsUsernameBase(name), used.lmsUsernames);
   const identifier = withNumericSuffix(buildEmployeeIdentifierBase(name), used.employeeIdentifiers);
 
   if (!name.fullName || !name.lastName) throw new AppError('first name and last name are required', 400);
-  if (!lmsAccount || !identifier) throw new AppError('Unable to generate employee identity from the provided name', 400);
+  if (!defaultLmsAccount || !identifier) throw new AppError('Unable to generate employee identity from the provided name', 400);
+
+  const lmsAccount = data.lmsAccount !== undefined && data.lmsAccount !== ''
+    ? data.lmsAccount
+    : (existing ? existing.lmsAccount : defaultLmsAccount);
+
+  const boEmail = data.boEmail !== undefined && data.boEmail !== ''
+    ? data.boEmail
+    : (existing ? existing.boEmail : buildCompanyEmail(identifier, account.code, account.type));
+
+  const pcName = data.pcName !== undefined && data.pcName !== ''
+    ? data.pcName
+    : (existing ? existing.pcName : buildPcName(identifier, account.code));
 
   return {
     ...data,
     fullName: name.fullName,
     accountAssignment: account.name,
     lmsAccount,
-    boEmail: buildCompanyEmail(identifier, account.code, account.type),
-    pcName: buildPcName(identifier, account.code),
+    boEmail,
+    pcName,
   };
 }
 
@@ -152,7 +164,7 @@ export const EmployeeService = {
 
   async create(data, user, meta = {}) {
     const actor = auditActor(user);
-    data = filterEmployeeWritePayload(data, user);
+    data = filterEmployeeWritePayload(data, user, true);
 
     if (!data.employeeNumber && !data.employeeId && !data.id) {
       throw new AppError('id is required', 400);
