@@ -91,15 +91,7 @@ type DirectoryFieldKey =
   | 'emailPassword'
   | 'lmsAccount'
   | 'status'
-  | 'site'
-  | 'pcName'
-  | 'rustDeskId'
-  | 'esetStatus'
-  | 'biosDate'
-  | 'activityWatchStatus'
-  | 'windowsKey'
-  | 'updatedAt'
-  | 'updatedBy';
+  | 'site';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -207,14 +199,6 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     ),
   },
   { key: 'site', label: 'Site', render: (emp) => emp.site || 'Unassigned' },
-  { key: 'pcName', label: 'PC Name', render: (emp) => emp.pcName || 'Unassigned' },
-  { key: 'rustDeskId', label: 'RustDesk ID', render: (emp) => emp.rustDeskId || emp.rustdeskId || '-' },
-  { key: 'esetStatus', label: 'ESET', render: (emp) => emp.esetStatus || 'Inactive' },
-  { key: 'biosDate', label: 'BIOS Date', render: (emp) => emp.biosDate || '-' },
-  { key: 'activityWatchStatus', label: 'ActivityWatch', render: (emp) => emp.activityWatchStatus || 'Missing' },
-  { key: 'windowsKey', label: 'Windows License Key', render: (emp) => emp.windowsKey || '-' },
-  { key: 'updatedAt', label: 'Updated At', render: (emp) => emp.updatedAt || '-' },
-  { key: 'updatedBy', label: 'Updated By', render: (emp) => emp.updatedBy || '-' },
 ];
 
 const sortableFieldKeys: DirectoryFieldKey[] = directoryFields.map((field) => field.key);
@@ -476,7 +460,7 @@ export default function Directory() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isStagingImport, setIsStagingImport] = useState(false);
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>({ key: 'updatedAt', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>({ key: 'fullName', direction: 'asc' });
   const [form, setForm] = useState<AddEmployeeForm>(initialForm);
   const [activeStep, setActiveStep] = useState(0);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -601,7 +585,7 @@ export default function Directory() {
   }, [baseFilteredEmployees, showIncompleteOnly]);
 
   const sortedEmployees = useMemo(() => {
-    const targetSort: SortConfig = sortConfig || { key: 'updatedAt', direction: 'desc' };
+    const targetSort: SortConfig = sortConfig || { key: 'fullName', direction: 'asc' };
     return [...filteredEmployees].sort((a, b) => compareEmployees(a, b, targetSort));
   }, [filteredEmployees, sortConfig]);
   const totalPages = Math.max(1, Math.ceil(sortedEmployees.length / recordsPerPage));

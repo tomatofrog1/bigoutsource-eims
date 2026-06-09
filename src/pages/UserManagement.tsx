@@ -1168,7 +1168,7 @@ export default function UserManagement() {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-6">
-                <CapabilityChecklist catalog={capabilityCatalog} selected={permsDraft} onToggle={togglePerm} />
+                <CapabilityChecklist catalog={capabilityCatalog.filter(c => c.key !== 'employees.it.view')} selected={permsDraft} onToggle={togglePerm} />
               </div>
               <div className="flex items-center justify-between gap-3 border-t px-6 py-4" style={{ borderColor: 'var(--color-border)' }}>
                 <button

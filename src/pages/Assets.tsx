@@ -24,9 +24,7 @@ export const assetFields: Array<{ key: AssetFieldKey; label: string; width: stri
   { key: 'esetStatus', label: 'ESET Status', width: 'w-[12%]' },
 ];
 
-export const selectableAssetFields = assetFields.filter((field) => field.key !== 'assigneeName');
-const maxVisibleFieldCount = 6;
-const defaultVisibleFieldKeys: AssetFieldKey[] = ['assigneeName', 'pcName', 'windowsKey', 'rustdeskId'];
+
 
 function formatWindowsLicenseKey(value = '') {
   return value
@@ -65,28 +63,7 @@ export default function Assets() {
   const [drafts, setDrafts] = useState<Record<string, Partial<any>>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [selectedFields, setSelectedFields] = useState<AssetFieldKey[] | null>(null);
-
-  const visibleFieldKeys = selectedFields ?? defaultVisibleFieldKeys;
-  const isCustomFieldView = selectedFields !== null;
-  const visibleFields = assetFields.filter((field) => visibleFieldKeys.includes(field.key));
-
-  const toggleField = (field: AssetFieldKey) => {
-    setSelectedFields((current) => {
-      const nextFields = current ?? defaultVisibleFieldKeys;
-
-      if (nextFields.includes(field)) {
-        return nextFields.filter((item) => item !== field);
-      }
-
-      if (nextFields.length >= maxVisibleFieldCount) {
-        toast.error(`You can display up to ${maxVisibleFieldCount - 1} selected items at a time`);
-        return current;
-      }
-
-      return [...nextFields, field];
-    });
-  };
+  const visibleFields = assetFields;
 
   const hasChanges = useMemo(() => {
     return Object.entries(drafts).some(([id, draft]) => {
@@ -296,50 +273,7 @@ export default function Assets() {
 
   return (
     <PageLayout title="IT Asset Management" contentClassName="w-full max-w-[1600px] mx-auto">
-      <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[14rem_minmax(0,1fr)]">
-        <aside className="sticky top-0 hidden self-start rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block min-h-[80vh]">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
-              <p className="mt-1 text-xs font-bold text-[#4B5563]">{isCustomFieldView ? `${visibleFieldKeys.length - 1}/${maxVisibleFieldCount - 1} selected` : 'Default fields shown'}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedFields(null)}
-              disabled={!isCustomFieldView}
-              className="rounded-lg border border-[#E5E7EB] px-2 py-1 text-[0.625rem] font-black uppercase text-[#6B7280] transition-all hover:text-[#111827] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Reset
-            </button>
-          </div>
-          <div className="max-h-[78vh] space-y-2 overflow-y-auto pr-1">
-            {selectableAssetFields.map((field) => {
-              const checked = visibleFieldKeys.includes(field.key);
-              const disabled = !checked && visibleFieldKeys.length >= maxVisibleFieldCount;
-
-              return (
-                <label
-                  key={field.key}
-                  className={cn(
-                    'flex items-start gap-2 rounded-xl border border-[#E5E7EB] px-3 py-2 text-xs font-bold text-[#374151] transition-all',
-                    checked ? 'bg-[#F9FAFB]' : 'bg-white',
-                    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:border-[#D1D5DB]'
-                  )}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={disabled}
-                    onChange={() => toggleField(field.key)}
-                    className="mt-0.5 h-4 w-4 rounded border-[#D1D5DB] accent-[#111827]"
-                  />
-                  <span className="leading-snug">{field.label}</span>
-                </label>
-              );
-            })}
-          </div>
-        </aside>
-
+      <div className="flex flex-col gap-6 w-full">
         <div className="flex flex-col gap-6 min-w-0">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-1 items-center gap-4">
