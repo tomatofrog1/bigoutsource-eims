@@ -447,6 +447,8 @@ export default function EmployeeProfile() {
     if (!employee.boEmail) mildCount++;
     if (!employee.emailPassword) mildCount++;
     if (!employee.lmsAccount) mildCount++;
+    if (employee.activityWatchStatus !== 'installed') mildCount++;
+    if (employee.esetStatus !== 'active') mildCount++;
 
     const total = criticalCount + mildCount;
     if (total === 0) return null;
@@ -879,7 +881,7 @@ export default function EmployeeProfile() {
                         </div>
 
                         <p className="text-[#6B7280] font-bold mt-1 uppercase text-xs tracking-widest">
-                          {employee.employeeNumber || 'No ID'} | {employee.site || 'Unassigned'}
+                          {employee.employeeNumber || <span className="text-red-500 font-black">No ID</span>} | {employee.site || <span className="text-red-500 font-black">Unassigned</span>}
                         </p>
                       </motion.div>
                     )}
@@ -1008,7 +1010,7 @@ export default function EmployeeProfile() {
                           </AnimatePresence>
                         </div>
                       ) : (
-                        employee.accountAssignment || 'Not Assigned'
+                        employee.accountAssignment || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
                     <ProfileField label="BigOutsource Email" icon={Mail} editing={editingHR}>
@@ -1033,7 +1035,7 @@ export default function EmployeeProfile() {
                           )}
                         </div>
                       ) : (
-                        employee.boEmail || 'Not Assigned'
+                        employee.boEmail || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
                     {canViewSecrets && (
@@ -1052,7 +1054,7 @@ export default function EmployeeProfile() {
                                 transition={{ duration: 0.2 }}
                                 className="inline-block"
                               >
-                                {showPassword ? employee.emailPassword || 'Not Assigned' : (employee.emailPassword ? '********' : 'Not Assigned')}
+                                {showPassword ? employee.emailPassword || <span className="text-red-500 font-black">Not Assigned</span> : (employee.emailPassword ? '********' : <span className="text-red-500 font-black">Not Assigned</span>)}
                               </motion.span>
                             </AnimatePresence>
                           </span>
@@ -1092,7 +1094,7 @@ export default function EmployeeProfile() {
                           )}
                         </div>
                       ) : (
-                        employee.lmsAccount || 'Not Assigned'
+                        employee.lmsAccount || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
                     <ProfileField label="Status" icon={ShieldCheck} editing={editingHR}>
@@ -1206,7 +1208,7 @@ export default function EmployeeProfile() {
                           </AnimatePresence>
                         </div>
                       ) : (
-                        employee.site || 'Unassigned'
+                        employee.site || <span className="text-red-500 font-black">Unassigned</span>
                       )}
                     </ProfileField>
                   </div>
@@ -1237,15 +1239,15 @@ export default function EmployeeProfile() {
                           )}
                         </div>
                       ) : (
-                        employee.pcName || 'Not Assigned'
+                        employee.pcName || <span className="text-red-500 font-black">Not Assigned</span>
                       )}
                     </ProfileField>
                     <ProfileField label="BIOS Date" icon={Calendar} editing={editingIT}>
-                      {editingIT ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : 'Not Set'}
+                      {editingIT ? <Input type="date" value={form.biosDate} onChange={(value) => updateForm('biosDate', value)} /> : employee.biosDate ? new Date(employee.biosDate).toLocaleDateString() : <span className="text-red-500 font-black">Not Set</span>}
                     </ProfileField>
                     {canViewSecrets && (
                     <ProfileField label="RustDesk ID" icon={Globe} editing={editingSecrets} error={formErrors.rustdeskId}>
-                      {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || 'Not Assigned'}
+                      {editingSecrets ? <Input value={form.rustdeskId} onChange={(value) => updateForm('rustdeskId', value)} placeholder="e.g. 123 456 789" error={Boolean(formErrors.rustdeskId)} /> : employee.rustdeskId || <span className="text-red-500 font-black">Not Assigned</span>}
                     </ProfileField>
                     )}
                   </div>
@@ -1284,7 +1286,7 @@ export default function EmployeeProfile() {
                                   transition={{ duration: 0.2 }}
                                   className="inline-block"
                                 >
-                                  {showSensitive ? employee.windowsKey || 'Not Assigned' : (employee.windowsKey ? '*****-*****-*****-*****-*****' : 'Not Assigned')}
+                                  {showSensitive ? (employee.windowsKey || <span className="text-red-500 font-black">Not Assigned</span>) : (employee.windowsKey ? '*****-*****-*****-*****-*****' : <span className="text-red-500 font-black">Not Assigned</span>)}
                                 </motion.span>
                               </AnimatePresence>
                             </p>

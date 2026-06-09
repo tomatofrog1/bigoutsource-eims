@@ -145,6 +145,8 @@ function calculateIncompleteData(employee: EmployeeRecord) {
   if (!employee.boEmail) mildCount++;
   if (!employee.emailPassword) mildCount++;
   if (!employee.lmsAccount) mildCount++;
+  if (employee.activityWatchStatus !== 'Installed') mildCount++;
+  if (employee.esetStatus !== 'Active') mildCount++;
 
   const total = criticalCount + mildCount;
   if (total === 0) return null;
