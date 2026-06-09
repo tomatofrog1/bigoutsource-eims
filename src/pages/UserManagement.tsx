@@ -231,10 +231,13 @@ export default function UserManagement() {
   }, [search, roleFilter, statusFilter]);
 
   const handleSort = (key: string) => {
-    setSortConfig((current) => ({
-      key,
-      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
-    }));
+    setSortConfig((current) => {
+      if (current?.key === key) {
+        if (current.direction === 'asc') return { key, direction: 'desc' };
+        if (current.direction === 'desc') return null;
+      }
+      return { key, direction: 'asc' };
+    });
   };
 
   const confirmDisableUser = async (id: string) => {
