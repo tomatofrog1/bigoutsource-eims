@@ -622,7 +622,8 @@ const REPORTS: ReportDef[] = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Reports() {
-  const { can } = useAuth();
+  const { can, refreshUser } = useAuth();
+  const canViewDepartments = can('departments.view');
   const [generating, setGenerating] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<typeof REPORTS[number] | null>(null);
@@ -635,18 +636,34 @@ export default function Reports() {
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 500);
+    if (!canViewDepartments) {
+      setDepartments([]);
+      return () => clearTimeout(timer);
+    }
+
     accountService.list().then(res => {
       setDepartments(asArray(res).map(d => ({
         id: d.id || '',
         name: d.name || '',
         type: d.accountType || d.account_type || 'external'
       })));
-    });
+    }).catch(() => setDepartments([]));
     return () => clearTimeout(timer);
-  }, []);
+  }, [canViewDepartments]);
+
+  async function hasFreshExportPermission() {
+    const freshUser = await refreshUser();
+    const allowed = Boolean(freshUser?.capabilities?.includes('reports.export'));
+    if (!allowed) toast.error("You don't have permission to export reports.");
+    return allowed;
+  }
 
   async function handleDownload(format: 'xlsx' | 'csv') {
     if (!selectedReport || generating) return;
+    if (!(await hasFreshExportPermission())) {
+      setSelectedReport(null);
+      return;
+    }
     setGenerating(selectedReport.title);
     const report = selectedReport;
     const scope = departmentScope;
@@ -665,9 +682,14 @@ export default function Reports() {
     }
   }
 
-  function confirmDownload() {
+  async function confirmDownload() {
     if (!previewData || !selectedFormat) return;
-    if (!can('reports.export')) return;
+    if (!(await hasFreshExportPermission())) {
+      setPreviewData(null);
+      setSelectedFormat(null);
+      setLastReport(null);
+      return;
+    }
     try {
       buildWorkbook(previewData.sheets, previewData.filename, selectedFormat);
       toast.success(previewData.message);

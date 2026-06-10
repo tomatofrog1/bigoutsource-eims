@@ -6,8 +6,8 @@ import { createAccountValidator, updateAccountValidator } from '../validators/ac
 
 const router = Router();
 
-router.get('/', AccountController.list);
-router.get('/recent', AccountController.recent);
+router.get('/', requirePermission('departments.view'), AccountController.list);
+router.get('/recent', requirePermission('departments.view'), AccountController.recent);
 router.post('/', requirePermission('departments.edit'), validate(createAccountValidator), AccountController.create);
 router.put('/:id', requirePermission('departments.edit'), validate(updateAccountValidator), AccountController.update);
 router.delete('/:id', requirePermission('departments.edit'), AccountController.remove);

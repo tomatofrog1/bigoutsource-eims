@@ -4,7 +4,7 @@ import { requirePermission } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-router.get('/summary', EmployeeImportController.summary);
+router.get('/summary', requirePermission('imports.manage'), EmployeeImportController.summary);
 router.get('/', requirePermission('imports.manage'), EmployeeImportController.list);
 router.post('/stage', requirePermission('imports.manage'), EmployeeImportController.stage);
 router.post('/duplicates/resolve', requirePermission('imports.manage'), EmployeeImportController.resolveDuplicate);

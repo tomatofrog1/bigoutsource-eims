@@ -424,7 +424,9 @@ export default function EmployeeProfile() {
   const canEditHR = can('employees.edit');
   const canEditIT = can('employees.it.edit');
   const canEditSecrets = can('employees.secrets.edit');
+  const canArchiveEmployee = can('employees.delete');
   const canManageEmployee = canEditHR || canEditIT || canEditSecrets;
+  const canUseEmployeeActions = canManageEmployee || canArchiveEmployee;
   const editingHR = isEditing && canEditHR;
   const editingIT = isEditing && canEditIT;
   const editingSecrets = isEditing && canEditSecrets;
@@ -684,7 +686,7 @@ export default function EmployeeProfile() {
   };
 
   const toggleArchiveEmployee = async () => {
-    if (!canManageEmployee) return;
+    if (!canArchiveEmployee) return;
     if (!id) return;
 
     setIsArchiving(true);
@@ -917,7 +919,7 @@ export default function EmployeeProfile() {
                           Save Changes
                         </button>
                       </motion.div>
-                    ) : canManageEmployee ? (
+                    ) : canUseEmployeeActions ? (
                       <motion.div
                         key="view-actions"
                         initial={{ opacity: 0, scale: 0.95, filter: 'blur(4px)' }}
@@ -926,16 +928,18 @@ export default function EmployeeProfile() {
                         transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                         className="flex gap-3"
                       >
-                        <button
-                          type="button"
-                          onClick={startEditing}
-                          className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Update Record
-                        </button>
+                        {canManageEmployee && (
+                          <button
+                            type="button"
+                            onClick={startEditing}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-[#111827] text-white rounded-xl text-sm font-bold hover:bg-[#374151] transition-all shadow-lg shadow-[#11182720]"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Update Record
+                          </button>
+                        )}
 
-                        {canEditHR && (
+                        {canArchiveEmployee && (
                         <button
                           type="button"
                           onClick={() => {
@@ -1581,7 +1585,7 @@ export default function EmployeeProfile() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {canEditHR && showArchiveModal && (
+        {canArchiveEmployee && showArchiveModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

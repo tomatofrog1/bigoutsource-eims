@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { AppUser } from '../types';
 import toast from 'react-hot-toast';
 import { authService } from '../services/authService';
@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<AppUser>;
+  refreshUser: () => Promise<AppUser | null>;
   logout: () => Promise<void>;
   isAdmin: boolean;
   isIT: boolean;
@@ -37,6 +38,7 @@ function toAppUser(apiUser: any): AppUser {
     department: apiUser.department || 'Unassigned',
     site: apiUser.site || 'Unassigned',
     capabilities: Array.isArray(apiUser.capabilities) ? apiUser.capabilities : [],
+    capabilityOverrides: Array.isArray(apiUser.capabilityOverrides) ? apiUser.capabilityOverrides : null,
   };
 }
 
@@ -44,28 +46,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshUser = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      setUser(null);
+      return null;
+    }
+
+    try {
+      const apiUser = await authService.me();
+      const nextUser = toAppUser(apiUser);
+      setUser(nextUser);
+      return nextUser;
+    } catch (error) {
+      clearAuthToken();
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     async function bootstrapSession() {
-      const token = getAuthToken();
-
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const apiUser = await authService.me();
-        setUser(toAppUser(apiUser));
-      } catch (error) {
-        clearAuthToken();
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
+      await refreshUser();
+      setLoading(false);
     }
 
     bootstrapSession();
-  }, []);
+  }, [refreshUser]);
+
+  useEffect(() => {
+    function syncCurrentUser() {
+      if (document.visibilityState === 'visible') {
+        refreshUser();
+      }
+    }
+
+    window.addEventListener('focus', syncCurrentUser);
+    document.addEventListener('visibilitychange', syncCurrentUser);
+    return () => {
+      window.removeEventListener('focus', syncCurrentUser);
+      document.removeEventListener('visibilitychange', syncCurrentUser);
+    };
+  }, [refreshUser]);
 
   const login = async (email: string, pass: string) => {
     try {
@@ -104,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     login,
     register,
+    refreshUser,
     logout,
     isAdmin: user?.role === 'super_admin' || user?.role === 'admin',
     isIT: user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'it_admin',

@@ -7,10 +7,8 @@ import { assignDeviceValidator, createDeviceValidator, updateDeviceValidator } f
 const router = Router();
 const assignmentRouter = Router();
 
-// Reads stay open to any authenticated user (the Dashboard shows asset counts to everyone);
-// the IT Assets management page is gated on the frontend. Writes require assets.edit.
-router.get('/', DeviceController.list);
-router.get('/:id', DeviceController.get);
+router.get('/', requirePermission('assets.view'), DeviceController.list);
+router.get('/:id', requirePermission('assets.view'), DeviceController.get);
 router.post('/', requirePermission('assets.edit'), validate(createDeviceValidator), DeviceController.create);
 router.put('/:id', requirePermission('assets.edit'), validate(updateDeviceValidator), DeviceController.update);
 router.delete('/:id', requirePermission('assets.edit'), DeviceController.remove);

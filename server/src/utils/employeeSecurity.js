@@ -21,10 +21,10 @@ const HR_WRITE_FIELDS = [
   'phone', 'phoneNumber', 'address',
   'boEmail', 'bigoutsourceEmail', 'lmsAccount',
   'status', 'site', 'siteId', 'siteName',
-  'is_archived', 'isArchived',
 ];
 const IT_WRITE_FIELDS = ['pcName', 'biosDate', 'esetStatus', 'activityWatchStatus'];
 const SECRET_WRITE_FIELDS = ['emailPassword', 'windowsKey', 'windowsLicenseKey', 'rustdeskId', 'rustDeskId'];
+const ARCHIVE_WRITE_FIELDS = ['is_archived', 'isArchived'];
 
 function blankFields(target, fields) {
   for (const field of fields) {
@@ -61,11 +61,12 @@ export function filterEmployeeWritePayload(data, user, isCreate = false) {
     IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
     SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
   } else {
-    if (caps.includes('employees.edit') || caps.includes('employees.create')) {
+    if (caps.includes('employees.edit')) {
       HR_WRITE_FIELDS.forEach((field) => allowed.add(field));
     }
     if (caps.includes('employees.it.edit')) IT_WRITE_FIELDS.forEach((field) => allowed.add(field));
     if (caps.includes('employees.secrets.edit')) SECRET_WRITE_FIELDS.forEach((field) => allowed.add(field));
+    if (caps.includes('employees.delete')) ARCHIVE_WRITE_FIELDS.forEach((field) => allowed.add(field));
   }
 
   const filtered = {};

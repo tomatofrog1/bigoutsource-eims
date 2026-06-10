@@ -6,6 +6,7 @@ create table if not exists public.user_profiles (
   status text not null default 'pending',
   department text not null default 'Unassigned',
   site text not null default 'HQ',
+  capability_overrides text[],
   approved_by uuid references auth.users(id) on delete set null,
   approved_at timestamptz,
   created_at timestamptz not null default now(),
@@ -15,6 +16,7 @@ create table if not exists public.user_profiles (
 alter table public.user_profiles add column if not exists full_name text not null default '';
 alter table public.user_profiles add column if not exists department text not null default 'Unassigned';
 alter table public.user_profiles add column if not exists site text not null default 'HQ';
+alter table public.user_profiles add column if not exists capability_overrides text[];
 alter table public.user_profiles add column if not exists approved_by uuid references auth.users(id) on delete set null;
 alter table public.user_profiles add column if not exists approved_at timestamptz;
 alter table public.user_profiles add column if not exists created_at timestamptz not null default now();

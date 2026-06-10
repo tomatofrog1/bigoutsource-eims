@@ -32,9 +32,13 @@ export default function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/directory" element={<Directory />} />
-            <Route path="/employee/:id" element={<EmployeeProfile />} />
-            <Route path="/departments" element={<Departments />} />
+            <Route element={<ProtectedRoute capability="employees.view" />}>
+              <Route path="/directory" element={<Directory />} />
+              <Route path="/employee/:id" element={<EmployeeProfile />} />
+            </Route>
+            <Route element={<ProtectedRoute capability="departments.view" />}>
+              <Route path="/departments" element={<Departments />} />
+            </Route>
             <Route path="/settings" element={<Settings />} />
             <Route element={<ProtectedRoute capability="assets.view" />}>
               <Route path="/assets" element={<Assets />} />

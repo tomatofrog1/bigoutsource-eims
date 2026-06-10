@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useTheme } from '@/src/contexts/ThemeContext';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { employeeService } from '@/src/services/employeeService';
 import { deviceService } from '@/src/services/deviceService';
 import { auditLogService } from '@/src/services/auditLogService';
@@ -76,6 +77,11 @@ const CustomTooltip = ({ active, payload, label, chartType }: any) => {
 
 export default function Dashboard() {
   const { isDark } = useTheme();
+  const { can } = useAuth();
+  const canViewEmployees = can('employees.view');
+  const canViewAssets = can('assets.view');
+  const canViewAuditLogs = can('auditlogs.view');
+  const canViewDepartments = can('departments.view');
   const [employees, setEmployees] = useState<any[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
@@ -91,40 +97,68 @@ export default function Dashboard() {
     let isMounted = true;
 
     async function loadEmployees() {
+      if (!canViewEmployees) {
+        setEmployees([]);
+        setEmployeesLoading(false);
+        return;
+      }
       try {
         const result = await employeeService.list();
         if (!isMounted) return;
         setEmployees(asArray(result).filter((emp: any) => !emp.isArchived && !emp.is_archived));
+      } catch {
+        if (isMounted) setEmployees([]);
       } finally {
         if (isMounted) setEmployeesLoading(false);
       }
     }
 
     async function loadDevices() {
+      if (!canViewAssets) {
+        setDevices([]);
+        setDevicesLoading(false);
+        return;
+      }
       try {
         const result = await deviceService.list();
         if (!isMounted) return;
         setDevices(asArray(result));
+      } catch {
+        if (isMounted) setDevices([]);
       } finally {
         if (isMounted) setDevicesLoading(false);
       }
     }
 
     async function loadLogs() {
+      if (!canViewAuditLogs) {
+        setLogs([]);
+        setLogsLoading(false);
+        return;
+      }
       try {
         const result = await auditLogService.list({ limit: 8 });
         if (!isMounted) return;
         setLogs(asArray(result));
+      } catch {
+        if (isMounted) setLogs([]);
       } finally {
         if (isMounted) setLogsLoading(false);
       }
     }
 
     async function loadAccounts() {
+      if (!canViewDepartments) {
+        setAccounts([]);
+        setAccountsLoading(false);
+        return;
+      }
       try {
         const result = await accountService.list();
         if (!isMounted) return;
         setAccounts(asArray(result));
+      } catch {
+        if (isMounted) setAccounts([]);
       } finally {
         if (isMounted) setAccountsLoading(false);
       }
@@ -137,7 +171,7 @@ export default function Dashboard() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [canViewAssets, canViewAuditLogs, canViewDepartments, canViewEmployees]);
 
   const turnoverStats = useMemo(() => {
     const active = employees.filter(e => e.status === 'active').length;
@@ -170,11 +204,11 @@ export default function Dashboard() {
 
     return [
       { label: 'Total Personnel', value: employees.length, icon: Users, color: 'text-[#111827]', link: '/directory' },
-      { label: 'Assigned Assets', value: assigned, icon: Laptop, color: 'text-blue-600', link: '/assets' },
+      ...(canViewAssets ? [{ label: 'Assigned Assets', value: assigned, icon: Laptop, color: 'text-blue-600', link: '/assets' }] : []),
       { label: 'Turnover Rate', value: `${turnoverStats.rate}%`, icon: UserMinus, color: 'text-orange-600' },
       { label: 'New Hires (30d)', value: recentHires.length, icon: UserPlus, color: 'text-green-600' },
     ];
-  }, [employees, devices, turnoverStats, recentHires]);
+  }, [canViewAssets, employees, devices, turnoverStats, recentHires]);
 
   const departmentDistribution = useMemo(() => {
     const internalAccounts = new Set(
@@ -504,9 +538,11 @@ export default function Dashboard() {
                     <Clock className="w-5 h-5 text-[#9CA3AF]" />
                     Recent Activity Logs
                   </h3>
-                  <Link to="/logs" className="text-xs font-black uppercase text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
-                    View All
-                  </Link>
+                  {canViewAuditLogs && (
+                    <Link to="/logs" className="text-xs font-black uppercase text-[#2563EB] hover:text-[#1D4ED8] hover:underline">
+                      View All
+                    </Link>
+                  )}
                 </div>
                 <div className="flex-1 space-y-5">
                   {logs.length ? (
@@ -555,7 +591,9 @@ export default function Dashboard() {
                           <p className="text-lg font-black" style={{ color: alert.color }}>{alert.value} Devices</p>
                         </div>
                       </div>
-                      <Link to="/assets" className="text-[0.625rem] font-black uppercase hover:underline px-2 py-1 rounded transition-colors" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-primary)' }}>Fix</Link>
+                      {canViewAssets && (
+                        <Link to="/assets" className="text-[0.625rem] font-black uppercase hover:underline px-2 py-1 rounded transition-colors" style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-primary)' }}>Fix</Link>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -194,7 +194,16 @@ export const EmployeeService = {
 
   async update(id, data, user, meta = {}) {
     const actor = auditActor(user);
+    const submittedFieldCount = data && typeof data === 'object' ? Object.keys(data).length : 0;
     data = filterEmployeeWritePayload(data, user);
+    if (!Object.keys(data || {}).length) {
+      throw new AppError(
+        submittedFieldCount
+          ? 'You do not have permission to edit the submitted employee fields'
+          : 'No employee fields supplied',
+        submittedFieldCount ? 403 : 400
+      );
+    }
     const before = await EmployeeModel.findById(id);
     if (!before) throw new AppError('Employee not found', 404);
 

@@ -6,7 +6,7 @@ import { createSiteValidator, updateSiteValidator } from '../validators/site.val
 
 const router = Router();
 
-router.get('/', SiteController.list);
+router.get('/', requirePermission('sites.view'), SiteController.list);
 router.post('/', requirePermission('sites.edit'), validate(createSiteValidator), SiteController.create);
 router.put('/:id', requirePermission('sites.edit'), validate(updateSiteValidator), SiteController.update);
 router.delete('/:id', requirePermission('sites.edit'), SiteController.remove);

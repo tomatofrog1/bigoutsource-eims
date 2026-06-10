@@ -21,6 +21,7 @@ export async function publicUser(profile) {
     role: profile.role,
     roles: [profile.role],
     capabilities,
+    capabilityOverrides: Array.isArray(profile.capabilityOverrides) ? profile.capabilityOverrides : null,
     status: profile.status,
     department: profile.department,
     site: profile.site,
