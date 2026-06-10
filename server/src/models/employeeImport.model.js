@@ -79,11 +79,11 @@ export const EmployeeImportModel = {
     return normalize(rows[0]);
   },
 
-  async countUnresolvedIssues() {
+  async countPendingImports() {
     const rows = await supabaseRequest(TABLE, {
       searchParams: {
         select: 'id',
-        status: 'eq.issue',
+        status: 'in.(issue,ready)',
         limit: '2000',
       },
     });

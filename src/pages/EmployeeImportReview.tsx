@@ -364,8 +364,8 @@ export default function EmployeeImportReview() {
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <Metric label="Ready" value={readyRows.length} tone="green" />
-          <Metric label="Issues" value={issueRows.length} tone="red" />
-          <Metric label="Duplicates" value={duplicateGroups.length} tone="amber" />
+          <Metric label="Issues" value={visibleIssueRows.length} tone="red" />
+          <Metric label="Duplicates" value={duplicateRows.length} tone="amber" />
           <Metric label="Imported" value={importedRows.length} tone="gray" />
         </div>
 
@@ -475,6 +475,7 @@ export default function EmployeeImportReview() {
                           phrase: 'DELETE DUPLICATES',
                           ids,
                         })}
+                        onEdit={openEditor}
                       />
                     ))
                   ) : (
@@ -641,6 +642,7 @@ function DuplicateGroup({
   onResolve,
   onMerge,
   onDelete,
+  onEdit,
 }: {
   importBatchId: string;
   groupKey: string;
@@ -648,6 +650,7 @@ function DuplicateGroup({
   onResolve: (importBatchId: string, duplicateKey: string, action: 'keep' | 'merge', keepRowId?: string) => void;
   onMerge: () => void;
   onDelete: (ids: string[], label: string) => void;
+  onEdit: (row: ImportRow) => void;
 }) {
   const maxCompleteness = Math.max(...rows.map(completeness));
   const moreCompleteRows = rows.filter((row) => completeness(row) === maxCompleteness);
@@ -697,13 +700,22 @@ function DuplicateGroup({
                 )}
               </div>
               <FieldGrid row={row} />
-              <button
-                type="button"
-                onClick={() => onResolve(importBatchId, groupKey, 'keep', row.id)}
-                className="mt-4 w-full rounded-xl bg-[#111827] px-4 py-2.5 text-sm font-black text-white transition-all hover:bg-[#374151]"
-              >
-                Keep This One
-              </button>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => onResolve(importBatchId, groupKey, 'keep', row.id)}
+                  className="w-full rounded-xl bg-[#111827] px-4 py-2.5 text-sm font-black text-white transition-all hover:bg-[#374151]"
+                >
+                  Keep This One
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onEdit(row)}
+                  className="w-full rounded-xl border border-[#D1D5DB] bg-white px-4 py-2.5 text-sm font-black text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827]"
+                >
+                  Edit Row
+                </button>
+              </div>
             </div>
           );
         })}

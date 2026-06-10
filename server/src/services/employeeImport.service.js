@@ -241,7 +241,7 @@ export const EmployeeImportService = {
   },
 
   async summary() {
-    return { unresolvedIssues: await EmployeeImportModel.countUnresolvedIssues() };
+    return { pendingImports: await EmployeeImportModel.countPendingImports() };
   },
 
   async resolveDuplicate({ importBatchId, duplicateKey, action, keepRowId, normalizedData: overrideNormalizedData, mergedData }, user) {
@@ -328,6 +328,48 @@ export const EmployeeImportService = {
         editedAt: new Date().toISOString(),
       },
     });
+
+    const oldEmpNumber = row.normalizedData?.employeeNumber;
+    if (oldEmpNumber && oldEmpNumber !== candidate.employeeNumber) {
+      const oldMatchingRows = batchRows.filter((item) => (
+        item.id !== id &&
+        item.status !== 'skipped' &&
+        item.status !== 'imported' &&
+        item.normalizedData?.employeeNumber === oldEmpNumber
+      ));
+
+      if (oldMatchingRows.length === 1) {
+        const remainingRow = oldMatchingRows[0];
+        const newIssues = validateRecord(remainingRow.normalizedData, new Set(), existingIds);
+        await EmployeeImportModel.update(remainingRow.id, {
+          ...remainingRow,
+          issues: newIssues,
+          status: newIssues.length ? 'issue' : 'ready',
+          duplicateKey: null,
+        });
+      }
+    }
+
+    if (candidate.employeeNumber && duplicateKeys.has(candidate.employeeNumber)) {
+      const newMatchingRows = batchRows.filter((item) => (
+        item.id !== id &&
+        item.status !== 'skipped' &&
+        item.status !== 'imported' &&
+        item.normalizedData?.employeeNumber === candidate.employeeNumber
+      ));
+      
+      for (const match of newMatchingRows) {
+        if (match.duplicateKey !== candidate.employeeNumber) {
+          const matchIssues = validateRecord(match.normalizedData, duplicateKeys, existingIds);
+          await EmployeeImportModel.update(match.id, {
+            ...match,
+            issues: matchIssues,
+            status: matchIssues.length ? 'issue' : 'ready',
+            duplicateKey: candidate.employeeNumber,
+          });
+        }
+      }
+    }
 
     await AuditLogModel.create({
       userId: user?.id,
@@ -432,11 +474,7 @@ export const EmployeeImportService = {
     for (const row of readyRows) {
       try {
         await EmployeeModel.create(row.normalizedData);
-        await EmployeeImportModel.update(row.id, {
-          ...row,
-          status: 'imported',
-          resolution: { action: 'imported', importedBy: user?.id, importedAt: new Date().toISOString() },
-        });
+        await EmployeeImportModel.remove(row.id);
         results.imported += 1;
       } catch (error) {
         await EmployeeImportModel.update(row.id, {

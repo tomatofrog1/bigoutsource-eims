@@ -4,16 +4,16 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { employeeImportService } from '@/src/services/employeeImportService';
 
-let cachedImportIssueCount = 0;
+let cachedPendingImportsCount = 0;
 
 export function ImportIssuesButton() {
   const { user, can } = useAuth();
-  const [count, setCount] = useState(cachedImportIssueCount);
+  const [count, setCount] = useState(cachedPendingImportsCount);
   const canManageImports = can('imports.manage');
 
   useEffect(() => {
     if (!canManageImports) {
-      cachedImportIssueCount = 0;
+      cachedPendingImportsCount = 0;
       setCount(0);
       return;
     }
@@ -23,11 +23,11 @@ export function ImportIssuesButton() {
     async function loadSummary() {
       try {
         const summary = await employeeImportService.summary();
-        const nextCount = Number(summary.unresolvedIssues || 0);
-        cachedImportIssueCount = nextCount;
+        const nextCount = Number(summary.pendingImports || 0);
+        cachedPendingImportsCount = nextCount;
         if (isMounted) setCount(nextCount);
       } catch (error) {
-        if (isMounted) setCount(cachedImportIssueCount);
+        if (isMounted) setCount(cachedPendingImportsCount);
       }
     }
 
@@ -45,13 +45,13 @@ export function ImportIssuesButton() {
   return (
     <Link
       to="/employee-imports/issues"
-      title={`Import Issues (${count})`}
-      aria-label={`Import Issues (${count})`}
-      className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-[#DC2626] transition-colors hover:bg-red-100"
+      title={`Pending Imports (${count})`}
+      aria-label={`Pending Imports (${count})`}
+      className="inline-flex items-center gap-2 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm font-bold text-amber-700 dark:text-amber-500 transition-colors hover:bg-amber-100 dark:hover:bg-amber-900/40"
     >
       <AlertTriangle className="h-4 w-4 shrink-0" />
-      <span className="whitespace-nowrap">Import Issues</span>
-      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[0.625rem] font-black text-white">
+      <span className="whitespace-nowrap">Pending Imports</span>
+      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-600 dark:bg-amber-500 px-1.5 text-[0.625rem] font-black text-white dark:text-amber-950">
         {count > 99 ? '99+' : count}
       </span>
     </Link>
