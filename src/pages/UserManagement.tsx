@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import type React from 'react';
 import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, ChevronRight, Loader2, Pencil, Search, ShieldCheck, SlidersHorizontal, Trash2, UserPlus, UserX, UsersRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -472,10 +472,10 @@ export default function UserManagement() {
 
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
-            <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm relative">
+            <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl shadow-sm relative">
               <table className="w-full text-left border-collapse table-fixed">
                 <thead>
-                  <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                  <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] [&>th:first-child]:rounded-tl-2xl [&>th:last-child]:rounded-tr-2xl">
                     <SortableHeader label="User" sortKey="fullName" currentSort={sortConfig} onSort={handleSort} className="w-[22%]" />
                     <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} className="w-[16%]" />
                     <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} className="w-[18%]" />
@@ -505,10 +505,10 @@ export default function UserManagement() {
               <SkeletonLoadingMessage message="Loading account information..." />
             </motion.div>
           ) : (
-            <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm">
+            <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl shadow-sm">
               <table className="w-full text-left border-collapse table-fixed">
                 <thead>
-                  <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+                  <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] [&>th:first-child]:rounded-tl-2xl [&>th:last-child]:rounded-tr-2xl">
                     <SortableHeader label="User" sortKey="fullName" currentSort={sortConfig} onSort={handleSort} className="w-[22%]" />
                     <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={handleSort} className="w-[16%]" />
                     <SortableHeader label="Department" sortKey="department" currentSort={sortConfig} onSort={handleSort} className="w-[18%]" />
@@ -734,7 +734,7 @@ export default function UserManagement() {
               </table>
 
               {(!isLoading && filteredUsers.length === 0) && (
-                <div className="p-12 text-center">
+                <div className="p-12 text-center rounded-b-2xl">
                   <div className="w-16 h-16 bg-[#F3F4F6] rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <UsersRound className="w-8 h-8 text-[#D1D5DB]" />
                   </div>
@@ -743,7 +743,7 @@ export default function UserManagement() {
               )}
 
               {(!isLoading && filteredUsers.length > 0) && (
-                <div className="px-6 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="px-6 py-4 border-t border-[#E5E7EB] bg-[#F9FAFB] rounded-b-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
                   <span className="text-xs font-bold text-[#6B7280]">
                     Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} entries
                   </span>
@@ -1250,10 +1250,26 @@ function AnimatedSelect({
   className?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const selectedLabel = options.find((opt) => opt.value === value)?.label || 'Select...';
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div className={`relative ${className || 'min-w-[140px]'}`}>
+    <div ref={containerRef} className={`relative ${className || 'min-w-[140px]'}`}>
       <button
         type="button"
         disabled={disabled}
@@ -1268,8 +1284,6 @@ function AnimatedSelect({
       </button>
       <AnimatePresence>
         {isOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1295,7 +1309,6 @@ function AnimatedSelect({
                 ))}
               </div>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
     </div>
