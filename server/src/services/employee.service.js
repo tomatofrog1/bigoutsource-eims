@@ -4,6 +4,7 @@ import { AuditLogModel } from '../models/auditLog.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { auditActor } from '../utils/auditActor.js';
 import { filterEmployeeWritePayload } from '../utils/employeeSecurity.js';
+import { NotificationService } from './notification.service.js';
 import {
   buildCompanyEmail,
   buildEmployeeIdentifierBase,
@@ -188,6 +189,9 @@ export const EmployeeService = {
       },
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
+    });
+    await NotificationService.notifyEmployeeAdded({ employee, actor }).catch((error) => {
+      console.error('Unable to create employee-added notifications', error);
     });
     return employee;
   },

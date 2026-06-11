@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, Loader2, ShieldAlert, X } from 'lucide-react';
+import { Bell, Loader2, ShieldAlert, UserPlus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { settingsService } from '@/src/services/settingsService';
 import { userService } from '@/src/services/userService';
+import { notificationService } from '@/src/services/notificationService';
 import { AppUser } from '@/src/types';
 import { ImportIssuesButton } from '@/src/components/imports/ImportIssuesButton';
 
@@ -68,10 +69,13 @@ function NotificationBell() {
   const [isLoading, setIsLoading] = useState(false);
   const [notifyRegistrationAttempts, setNotifyRegistrationAttempts] = useState(true);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [employeeNotifications, setEmployeeNotifications] = useState<any[]>([]);
   const [seenPendingIds, setSeenPendingIds] = useState<Set<string>>(() => readSeenPendingRegistrationIds());
   const [activeNotificationIds, setActiveNotificationIds] = useState<Set<string>>(new Set());
+  const [activeEmployeeNotificationIds, setActiveEmployeeNotificationIds] = useState<Set<string>>(new Set());
 
   const canManageUsers = can('users.manage');
+  const canReceiveEmployeeAddedNotifications = can('notifications.employee_added');
 
   const pendingUsers = useMemo(
     () => users.filter((account) => account.status === 'pending'),
@@ -85,29 +89,50 @@ function NotificationBell() {
     [accountRequestNotifications, seenPendingIds]
   );
 
-  const unreadCount = canManageUsers && notifyRegistrationAttempts ? unreadPendingUsers.length : 0;
+  const unreadEmployeeNotifications = useMemo(
+    () => employeeNotifications.filter((notification) => !notification.readAt),
+    [employeeNotifications]
+  );
+
+  const unreadCount =
+    (canManageUsers && notifyRegistrationAttempts ? unreadPendingUsers.length : 0) +
+    (canReceiveEmployeeAddedNotifications ? unreadEmployeeNotifications.length : 0);
 
   const openNotifications = () => {
     setIsOpen(true);
 
-    if (!unreadPendingUsers.length) {
+    if (unreadPendingUsers.length) {
+      const unreadIds = new Set(unreadPendingUsers.map((account) => String(account.uid)));
+      const nextSeenIds = new Set(seenPendingIds);
+      unreadIds.forEach((id) => nextSeenIds.add(id));
+      saveSeenPendingRegistrationIds(nextSeenIds);
+      setSeenPendingIds(nextSeenIds);
+      setActiveNotificationIds(unreadIds);
+    } else {
       setActiveNotificationIds(new Set());
-      return;
     }
 
-    const unreadIds = new Set(unreadPendingUsers.map((account) => String(account.uid)));
-    const nextSeenIds = new Set(seenPendingIds);
-    unreadIds.forEach((id) => nextSeenIds.add(id));
-    saveSeenPendingRegistrationIds(nextSeenIds);
-    setSeenPendingIds(nextSeenIds);
-    setActiveNotificationIds(unreadIds);
+    if (unreadEmployeeNotifications.length) {
+      const unreadIds = new Set(unreadEmployeeNotifications.map((notification) => String(notification.id)));
+      setActiveEmployeeNotificationIds(unreadIds);
+      setEmployeeNotifications((current) =>
+        current.map((notification) =>
+          unreadIds.has(String(notification.id)) ? { ...notification, readAt: notification.readAt || new Date().toISOString() } : notification
+        )
+      );
+      notificationService.markAllRead().catch(() => {});
+    } else {
+      setActiveEmployeeNotificationIds(new Set());
+    }
   };
 
   useEffect(() => {
-    if (!canManageUsers) {
+    if (!canManageUsers && !canReceiveEmployeeAddedNotifications) {
       setNotifyRegistrationAttempts(false);
       setUsers([]);
+      setEmployeeNotifications([]);
       setActiveNotificationIds(new Set());
+      setActiveEmployeeNotificationIds(new Set());
       return;
     }
 
@@ -117,20 +142,31 @@ function NotificationBell() {
       setIsLoading(true);
 
       try {
-        const [settingsResult, accountListResult] = await Promise.allSettled([settingsService.get(), userService.list()]);
+        const [settingsResult, accountListResult, employeeNotificationResult] = await Promise.allSettled([
+          canManageUsers ? settingsService.get() : Promise.resolve(null),
+          canManageUsers ? userService.list() : Promise.resolve([]),
+          canReceiveEmployeeAddedNotifications ? notificationService.list({ limit: 30 }) : Promise.resolve([]),
+        ]);
         if (!isMounted) return;
 
-        if (settingsResult.status === 'fulfilled') {
+        if (canManageUsers && settingsResult.status === 'fulfilled' && settingsResult.value) {
           setNotifyRegistrationAttempts(Boolean(settingsResult.value.notifyRegistrationAttempts));
         }
 
-        const nextUsers = accountListResult.status === 'fulfilled' && Array.isArray(accountListResult.value) ? accountListResult.value : [];
+        const nextUsers = canManageUsers && accountListResult.status === 'fulfilled' && Array.isArray(accountListResult.value) ? accountListResult.value : [];
         setUsers(nextUsers);
         window.dispatchEvent(new CustomEvent(USER_ACCOUNTS_REFRESHED_EVENT, { detail: { users: nextUsers } }));
+
+        const nextEmployeeNotifications =
+          canReceiveEmployeeAddedNotifications && employeeNotificationResult.status === 'fulfilled' && Array.isArray(employeeNotificationResult.value)
+            ? employeeNotificationResult.value
+            : [];
+        setEmployeeNotifications(nextEmployeeNotifications);
       } catch (error) {
         if (!isMounted) return;
 
         setUsers([]);
+        setEmployeeNotifications([]);
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -143,7 +179,7 @@ function NotificationBell() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [canManageUsers]);
+  }, [canManageUsers, canReceiveEmployeeAddedNotifications]);
 
   return (
     <>
@@ -201,10 +237,57 @@ function NotificationBell() {
                 <div className="flex h-32 items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin text-[#9CA3AF]" />
                 </div>
-              ) : !canManageUsers ? (
-                <NotificationEmptyState message="Notifications are available to Super Admin users." />
-              ) : accountRequestNotifications.length > 0 ? (
+              ) : !canManageUsers && !canReceiveEmployeeAddedNotifications ? (
+                <NotificationEmptyState message="No notification permissions are enabled for this account." />
+              ) : accountRequestNotifications.length > 0 || employeeNotifications.length > 0 ? (
                 <div className="space-y-3">
+                  {employeeNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="rounded-xl border p-4 text-left transition-colors"
+                      style={
+                        activeEmployeeNotificationIds.has(String(notification.id))
+                          ? { borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.08)' }
+                          : { borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }
+                      }
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="rounded-xl p-2"
+                          style={
+                            activeEmployeeNotificationIds.has(String(notification.id))
+                              ? { color: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.1)' }
+                              : { backgroundColor: 'var(--color-surface-secondary)', color: 'var(--color-text-muted)' }
+                          }
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-black" style={{ color: 'var(--color-text-primary)' }}>{notification.actorName || 'Someone'}</p>
+                            {activeEmployeeNotificationIds.has(String(notification.id)) && (
+                              <span className="rounded-full px-2 py-0.5 text-[0.625rem] font-black uppercase" style={{ backgroundColor: 'rgba(37, 99, 235, 0.12)', color: '#2563EB' }}>
+                                New
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-[0.6875rem] font-bold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>{notification.actorRole || 'User'}</p>
+                          <p className="mt-2 text-xs font-bold" style={{ color: 'var(--color-text-secondary)' }}>
+                            Added <span style={{ color: 'var(--color-text-primary)' }}>{notification.entityLabel || 'an employee'}</span> to employee records.
+                          </p>
+                          {notification.actionUrl && (
+                            <Link
+                              to={notification.actionUrl}
+                              onClick={() => setIsOpen(false)}
+                              className="mt-3 inline-flex items-center justify-center rounded-lg bg-[#111827] px-3 py-2 text-xs font-black text-white transition-colors hover:bg-[#374151]"
+                            >
+                              View profile
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                   {accountRequestNotifications.map((account) => (
                     <Link
                       key={account.uid}

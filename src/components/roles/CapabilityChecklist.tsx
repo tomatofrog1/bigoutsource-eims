@@ -10,6 +10,7 @@ const DOMAIN_LABELS: Record<string, string> = {
   imports: 'Imports',
   reports: 'Reports',
   auditlogs: 'Audit Logs',
+  notifications: 'Notifications',
 };
 
 function domainOf(key: string) {

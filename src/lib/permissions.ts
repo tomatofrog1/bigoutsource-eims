@@ -26,6 +26,7 @@ export type Capability =
   | 'reports.export'
   | 'auditlogs.view'
   | 'auditlogs.undo'
+  | 'notifications.employee_added'
   | 'users.manage'
   | 'roles.manage'
   | 'settings.manage';

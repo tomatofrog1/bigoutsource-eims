@@ -13,6 +13,7 @@ import userRoutes from './routes/user.routes.js';
 import roleRoutes from './routes/role.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import employeeImportRoutes from './routes/employeeImport.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 import { authenticate, requirePermission } from './middleware/auth.middleware.js';
 import { errorHandler, notFound } from './middleware/error.middleware.js';
 
@@ -62,6 +63,7 @@ app.use('/api/sites', authenticate, siteRoutes);
 app.use('/api/devices', authenticate, deviceRoutes);
 app.use('/api/device-assignments', authenticate, assignmentRouter);
 app.use('/api/audit-logs', authenticate, auditLogRoutes);
+app.use('/api/notifications', authenticate, notificationRoutes);
 app.use('/api/users', authenticate, requirePermission('users.manage'), userRoutes);
 app.use('/api/roles', authenticate, roleRoutes);
 app.use('/api/settings', authenticate, requirePermission('settings.manage'), settingsRoutes);

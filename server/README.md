@@ -34,7 +34,7 @@ In local development, the API uses `kamote@gmail.com` / `kamote123` as the seede
 
 Keep the service-role key only in `server/.env`. Do not expose it through a `VITE_` frontend variable.
 
-4. Run `server/sql/auth_setup.sql`, `server/sql/audit_logs_setup.sql`, and `server/sql/department_codes_setup.sql` in the Supabase SQL Editor to create/update required tables and department-code constraints. If existing accounts produce duplicate generated codes, assign unique lowercase letter codes manually before re-running the unique-index step.
+4. Run `server/sql/auth_setup.sql`, `server/sql/audit_logs_setup.sql`, `server/sql/notifications_setup.sql`, and `server/sql/department_codes_setup.sql` in the Supabase SQL Editor to create/update required tables and department-code constraints. If existing accounts produce duplicate generated codes, assign unique lowercase letter codes manually before re-running the unique-index step.
 
 5. Start the API:
 
@@ -71,6 +71,8 @@ updated_at timestamptz
 
 Audit history is stored in `public.audit_logs`. Run `server/sql/audit_logs_setup.sql` before using employee create/update flows so audit entries persist in Supabase and appear on `/api/audit-logs`.
 
+User notifications are stored in `public.notifications`. Run `server/sql/notifications_setup.sql` before using employee create flows so active accounts with the `notifications.employee_added` capability receive employee-added notifications.
+
 Department/account records are stored in `public.accounts` and must include a unique `department_code`:
 
 ```sql
@@ -94,3 +96,5 @@ Employee `lms_account`, `bigoutsource_email`, and `pc_name` values are generated
 - `GET /api/sites`
 - `GET /api/devices`
 - `GET /api/audit-logs`
+- `GET /api/notifications`
+- `POST /api/notifications/read-all`
