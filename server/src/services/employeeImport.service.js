@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { EmployeeImportModel } from '../models/employeeImport.model.js';
 import { EmployeeModel } from '../models/employee.model.js';
+import { AccountModel } from '../models/account.model.js';
 import { AuditLogModel } from '../models/auditLog.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { generateLmsAccount } from '../utils/lmsAccount.js';
@@ -191,6 +192,40 @@ async function loadExistingEmployeeIds() {
       .map((employee) => String(employee.employeeNumber ?? employee.id ?? '').trim())
       .filter(Boolean)
   );
+}
+
+/**
+ * Create departments (accounts) that an import references but that don't exist yet.
+ * Runs as part of the import flow, so it is authorized by `imports.manage` rather
+ * than `departments.edit` — this lets importers (e.g. IT Admin) resolve unknown
+ * departments inline. De-duplicated by name and skips any that already exist.
+ */
+async function createMissingDepartments(newDepartments = []) {
+  if (!Array.isArray(newDepartments) || !newDepartments.length) return [];
+
+  const created = [];
+  const seen = new Set();
+
+  for (const dept of newDepartments) {
+    const name = String(dept?.name || '').trim();
+    if (!name) continue;
+
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const existing = await AccountModel.findByName(name);
+    if (existing?.id) continue;
+
+    const account = await AccountModel.create({
+      name,
+      accountType: dept.type ?? dept.accountType,
+      departmentCode: dept.code ?? dept.departmentCode,
+    });
+    created.push(account);
+  }
+
+  return created;
 }
 
 export const EmployeeImportService = {
@@ -474,9 +509,11 @@ export const EmployeeImportService = {
     return { deleted: targets.length, importBatchId };
   },
 
-  async importReady(importBatchId, user, meta = {}) {
+  async importReady(importBatchId, user, meta = {}, newDepartments = []) {
+    const createdDepartments = await createMissingDepartments(newDepartments);
+
     const readyRows = (await EmployeeImportModel.findAll({ importBatchId, status: 'ready' })).sort((a, b) => a.sourceRow - b.sourceRow);
-    const results = { imported: 0, failed: 0, failures: [] };
+    const results = { imported: 0, failed: 0, failures: [], departmentsCreated: createdDepartments.length };
 
     for (const row of readyRows) {
       try {
