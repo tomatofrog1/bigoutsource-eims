@@ -17,6 +17,7 @@ import {
   X,
   Save,
   Building2,
+  AlertTriangle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -30,7 +31,7 @@ type ImportRow = {
   importBatchId: string;
   sourceRow: number;
   normalizedData: Record<string, any>;
-  issues: Array<{ code: string; message: string }>;
+  issues: Array<{ code: string; message: string; severity?: 'warning' }>;
   status: 'ready' | 'issue' | 'imported' | 'skipped';
   duplicateKey?: string;
 };
@@ -138,8 +139,21 @@ function completeness(row: ImportRow) {
   return completenessForData(row.normalizedData);
 }
 
+function blockingIssues(row: ImportRow) {
+  return (row.issues || []).filter((issue) => issue.severity !== 'warning');
+}
+
+function rowWarnings(row: ImportRow) {
+  return (row.issues || []).filter((issue) => issue.severity === 'warning');
+}
+
 function issueText(row: ImportRow) {
-  return row.issues?.map((issue) => issue.message).join(', ') || 'Needs review';
+  const blocking = blockingIssues(row);
+  return blocking.length ? blocking.map((issue) => issue.message).join(', ') : 'Needs review';
+}
+
+function warningText(row: ImportRow) {
+  return rowWarnings(row).map((issue) => issue.message).join(', ');
 }
 
 function normalizeSiteOption(value?: string) {
@@ -1115,7 +1129,10 @@ function IssueTable({
               {row.normalizedData.status || '-'}{row.normalizedData.is_archived ? ' / archived' : ''}
             </td>
             <td className="px-4 py-3 text-sm font-bold text-[#4B5563]">
-              {ready ? `${completeness(row)}/${fieldLabels.length}` : issueText(row)}
+              <div className="flex flex-col items-start gap-1.5">
+                <span>{ready ? `${completeness(row)}/${fieldLabels.length}` : issueText(row)}</span>
+                {rowWarnings(row).length > 0 && <WarningChip text={warningText(row)} />}
+              </div>
             </td>
             <td className="px-4 py-3 text-right">
               <div className="flex justify-end gap-2">
@@ -1688,6 +1705,18 @@ function SelectDropdown({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function WarningChip({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      className="inline-flex max-w-full items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[0.625rem] font-black uppercase tracking-wide text-amber-700"
+    >
+      <AlertTriangle className="h-3 w-3 shrink-0" />
+      <span className="truncate">Possible duplicate</span>
+    </span>
   );
 }
 

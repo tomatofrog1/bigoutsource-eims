@@ -102,14 +102,45 @@ function completeness(record) {
   }, 0);
 }
 
-function validateRecord(record, duplicateKeys, existingIds = new Set()) {
+function normalizeName(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+// A warning is advisory — it does not block a row from being "ready".
+function isBlockingIssue(issue) {
+  return issue?.severity !== 'warning';
+}
+
+function statusFromIssues(issues = []) {
+  return issues.some(isBlockingIssue) ? 'issue' : 'ready';
+}
+
+// Build the within-batch name-duplicate set for one name (used when re-validating a single row).
+function batchNameDuplicateSet(nameKey, batchRows = [], excludeId) {
+  if (!nameKey) return new Set();
+  const matches = batchRows.filter((item) => (
+    item.id !== excludeId &&
+    item.status !== 'skipped' &&
+    item.status !== 'imported' &&
+    normalizeName(item.normalizedData?.fullName) === nameKey
+  ));
+  return matches.length ? new Set([nameKey]) : new Set();
+}
+
+function validateRecord(
+  record,
+  duplicateKeys,
+  existingIds = new Set(),
+  duplicateNames = new Set(),
+  existingNames = new Set()
+) {
   const issues = [];
 
   if (!record.employeeNumber) issues.push({ code: 'missing_id', message: 'Missing employee ID' });
   if (!record.fullName) issues.push({ code: 'missing_name', message: 'Missing employee name' });
   if (!record.boEmail) issues.push({ code: 'missing_email', message: 'Missing Bigoutsource email' });
   if (!record.accountAssignment) issues.push({ code: 'missing_account', message: 'Missing account' });
-  
+
   const validSites = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
   if (!record.siteName) {
     issues.push({ code: 'missing_site', message: 'Missing site' });
@@ -122,6 +153,23 @@ function validateRecord(record, duplicateKeys, existingIds = new Set()) {
   }
   if (record.employeeNumber && existingIds.has(record.employeeNumber)) {
     issues.push({ code: 'existing_id', message: `Employee ID ${record.employeeNumber} already exists in Employee Records` });
+  }
+
+  // Name duplicates are warnings, not blockers — two real people can share a name.
+  const nameKey = normalizeName(record.fullName);
+  if (nameKey && duplicateNames.has(nameKey)) {
+    issues.push({
+      code: 'duplicate_name',
+      message: `Possible duplicate: name "${record.fullName}" appears more than once in this import`,
+      severity: 'warning',
+    });
+  }
+  if (nameKey && existingNames.has(nameKey)) {
+    issues.push({
+      code: 'existing_name',
+      message: `Possible duplicate: "${record.fullName}" already exists in Employee Records`,
+      severity: 'warning',
+    });
   }
 
   if (record.biosDate) {
@@ -185,13 +233,19 @@ function mergeRecords(records) {
   return merged;
 }
 
-async function loadExistingEmployeeIds() {
+async function loadExistingEmployees() {
   const employees = await EmployeeModel.findAll();
-  return new Set(
-    employees
-      .map((employee) => String(employee.employeeNumber ?? employee.id ?? '').trim())
-      .filter(Boolean)
-  );
+  const ids = new Set();
+  const names = new Set();
+
+  for (const employee of employees) {
+    const id = String(employee.employeeNumber ?? employee.id ?? '').trim();
+    if (id) ids.add(id);
+    const name = normalizeName(employee.fullName ?? employee.name);
+    if (name) names.add(name);
+  }
+
+  return { ids, names };
 }
 
 /**
@@ -241,16 +295,20 @@ export const EmployeeImportService = {
       normalizedData: normalizeRow(row.rawData || {}),
     }));
     const idCounts = new Map();
+    const nameCounts = new Map();
 
     normalizedRows.forEach((row) => {
       const id = row.normalizedData.employeeNumber;
       if (id) idCounts.set(id, (idCounts.get(id) || 0) + 1);
+      const nameKey = normalizeName(row.normalizedData.fullName);
+      if (nameKey) nameCounts.set(nameKey, (nameCounts.get(nameKey) || 0) + 1);
     });
 
     const duplicateKeys = new Set([...idCounts.entries()].filter(([, count]) => count > 1).map(([id]) => id));
-    const existingIds = await loadExistingEmployeeIds();
+    const duplicateNames = new Set([...nameCounts.entries()].filter(([, count]) => count > 1).map(([name]) => name));
+    const { ids: existingIds, names: existingNames } = await loadExistingEmployees();
     const stagedRows = normalizedRows.map((row) => {
-      const issues = validateRecord(row.normalizedData, duplicateKeys, existingIds);
+      const issues = validateRecord(row.normalizedData, duplicateKeys, existingIds, duplicateNames, existingNames);
       return {
         importBatchId,
         sourceSheet,
@@ -258,7 +316,7 @@ export const EmployeeImportService = {
         rawData: row.rawData,
         normalizedData: row.normalizedData,
         issues,
-        status: issues.length ? 'issue' : 'ready',
+        status: statusFromIssues(issues),
         duplicateKey: duplicateKeys.has(row.normalizedData.employeeNumber) ? row.normalizedData.employeeNumber : null,
         createdBy: user?.id,
       };
@@ -309,8 +367,19 @@ export const EmployeeImportService = {
       throw new AppError('Unsupported duplicate resolution action', 400);
     }
 
-    const existingIds = await loadExistingEmployeeIds();
-    const remainingIssues = validateRecord(normalizedData, new Set(), existingIds).filter((issue) => issue.code !== 'duplicate_id');
+    const { ids: existingIds, names: existingNames } = await loadExistingEmployees();
+    const batchRows = await EmployeeImportModel.findAll({ importBatchId });
+    const groupIds = new Set(rows.map((groupRow) => groupRow.id));
+    const keptNameKey = normalizeName(normalizedData.fullName);
+    const keptNameMatches = batchRows.filter((item) => (
+      !groupIds.has(item.id) &&
+      item.status !== 'skipped' &&
+      item.status !== 'imported' &&
+      normalizeName(item.normalizedData?.fullName) === keptNameKey
+    ));
+    const duplicateNames = keptNameKey && keptNameMatches.length ? new Set([keptNameKey]) : new Set();
+    const remainingIssues = validateRecord(normalizedData, new Set(), existingIds, duplicateNames, existingNames)
+      .filter((issue) => issue.code !== 'duplicate_id');
     const updated = [];
 
     for (const row of rows) {
@@ -319,7 +388,7 @@ export const EmployeeImportService = {
           ...row,
           normalizedData,
           issues: remainingIssues,
-          status: remainingIssues.length ? 'issue' : 'ready',
+          status: statusFromIssues(remainingIssues),
           duplicateKey: null,
           resolution: { action, resolvedBy: user?.id, resolvedAt: new Date().toISOString() },
         }));
@@ -355,13 +424,16 @@ export const EmployeeImportService = {
       if (matchingRows.length) duplicateKeys.add(candidate.employeeNumber);
     }
 
-    const existingIds = await loadExistingEmployeeIds();
-    const issues = validateRecord(candidate, duplicateKeys, existingIds);
+    const candidateNameKey = normalizeName(candidate.fullName);
+    const duplicateNames = batchNameDuplicateSet(candidateNameKey, batchRows, id);
+
+    const { ids: existingIds, names: existingNames } = await loadExistingEmployees();
+    const issues = validateRecord(candidate, duplicateKeys, existingIds, duplicateNames, existingNames);
     const updated = await EmployeeImportModel.update(id, {
       ...row,
       normalizedData: candidate,
       issues,
-      status: issues.length ? 'issue' : 'ready',
+      status: statusFromIssues(issues),
       duplicateKey: duplicateKeys.has(candidate.employeeNumber) ? candidate.employeeNumber : null,
       resolution: {
         ...(row.resolution || {}),
@@ -382,11 +454,13 @@ export const EmployeeImportService = {
 
       if (oldMatchingRows.length === 1) {
         const remainingRow = oldMatchingRows[0];
-        const newIssues = validateRecord(remainingRow.normalizedData, new Set(), existingIds);
+        const remainingNameKey = normalizeName(remainingRow.normalizedData?.fullName);
+        const remainingDupNames = batchNameDuplicateSet(remainingNameKey, batchRows, remainingRow.id);
+        const newIssues = validateRecord(remainingRow.normalizedData, new Set(), existingIds, remainingDupNames, existingNames);
         await EmployeeImportModel.update(remainingRow.id, {
           ...remainingRow,
           issues: newIssues,
-          status: newIssues.length ? 'issue' : 'ready',
+          status: statusFromIssues(newIssues),
           duplicateKey: null,
         });
       }
@@ -402,11 +476,13 @@ export const EmployeeImportService = {
       
       for (const match of newMatchingRows) {
         if (match.duplicateKey !== candidate.employeeNumber) {
-          const matchIssues = validateRecord(match.normalizedData, duplicateKeys, existingIds);
+          const matchNameKey = normalizeName(match.normalizedData?.fullName);
+          const matchDupNames = batchNameDuplicateSet(matchNameKey, batchRows, match.id);
+          const matchIssues = validateRecord(match.normalizedData, duplicateKeys, existingIds, matchDupNames, existingNames);
           await EmployeeImportModel.update(match.id, {
             ...match,
             issues: matchIssues,
-            status: matchIssues.length ? 'issue' : 'ready',
+            status: statusFromIssues(matchIssues),
             duplicateKey: candidate.employeeNumber,
           });
         }

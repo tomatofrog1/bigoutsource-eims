@@ -68,41 +68,11 @@ begin
   if to_regclass('public.roles') is not null then
     update public.roles
     set
-      capabilities = '[
-        "employees.view",
-        "employees.create",
-        "employees.edit",
-        "employees.delete",
-        "employees.it.view",
-        "employees.it.edit",
-        "employees.secrets.view",
-        "employees.secrets.edit",
-        "assets.view",
-        "assets.edit",
-        "departments.view",
-        "departments.edit",
-        "sites.view",
-        "sites.edit",
-        "imports.manage",
-        "reports.view",
-        "reports.export",
-        "auditlogs.view",
-        "auditlogs.undo",
-        "notifications.employee_added",
-        "users.manage",
-        "roles.manage",
-        "settings.manage"
-      ]'::jsonb,
-      updated_at = now()
-    where slug = 'super_admin';
-
-    update public.roles
-    set
       capabilities = case
         when coalesce(capabilities, '[]'::jsonb) ? 'notifications.employee_added' then capabilities
         else coalesce(capabilities, '[]'::jsonb) || '["notifications.employee_added"]'::jsonb
       end,
       updated_at = now()
-    where slug in ('admin', 'hr_admin', 'it_admin', 'viewer');
+    where slug in ('super_admin', 'admin', 'hr_admin', 'it_admin', 'viewer');
   end if;
 end $$;
