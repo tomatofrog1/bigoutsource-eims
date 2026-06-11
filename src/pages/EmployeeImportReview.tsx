@@ -16,6 +16,7 @@ import {
   ChevronRight,
   X,
   Save,
+  Building2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
@@ -46,6 +47,21 @@ type AccountOption = {
   name: string;
 };
 
+type DepartmentType = 'internal' | 'external';
+
+type DepartmentRecord = {
+  id: string;
+  name: string;
+  code: string;
+  type: DepartmentType;
+};
+
+type PendingDepartment = {
+  name: string;
+  type: DepartmentType;
+  code: string;
+};
+
 type DeleteIntent = {
   title: string;
   detail: string;
@@ -54,6 +70,29 @@ type DeleteIntent = {
 };
 
 const siteOptions = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
+
+function suggestDepartmentCode(name = ''): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '';
+
+  const initials = words
+    .map((w) => w.replace(/[^a-zA-Z]/g, '').charAt(0).toLowerCase())
+    .filter(Boolean)
+    .join('');
+
+  if (initials.length >= 2) return initials.slice(0, 3);
+
+  const base = (words[0].replace(/[^a-zA-Z]/g, '') || '').toLowerCase();
+  return base.slice(0, Math.max(2, Math.min(3, base.length)));
+}
+
+function sanitizeDepartmentCode(value = ''): string {
+  return value.toLowerCase().replace(/[^a-z]/g, '').slice(0, 3);
+}
+
+function isValidDepartmentCode(code: string): boolean {
+  return /^[a-z]{2,3}$/.test(code);
+}
 
 const importReviewCache: {
   rows: ImportRow[];
@@ -148,6 +187,9 @@ export default function EmployeeImportReview() {
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [mergeForm, setMergeForm] = useState<Record<string, any>>({});
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
+  const [departments, setDepartments] = useState<DepartmentRecord[]>([]);
+  const [pendingDepartments, setPendingDepartments] = useState<PendingDepartment[] | null>(null);
+  const [isResolvingDepts, setIsResolvingDepts] = useState(false);
   const [focusedBatchId, setFocusedBatchId] = useState(() => importReviewCache.focusedBatchId);
   const [activeView, setActiveView] = useState<'ready' | 'issues' | 'duplicates'>(() => importReviewCache.activeView);
 
@@ -193,14 +235,27 @@ export default function EmployeeImportReview() {
 
     accountService.list()
       .then((value) => {
-        const accountOptions = Array.isArray(value)
-          ? value.filter((account: any) => account?.id && account?.name).map((account: any) => ({ id: account.id, name: account.name }))
+        const valid = Array.isArray(value)
+          ? value.filter((account: any) => account?.id && account?.name)
           : [];
+        const accountOptions = valid.map((account: any) => ({ id: account.id, name: account.name }));
+        const departmentRecords: DepartmentRecord[] = valid.map((account: any) => ({
+          id: account.id,
+          name: account.name,
+          code: account.departmentCode || account.department_code || '',
+          type: (account.accountType || account.account_type) === 'internal' ? 'internal' : 'external',
+        }));
 
-        if (isMounted) setAccounts(accountOptions);
+        if (isMounted) {
+          setAccounts(accountOptions);
+          setDepartments(departmentRecords);
+        }
       })
       .catch(() => {
-        if (isMounted) setAccounts([]);
+        if (isMounted) {
+          setAccounts([]);
+          setDepartments([]);
+        }
       });
 
     return () => {
@@ -252,19 +307,104 @@ export default function EmployeeImportReview() {
     }
   };
 
+  const runImport = async (targetBatchId: string, newDepartments: PendingDepartment[] = []) => {
+    setIsImporting(true);
+    try {
+      const result = await employeeImportService.importReady(targetBatchId, newDepartments);
+      const importedCount = result.imported || 0;
+      const deptCount = result.departmentsCreated || 0;
+      toast.success(
+        `${importedCount} employee record${importedCount === 1 ? '' : 's'} imported`
+        + (deptCount ? ` · ${deptCount} department${deptCount === 1 ? '' : 's'} created` : '')
+      );
+
+      // Register newly created departments locally so a follow-up import in this
+      // session won't re-prompt for the same departments.
+      if (newDepartments.length) {
+        const additions = newDepartments.map((dept) => ({
+          id: `dept:${dept.name.toLowerCase()}`,
+          name: dept.name,
+          code: dept.code,
+          type: dept.type,
+        }));
+        setDepartments((prev) => {
+          const existing = new Set(prev.map((dept) => dept.name.trim().toLowerCase()));
+          return [...prev, ...additions.filter((dept) => !existing.has(dept.name.trim().toLowerCase()))];
+        });
+        setAccounts((prev) => {
+          const existing = new Set(prev.map((account) => account.name.trim().toLowerCase()));
+          return [
+            ...prev,
+            ...additions
+              .filter((dept) => !existing.has(dept.name.trim().toLowerCase()))
+              .map((dept) => ({ id: dept.id, name: dept.name })),
+          ];
+        });
+      }
+
+      await loadRows();
+      return true;
+    } catch (error: any) {
+      toast.error(error.message || 'Unable to import ready records');
+      return false;
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const importReady = async () => {
     const targetBatchId = batchId || rows[0]?.importBatchId;
     if (!targetBatchId) return;
 
-    setIsImporting(true);
+    // Detect department/account names on the ready rows that don't exist yet,
+    // deduplicated by name (case-insensitive) so each unknown department appears once.
+    const existingNames = new Set(departments.map((dept) => dept.name.trim().toLowerCase()));
+    const missing = new Map<string, string>();
+
+    readyRows.forEach((row) => {
+      const name = String(row.normalizedData?.accountAssignment || '').trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      if (!existingNames.has(key) && !missing.has(key)) {
+        missing.set(key, name);
+      }
+    });
+
+    if (missing.size > 0) {
+      // Block the import until every unknown department is created.
+      setPendingDepartments(
+        [...missing.values()].map((name) => ({
+          name,
+          type: 'internal',
+          code: suggestDepartmentCode(name),
+        }))
+      );
+      return;
+    }
+
+    await runImport(targetBatchId);
+  };
+
+  const updatePendingDepartment = (index: number, patch: Partial<PendingDepartment>) => {
+    setPendingDepartments((current) => {
+      if (!current) return current;
+      return current.map((dept, i) => (i === index ? { ...dept, ...patch } : dept));
+    });
+  };
+
+  const createPendingDepartments = async () => {
+    if (!pendingDepartments?.length) return;
+    const targetBatchId = batchId || rows[0]?.importBatchId;
+    if (!targetBatchId) return;
+
+    setIsResolvingDepts(true);
     try {
-      const result = await employeeImportService.importReady(targetBatchId);
-      toast.success(`${result.imported || 0} employee record${result.imported === 1 ? '' : 's'} imported`);
-      await loadRows();
-    } catch (error: any) {
-      toast.error(error.message || 'Unable to import ready records');
+      // Departments are created server-side as part of the import (authorized by
+      // imports.manage), so importers without departments.edit can resolve them.
+      const ok = await runImport(targetBatchId, pendingDepartments);
+      if (ok) setPendingDepartments(null);
     } finally {
-      setIsImporting(false);
+      setIsResolvingDepts(false);
     }
   };
 
@@ -583,6 +723,21 @@ export default function EmployeeImportReview() {
               if (!isDeletingRows) setDeleteIntent(null);
             }}
             onConfirm={deleteRows}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {pendingDepartments && (
+          <ResolveDepartmentsModal
+            departments={pendingDepartments}
+            existingCodes={new Set(departments.map((dept) => dept.code.trim().toLowerCase()).filter(Boolean))}
+            isSaving={isResolvingDepts}
+            onChange={updatePendingDepartment}
+            onClose={() => {
+              if (!isResolvingDepts) setPendingDepartments(null);
+            }}
+            onSubmit={createPendingDepartments}
           />
         )}
       </AnimatePresence>
@@ -986,6 +1141,143 @@ function IssueTable({
         ))}
       </tbody>
     </table>
+  );
+}
+
+function ResolveDepartmentsModal({
+  departments,
+  existingCodes,
+  isSaving,
+  onChange,
+  onClose,
+  onSubmit,
+}: {
+  departments: PendingDepartment[];
+  existingCodes: Set<string>;
+  isSaving: boolean;
+  onChange: (index: number, patch: Partial<PendingDepartment>) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  const codeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    departments.forEach((dept) => {
+      const code = dept.code.trim().toLowerCase();
+      if (code) counts.set(code, (counts.get(code) || 0) + 1);
+    });
+    return counts;
+  }, [departments]);
+
+  const errors = departments.map((dept) => {
+    const code = dept.code.trim().toLowerCase();
+    if (!isValidDepartmentCode(code)) return 'Code must be 2–3 letters';
+    if (existingCodes.has(code)) return 'Code already used by another department';
+    if ((codeCounts.get(code) || 0) > 1) return 'Duplicate code in this list';
+    return '';
+  });
+
+  const allValid = departments.length > 0 && errors.every((error) => !error);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/45 px-4 py-6 backdrop-blur-sm"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 30, scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+        className="flex max-h-[94vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-[#E5E7EB] px-6 py-4">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-amber-50 p-2 text-amber-600">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-[#111827]">New Departments Detected</h2>
+              <p className="mt-1 text-xs font-bold leading-relaxed text-[#6B7280]">
+                {departments.length} department{departments.length === 1 ? '' : 's'} on the ready records {departments.length === 1 ? 'is' : 'are'} not in the system yet.
+                Choose a type and code for each before importing.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="rounded-xl p-2 text-[#9CA3AF] transition-all hover:bg-[#F3F4F6] hover:text-[#111827]"
+          >
+            <XCircle className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="min-h-0 space-y-3 overflow-y-auto px-6 py-5">
+          {departments.map((dept, index) => (
+            <div key={dept.name} className="rounded-2xl border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Department</p>
+                  <p className="truncate text-sm font-black text-[#111827]">{dept.name}</p>
+                </div>
+                <div className="flex rounded-xl border border-[#E5E7EB] bg-white p-1">
+                  {(['internal', 'external'] as DepartmentType[]).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => onChange(index, { type })}
+                      className={cn(
+                        'rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-widest transition-all',
+                        dept.type === type ? 'bg-[#111827] text-white' : 'text-[#9CA3AF] hover:text-[#111827]'
+                      )}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-3 flex flex-col gap-1.5">
+                <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Department Code</span>
+                <input
+                  value={dept.code}
+                  onChange={(event) => onChange(index, { code: sanitizeDepartmentCode(event.target.value) })}
+                  disabled={isSaving}
+                  placeholder="e.g. acc"
+                  className={cn(
+                    'w-full max-w-[10rem] rounded-xl border bg-white px-3 py-2 text-sm font-bold uppercase tracking-widest text-[#111827] outline-none transition-all focus:ring-2 focus:ring-[#111827]',
+                    errors[index] ? 'border-red-300 bg-red-50' : 'border-[#E5E7EB]'
+                  )}
+                />
+                {errors[index] && <p className="text-xs font-bold text-red-600">{errors[index]}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:text-[#111827]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={!allValid || isSaving}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#111827] px-5 py-2.5 text-sm font-black text-white transition-all hover:bg-[#374151] disabled:cursor-not-allowed disabled:bg-[#D1D5DB]"
+          >
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+            Create &amp; Import
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

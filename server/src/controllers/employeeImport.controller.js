@@ -70,7 +70,12 @@ export const EmployeeImportController = {
     try {
       return success(
         res,
-        await EmployeeImportService.importReady(req.params.importBatchId, req.user, { ipAddress: req.ip }),
+        await EmployeeImportService.importReady(
+          req.params.importBatchId,
+          req.user,
+          { ipAddress: req.ip },
+          req.body?.newDepartments
+        ),
         'Ready rows imported'
       );
     } catch (error) {
