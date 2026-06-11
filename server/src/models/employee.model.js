@@ -154,6 +154,19 @@ export const EmployeeModel = {
     return normalize(rows[0]);
   },
 
+  // Employees that are inactive but have NOT been archived yet.
+  async countInactiveUnarchived() {
+    const rows = await supabaseRequest('employees', {
+      searchParams: {
+        select: 'id',
+        status: 'eq.inactive',
+        is_archived: 'eq.false',
+        limit: '5000',
+      },
+    });
+    return Array.isArray(rows) ? rows.length : 0;
+  },
+
   async create(data) {
     const payload = toDatabasePayload(data, { includeId: true });
     const rows = await supabaseRequest('employees', {

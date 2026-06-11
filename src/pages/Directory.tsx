@@ -448,7 +448,10 @@ export default function Directory() {
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [siteFilter, setSiteFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const value = searchParams.get('status');
+    return value && ['Active', 'Inactive', 'Archived'].includes(value) ? value : 'All';
+  });
   const [accountFilter, setAccountFilter] = useState(() => searchParams.get('account') || 'All Account');
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -538,6 +541,15 @@ export default function Directory() {
       isMounted = false;
     };
   }, []);
+
+  // Sync the status filter when navigated to with a ?status= param (e.g. the
+  // header's "Inactive" button) even if this page is already mounted.
+  useEffect(() => {
+    const value = searchParams.get('status');
+    if (value && ['Active', 'Inactive', 'Archived'].includes(value)) {
+      setStatusFilter(value);
+    }
+  }, [searchParams]);
 
   const siteFilterOptions = useMemo(
     () => ['All', ...Array.from(new Set([...sites.map((site) => site.name), ...employees.map((emp) => emp.site)]))],

@@ -8,6 +8,7 @@ import { userService } from '@/src/services/userService';
 import { notificationService } from '@/src/services/notificationService';
 import { AppUser } from '@/src/types';
 import { ImportIssuesButton } from '@/src/components/imports/ImportIssuesButton';
+import { InactiveEmployeesButton } from '@/src/components/employees/InactiveEmployeesButton';
 
 const SEEN_PENDING_REGISTRATIONS_KEY = 'eims_seen_pending_registration_ids';
 const NOTIFICATION_REFRESH_MS = 10000;
@@ -46,6 +47,7 @@ export function Header({ title }: { title: string }) {
         
         <div className="flex items-center gap-4">
           <ImportIssuesButton />
+          <InactiveEmployeesButton />
           <NotificationBell />
           
           <div className="flex items-center gap-3 pl-4 border-l" style={{ borderColor: 'var(--color-border)' }}>

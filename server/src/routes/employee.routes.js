@@ -7,6 +7,7 @@ import { createEmployeeValidator, updateEmployeeValidator } from '../validators/
 const router = Router();
 
 router.get('/', requirePermission('employees.view'), EmployeeController.list);
+router.get('/summary', requirePermission('employees.view'), EmployeeController.summary);
 router.get('/:id', requirePermission('employees.view'), EmployeeController.get);
 router.post('/', requirePermission('employees.create'), validate(createEmployeeValidator), EmployeeController.create);
 // Any tier of edit may PATCH; the service filters the payload to the fields the user owns.

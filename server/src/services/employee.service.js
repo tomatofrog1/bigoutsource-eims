@@ -156,6 +156,11 @@ export const EmployeeService = {
     return EmployeeModel.findAll();
   },
 
+  async summary() {
+    const inactiveUnarchived = await EmployeeModel.countInactiveUnarchived();
+    return { inactiveUnarchived };
+  },
+
   async get(id) {
     const employee = await EmployeeModel.findById(id);
     if (!employee) throw new AppError('Employee not found', 404);
