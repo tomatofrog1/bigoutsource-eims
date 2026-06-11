@@ -12,6 +12,14 @@ export const EmployeeController = {
     }
   },
 
+  async summary(req, res, next) {
+    try {
+      return success(res, await EmployeeService.summary());
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async get(req, res, next) {
     try {
       const employee = await EmployeeService.get(req.params.id);
