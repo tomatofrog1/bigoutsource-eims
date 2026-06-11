@@ -754,6 +754,8 @@ export default function Directory() {
   const visibleFields = directoryFields.filter((field) => visibleFieldKeys.includes(field.key));
   const visibleFieldWeightTotal = visibleFields.reduce((total, field) => total + (columnWeights[field.key] || 1), 0);
   const isCustomFieldView = selectedFields !== null;
+  const maxSelectableFieldCount = maxVisibleFieldCount - requiredVisibleFieldKeys.length;
+  const selectedSelectableFieldCount = visibleFieldKeys.filter((field) => !requiredVisibleFieldKeys.includes(field)).length;
   const canSelectMoreFields = visibleFieldKeys.length < maxVisibleFieldCount;
   const isFieldVisible = (field: DirectoryFieldKey) => visibleFieldKeys.includes(field);
   const isRequiredField = (field: DirectoryFieldKey) => requiredVisibleFieldKeys.includes(field);
@@ -769,7 +771,7 @@ export default function Directory() {
       }
 
       if (nextFields.length >= maxVisibleFieldCount) {
-        toast.error(`You can display up to ${maxVisibleFieldCount} selected items at a time`);
+        toast.error(`You can display up to ${maxSelectableFieldCount} selected items at a time`);
         return current;
       }
 
@@ -1064,7 +1066,7 @@ export default function Directory() {
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <p className="text-[0.625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Table View</p>
-              <p className="mt-1 text-xs font-bold text-[#4B5563]">{isCustomFieldView ? `${visibleFieldKeys.length}/4 selected` : 'Default fields shown'}</p>
+              <p className="mt-1 text-xs font-bold text-[#4B5563]">{isCustomFieldView ? `${selectedSelectableFieldCount}/${maxSelectableFieldCount} selected` : 'Default fields shown'}</p>
             </div>
             <button
               type="button"
