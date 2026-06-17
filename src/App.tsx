@@ -8,18 +8,18 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TextSizeProvider } from './contexts/TextSizeContext';
 import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import Dashboard from './pages/Dashboard';
-import Directory from './pages/Directory';
-import EmployeeProfile from './pages/EmployeeProfile';
-import Departments from './pages/Departments';
-import Settings from './pages/Settings';
-import Login from './pages/Login';
-import Assets from './pages/Assets';
-import Reports from './pages/Reports';
-import AuditLogs from './pages/AuditLogs';
-import UserManagement from './pages/UserManagement';
-import EmployeeImportReview from './pages/EmployeeImportReview';
+import ProtectedRoute from './features/auth/components/ProtectedRoute';
+import Dashboard from './features/dashboard/pages/Dashboard';
+import Directory from './features/employees/pages/Directory';
+import EmployeeProfile from './features/employees/pages/EmployeeProfile';
+import Departments from './features/employees/pages/Departments';
+import Settings from './features/settings/pages/Settings';
+import Login from './features/auth/pages/Login';
+import Assets from './features/assets/pages/Assets';
+import Reports from './features/reports/pages/Reports';
+import AuditLogs from './features/reports/pages/AuditLogs';
+import UserManagement from './features/settings/pages/UserManagement';
+import EmployeeImportReview from './features/imports/pages/EmployeeImportReview';
 
 export default function App() {
   return (

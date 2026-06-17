@@ -1,6 +1,6 @@
 import app from './app.js';
 import { env } from './config/env.js';
-import { AuthService } from './services/auth.service.js';
+import { AuthService } from './modules/auth/auth.service.js';
 import { initRealtime } from './realtime/socketServer.js';
 
 let server;

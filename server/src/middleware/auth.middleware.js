@@ -1,8 +1,8 @@
 import { supabaseAuth } from '../config/supabase.js';
-import { UserProfileModel } from '../models/userProfile.model.js';
+import { UserProfileModel } from '../modules/userProfile/userProfile.model.js';
 import { AppError } from '../utils/apiResponse.js';
 import { userHasCapability, userHasAnyCapability } from '../config/capabilities.js';
-import { RoleService } from '../services/role.service.js';
+import { RoleService } from '../modules/role/role.service.js';
 
 export async function authenticate(req, res, next) {
   try {

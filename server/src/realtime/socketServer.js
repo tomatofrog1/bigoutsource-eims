@@ -1,8 +1,8 @@
 import { Server } from 'socket.io';
 import { env } from '../config/env.js';
 import { supabaseAuth } from '../config/supabase.js';
-import { UserProfileModel } from '../models/userProfile.model.js';
-import { RoleService } from '../services/role.service.js';
+import { UserProfileModel } from '../modules/userProfile/userProfile.model.js';
+import { RoleService } from '../modules/role/role.service.js';
 import { setRealtimeServer } from './accessEvents.js';
 
 const localDevOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):30\d{2}$/;

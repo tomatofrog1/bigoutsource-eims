@@ -1,10 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { AppUser } from '../types';
 import toast from 'react-hot-toast';
-import { authService } from '../services/authService';
-import { clearAuthToken, getAuthToken } from '../services/api';
-import { connectAccessSocket } from '../services/realtimeService';
-import { userCan, type Capability } from '../lib/permissions';
+import { authService } from '@/src/features/auth/services/authService';
+import { clearAuthToken, getAuthToken } from '@/src/services/api';
+import { connectAccessSocket } from '@/src/services/realtimeService';
+import { userCan, type Capability } from '@/src/lib/permissions';
 
 interface AuthContextType {
   user: AppUser | null;
