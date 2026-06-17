@@ -9,6 +9,7 @@ import { notificationService } from '@/src/services/notificationService';
 import { AppUser } from '@/src/types';
 import { ImportIssuesButton } from '@/src/components/imports/ImportIssuesButton';
 import { InactiveEmployeesButton } from '@/src/components/employees/InactiveEmployeesButton';
+import { BackButton } from '@/src/components/layout/BackButton';
 
 const SEEN_PENDING_REGISTRATIONS_KEY = 'eims_seen_pending_registration_ids';
 const NOTIFICATION_REFRESH_MS = 10000;
@@ -43,7 +44,7 @@ function formatNotificationTimestamp(value?: string) {
   }).format(date);
 }
 
-export function Header({ title }: { title: string }) {
+export function Header({ title, backFallback }: { title: string, backFallback?: string }) {
   const { user } = useAuth();
   const name = user?.fullName || user?.email || 'User';
   const initials = name
@@ -55,7 +56,10 @@ export function Header({ title }: { title: string }) {
 
   return (
     <header className="h-16 border-b flex items-center justify-between px-8" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-      <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>{title}</h1>
+      <div className="flex items-center gap-4">
+        {backFallback && <BackButton fallback={backFallback} />}
+        <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>{title}</h1>
+      </div>
       
       <div className="flex items-center gap-6">
         

@@ -28,6 +28,7 @@ import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage'
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
 import { cn } from '@/src/lib/utils';
+import { useDebounce } from '@/src/hooks/useDebounce';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/services/employeeService';
 import { siteService } from '@/src/services/siteService';
@@ -458,6 +459,7 @@ export default function Directory() {
   const [sites, setSites] = useState<SiteOption[]>(mockSites);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [siteFilter, setSiteFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState(() => {
     const value = searchParams.get('status');
@@ -567,7 +569,7 @@ export default function Directory() {
     [employees, sites]
   );
 
-  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
   const hasSearchTerm = normalizedSearchTerm.length > 0;
 
   const baseFilteredEmployees = employees

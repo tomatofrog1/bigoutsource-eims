@@ -514,7 +514,7 @@ export default function EmployeeImportReview() {
   };
 
   return (
-    <PageLayout title="Import Review" contentClassName="w-full max-w-none">
+    <PageLayout title="Import Review" contentClassName="w-full max-w-none" backFallback="/directory">
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <Metric label="Ready" value={readyRows.length} tone="green" />

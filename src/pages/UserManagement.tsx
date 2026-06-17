@@ -378,7 +378,7 @@ export default function UserManagement() {
 
   return (
     <PageLayout title="System Permissions & Users" contentClassName="w-full max-w-[1600px] mx-auto">
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 w-full">
         <div className="inline-flex w-fit items-center gap-1 rounded-xl border p-1" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
           {(['users', 'roles'] as const).map((tab) => (
             <button

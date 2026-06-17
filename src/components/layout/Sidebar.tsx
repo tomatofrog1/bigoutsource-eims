@@ -74,15 +74,6 @@ export function Sidebar() {
         "h-full border-r flex flex-col shrink-0 transition-all duration-300 relative",
         isRetracted ? "w-20" : "w-64"
       )} style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-        <button
-          onClick={toggleSidebar}
-          className="absolute -right-4 top-7 flex h-8 w-8 items-center justify-center rounded-full border-2 shadow-md z-20 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
-          aria-label={isRetracted ? "Expand sidebar" : "Retract sidebar"}
-        >
-          {isRetracted ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-        </button>
-
         <div className={cn("py-6", isRetracted ? "px-4" : "px-6")}>
           <div className={cn("flex items-center mb-8 overflow-hidden", isRetracted ? "justify-center" : "gap-2")}>
             <div className="w-8 h-8 bg-white rounded flex items-center justify-center shrink-0">
@@ -196,37 +187,49 @@ export function Sidebar() {
               </AnimatePresence>
             </div>
           </div>
-          <button
-            onClick={() => setShowLogoutModal(true)}
-            className={cn(
-              "flex items-center text-[#EF4444] hover:bg-[#FEF2F2] transition-colors relative group",
-              isRetracted ? "p-2 justify-center mx-auto rounded-lg w-10 h-10" : "gap-3 w-full px-3 py-2 rounded-lg text-left"
-            )}
-          >
-            <LogOut className="w-5 h-5 shrink-0" />
-
-            {isRetracted && (
-              <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
-                <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#EF4444] mr-[-1px]"></div>
-                <div className="bg-[#EF4444] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
-                  Log out
-                </div>
-              </div>
-            )}
-
-            <AnimatePresence initial={false}>
-              {!isRetracted && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="text-sm font-medium whitespace-nowrap overflow-hidden"
-                >
-                  Log out
-                </motion.span>
+          <div className={cn("flex", isRetracted ? "flex-col items-center gap-4" : "flex-row items-center gap-2 w-full")}>
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className={cn(
+                "flex items-center text-[#EF4444] hover:bg-[#FEF2F2] transition-colors relative group",
+                isRetracted ? "p-2 justify-center mx-auto rounded-lg w-10 h-10" : "flex-1 gap-3 px-3 py-2 rounded-lg text-left"
               )}
-            </AnimatePresence>
-          </button>
+            >
+              <LogOut className="w-5 h-5 shrink-0" />
+
+              {isRetracted && (
+                <div className="absolute left-full ml-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] flex items-center translate-x-2 group-hover:translate-x-0 pointer-events-none">
+                  <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#EF4444] mr-[-1px]"></div>
+                  <div className="bg-[#EF4444] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
+                    Log out
+                  </div>
+                </div>
+              )}
+
+              <AnimatePresence initial={false}>
+                {!isRetracted && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="text-sm font-medium whitespace-nowrap overflow-hidden"
+                  >
+                    Log out
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+            <button
+              onClick={toggleSidebar}
+              className={cn(
+                "flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827] transition-colors rounded-lg",
+                isRetracted ? "w-10 h-10 p-2" : "w-10 h-10 shrink-0"
+              )}
+              aria-label={isRetracted ? "Expand sidebar" : "Retract sidebar"}
+            >
+              {isRetracted ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </aside>
 

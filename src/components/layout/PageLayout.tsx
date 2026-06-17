@@ -8,9 +8,10 @@ interface PageLayoutProps {
   children: ReactNode;
   title: string;
   contentClassName?: string;
+  backFallback?: string;
 }
 
-export function PageLayout({ children, title, contentClassName = 'max-w-6xl mx-auto' }: PageLayoutProps) {
+export function PageLayout({ children, title, contentClassName = 'max-w-6xl mx-auto', backFallback }: PageLayoutProps) {
   const location = useLocation();
 
   return (
@@ -22,7 +23,7 @@ export function PageLayout({ children, title, contentClassName = 'max-w-6xl mx-a
       <div className="relative z-10 flex h-full w-full">
         <Sidebar />
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <Header title={title} />
+          <Header title={title} backFallback={backFallback} />
           <main className="flex-1 overflow-y-auto p-8">
             <AnimatePresence mode="wait">
               <motion.div

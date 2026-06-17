@@ -740,7 +740,7 @@ export default function EmployeeProfile() {
   };
 
   return (
-    <PageLayout title={pageTitle}>
+    <PageLayout title={pageTitle} backFallback="/directory">
       <AnimatePresence mode="wait" initial={false}>
         {isLoading ? (
           <motion.div key="skeleton-profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="flex flex-col gap-8 pb-12 w-full relative">
@@ -789,11 +789,6 @@ export default function EmployeeProfile() {
           </motion.div>
         ) : (
           <motion.form key="content-profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 30 }} onSubmit={saveProfile} className="flex flex-col gap-8 pb-12 w-full">
-            <Link to="/directory" className="flex items-center gap-2 text-sm font-bold text-[#6B7280] hover:text-[#111827] transition-colors w-fit uppercase tracking-tighter">
-              <ArrowLeft className="w-4 h-4" />
-              Employee Directory
-            </Link>
-
             <div className="relative bg-white rounded-3xl border border-[#E5E7EB] overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
               <div className="h-32 bg-gradient-to-br from-[#111827] via-[#1F2937] to-[#111827]"></div>
 

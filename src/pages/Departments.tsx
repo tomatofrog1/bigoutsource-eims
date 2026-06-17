@@ -380,7 +380,6 @@ export default function Departments() {
   return (
     <PageLayout title="Organization Departments">
       <div className="flex flex-col gap-8">
-
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
             <motion.div key="skeleton-stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="grid grid-cols-2 gap-4 sm:grid-cols-4">
