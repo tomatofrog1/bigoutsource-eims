@@ -112,6 +112,14 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
+const getCachedDeptCounts = () => {
+  try {
+    const cached = localStorage.getItem('eims_dept_counts');
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return { internal: 3, external: 2 };
+};
+
 export default function Departments() {
   const navigate = useNavigate();
   const { can } = useAuth();
@@ -122,6 +130,7 @@ export default function Departments() {
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const cachedCounts = useMemo(getCachedDeptCounts, []);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -182,6 +191,12 @@ export default function Departments() {
       setDepartments(normalized);
       setEmployees(asArray(employeeList));
       setEmployeeCounts(counts);
+
+      try {
+        const internalCount = normalized.filter(d => d.accountType === 'internal').length;
+        const externalCount = normalized.filter(d => d.accountType === 'external').length;
+        localStorage.setItem('eims_dept_counts', JSON.stringify({ internal: internalCount, external: externalCount }));
+      } catch {}
     } catch (error: any) {
       toast.error(error.message || 'Unable to load departments');
     } finally {
@@ -383,12 +398,25 @@ export default function Departments() {
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
             <motion.div key="skeleton-stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-2xl border border-[#F3F4F6] bg-white p-4 shadow-sm animate-pulse">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-200" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-6 w-12 bg-gray-200 rounded" />
-                    <div className="h-3 w-20 bg-gray-200 rounded" />
+              {[
+                { label: 'Total Departments', icon: Building2, color: 'blue' as const },
+                { label: 'Internal', icon: Shield, color: 'indigo' as const },
+                { label: 'External', icon: Zap, color: 'violet' as const },
+                { label: 'Active Employees', icon: Users, color: 'emerald' as const }
+              ].map((stat, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-2xl border border-[#F3F4F6] bg-white p-4 shadow-sm">
+                  <div className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                    stat.color === 'blue' && 'bg-blue-50 text-blue-200',
+                    stat.color === 'indigo' && 'bg-indigo-50 text-indigo-200',
+                    stat.color === 'violet' && 'bg-violet-50 text-violet-200',
+                    stat.color === 'emerald' && 'bg-emerald-50 text-emerald-200'
+                  )}>
+                    <stat.icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="h-6 w-12 bg-gray-200 rounded animate-pulse mb-1" />
+                    <p className="text-[0.6875rem] font-semibold text-[#9CA3AF]">{stat.label}</p>
                   </div>
                 </div>
               ))}
@@ -433,26 +461,31 @@ export default function Departments() {
               {['Internal', 'External'].map((title, idx) => (
                 <section key={title} className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <div className="h-3.5 w-0.5 rounded-full bg-gray-200 animate-pulse" />
-                    <div className="h-4 w-20 rounded bg-gray-200 animate-pulse" />
+                    <div className="h-3.5 w-0.5 rounded-full bg-[#111827]" />
+                    <h2 className="text-xs font-black uppercase tracking-widest text-[#6B7280]">{title}</h2>
                     <div className="h-4 w-6 rounded-full bg-gray-200 animate-pulse" />
                   </div>
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {[...Array(idx === 0 ? 3 : 2)].map((_, i) => (
-                      <div key={i} className="group relative flex flex-col rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm animate-pulse">
+                    {[...Array(idx === 0 ? cachedCounts.internal : cachedCounts.external)].map((_, i) => (
+                      <div key={i} className="group relative flex flex-col rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm">
                         <div className="mb-4 flex items-start justify-between">
-                          <div className="h-11 w-11 rounded-xl bg-gray-200" />
-                          <div className="h-8 w-8 rounded-xl bg-gray-200" />
+                          <div className={cn(
+                            'flex h-11 w-11 items-center justify-center rounded-xl',
+                            title === 'Internal' ? 'bg-blue-50 text-blue-200' : 'bg-violet-50 text-violet-200'
+                          )}>
+                            <Building2 className="h-5 w-5" />
+                          </div>
+                          <div className="h-8 w-8 rounded-xl bg-gray-200 animate-pulse" />
                         </div>
-                        <div className="h-6 w-3/4 rounded bg-gray-200 mb-4 mt-2" />
+                        <div className="h-6 w-3/4 rounded bg-gray-200 animate-pulse mb-4 mt-2" />
                         <div className="mt-auto grid grid-cols-2 gap-3 border-t border-[#F9FAFB] pt-4">
                           <div>
-                            <div className="h-2 w-8 bg-gray-200 rounded mb-1.5" />
-                            <div className="h-4 w-12 bg-gray-200 rounded" />
+                            <p className="mb-0.5 text-[0.5625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Code</p>
+                            <div className="h-4 w-12 bg-gray-200 rounded animate-pulse mt-1" />
                           </div>
                           <div>
-                            <div className="h-2 w-16 bg-gray-200 rounded mb-1.5" />
-                            <div className="h-4 w-8 bg-gray-200 rounded" />
+                            <p className="mb-0.5 text-[0.5625rem] font-black uppercase tracking-widest text-[#9CA3AF]">Active Staff</p>
+                            <div className="h-4 w-8 bg-gray-200 rounded animate-pulse mt-1" />
                           </div>
                         </div>
                       </div>
@@ -1041,6 +1074,7 @@ function DepartmentGroup({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05, type: 'spring', stiffness: 380, damping: 30 }}
+            whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
           >
             <DepartmentCard
               department={dept}
@@ -1096,7 +1130,7 @@ function DepartmentCard({
   }, [menuOpen, onCloseMenu]);
 
   return (
-    <div className="group relative flex flex-col rounded-2xl border border-[#E5E7EB] bg-white shadow-sm transition-all duration-200 hover:shadow-md">
+    <div className="group relative flex flex-col rounded-2xl border border-[#E5E7EB] bg-white shadow-sm transition-[box-shadow,border-color] duration-300 hover:shadow-xl">
       <div className="flex flex-1 flex-col p-5">
         <div className="mb-4 flex items-start justify-between">
           <div className={cn(

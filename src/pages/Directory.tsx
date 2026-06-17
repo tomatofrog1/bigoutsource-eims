@@ -166,27 +166,34 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
     render: (emp) => {
       const incomplete = calculateIncompleteData(emp);
       return (
-        <div className="flex items-center gap-2 max-w-full">
-          <span className="truncate">{emp.fullName || 'Unnamed Employee'}</span>
-          {incomplete && (
-            <div
-              className={cn(
-                'group relative flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[0.625rem] font-black shrink-0 cursor-help border shadow-sm',
-                incomplete.type === 'critical' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-              )}
-            >
-              <ShieldAlert className="w-3 h-3" />
-              {incomplete.total}
+        <motion.div layout className="flex items-center gap-2 max-w-full">
+          <motion.span layout className="truncate">{emp.fullName || 'Unnamed Employee'}</motion.span>
+          <AnimatePresence>
+            {incomplete && (
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 500, damping: 20 }}
+                className={cn(
+                  'group relative flex items-center justify-center gap-1 px-2 py-0.5 rounded-full text-[0.625rem] font-black shrink-0 cursor-help border shadow-sm',
+                  incomplete.type === 'critical' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                )}
+              >
+                <ShieldAlert className="w-3 h-3" />
+                {incomplete.total}
 
-              <div className="absolute left-full ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] flex items-center -translate-x-2 group-hover:translate-x-0 pointer-events-none">
-                <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
-                <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
-                  {incomplete.total} incomplete data fields
+                <div className="absolute left-full ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] flex items-center -translate-x-2 group-hover:translate-x-0 pointer-events-none">
+                  <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-[#111827] mr-[-1px]"></div>
+                  <div className="bg-[#111827] text-white text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
+                    {incomplete.total} incomplete data fields
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       );
     },
   },
@@ -405,6 +412,14 @@ function suggestDepartmentCode(name = '') {
     .join('');
 }
 
+const getCachedEmployeeCount = () => {
+  try {
+    const cached = localStorage.getItem('eims_employee_count');
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return 10;
+};
+
 function generatedPreview(form: AddEmployeeForm, account?: AccountOption) {
   const firstRaw = String(form.firstName || '');
   const firstForLms = sanitizeNamePart(firstRaw);
@@ -456,6 +471,10 @@ export default function Directory() {
     can('employees.create') || can('employees.edit') || can('employees.it.edit') || can('employees.secrets.edit');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
+  const cachedEmployeeCount = useMemo(getCachedEmployeeCount, []);
+  const skeletonRowCount = Math.min(cachedEmployeeCount, recordsPerPage);
+  const skeletonEmptyRowCount = Math.max(0, recordsPerPage - skeletonRowCount);
+
   const [sites, setSites] = useState<SiteOption[]>(mockSites);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -529,6 +548,9 @@ export default function Directory() {
         if (employeeResult.status === 'fulfilled') {
           const records = normalizeEmployeeList(employeeResult.value);
           setEmployees(records);
+          try {
+            localStorage.setItem('eims_employee_count', JSON.stringify(records.length));
+          } catch {}
         } else {
           setEmployees(normalizeEmployeeList(MOCK_EMPLOYEES));
         }
@@ -1084,8 +1106,14 @@ export default function Directory() {
     }
   };
 
+  const hasAccountFilterParam = searchParams.has('account');
+
   return (
-    <PageLayout title="Personnel Database" contentClassName="w-full max-w-none">
+    <PageLayout 
+      title="Personnel Database" 
+      contentClassName="w-full max-w-none"
+      backFallback={hasAccountFilterParam ? '/departments' : undefined}
+    >
       <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[14rem_minmax(0,1fr)]">
         <aside className="sticky top-0 hidden self-start rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-xl shadow-[#11182714] xl:block min-h-[80vh]">
           <div className="mb-3 flex items-start justify-between gap-3">
@@ -1248,7 +1276,7 @@ export default function Directory() {
                     </tr>
                   </thead>
                   <tbody className="">
-                    {[...Array(recordsPerPage)].map((_, index) => (
+                    {[...Array(skeletonRowCount)].map((_, index) => (
                       <tr key={`skeleton-${index}`} className={cn(tableRowHeightClass, 'animate-pulse border-b border-[#F3F4F6] last:border-0')}>
                         {visibleFields.map((field) => (
                           <td key={field.key} className={cn('py-0 align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
@@ -1258,6 +1286,11 @@ export default function Directory() {
                         <td className="px-4 py-0 text-right align-middle">
                           <div className="h-9 w-24 bg-gray-200 rounded-xl ml-auto"></div>
                         </td>
+                      </tr>
+                    ))}
+                    {[...Array(skeletonEmptyRowCount)].map((_, index) => (
+                      <tr key={`placeholder-${index}`} className={cn(tableRowHeightClass, 'pointer-events-none border-b border-[#F3F4F6] last:border-0')}>
+                        <td colSpan={visibleFields.length + 1} className="px-4 py-0 align-middle" />
                       </tr>
                     ))}
                   </tbody>

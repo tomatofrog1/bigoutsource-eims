@@ -504,32 +504,40 @@ export default function Dashboard() {
   return (
     <PageLayout title="System Overview">
       {/* Tabs */}
-      <div className="flex border-b border-[#E5E7EB] mb-8 overflow-x-auto hide-scrollbar">
-        {[
-          { id: 'overview', label: 'Overview', icon: BarChart3 },
-          { id: 'hr', label: 'HR Analytics', icon: Users },
-          { id: 'it', label: 'IT & Security', icon: Shield },
-          { id: 'audit', label: 'Audit Logs', icon: Clock }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`relative flex items-center gap-2 px-6 py-4 text-sm font-bold transition-all whitespace-nowrap outline-none ${activeTab === tab.id
-              ? 'text-[#6366F1]'
-              : 'text-[#6B7280] hover:text-[#111827]'
-              }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-            {activeTab === tab.id && (
-              <motion.div
-                layoutId="activeDashboardTab"
-                className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-[#6366F1]"
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              />
-            )}
-          </button>
-        ))}
+      <div className="mb-8 overflow-x-auto hide-scrollbar pb-2">
+        <div className="inline-flex items-center p-1.5 bg-[#F3F4F6]/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-[#E5E7EB]/50 dark:border-slate-700/50 shadow-inner">
+          {[
+            { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'hr', label: 'HR Analytics', icon: Users },
+            { id: 'it', label: 'IT & Security', icon: Shield },
+            { id: 'audit', label: 'Audit Logs', icon: Clock }
+          ].map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`relative flex items-center gap-2 px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap outline-none rounded-xl group ${
+                  isActive
+                    ? 'text-[#6366F1] dark:text-indigo-400'
+                    : 'text-[#6B7280] hover:text-[#111827] hover:bg-[#E5E7EB]/50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/50'
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeDashboardTabPill"
+                    className="absolute inset-0 bg-white dark:bg-slate-700 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-[#E5E7EB]/50 dark:border-slate-600/50"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <tab.icon className={`w-4 h-4 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="space-y-8">
@@ -555,14 +563,15 @@ export default function Dashboard() {
                 ) : (
                   <motion.div key="content-stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {stats.map((stat) => (
-                      <button
+                      <motion.button
                         key={stat.label}
                         onClick={() => setActiveModal(stat.label)}
+                        whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
                         className="block group outline-none text-left w-full"
                       >
-                        <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm group-hover:border-[#6366F1] group-hover:shadow-md transition-all duration-200 cursor-pointer h-full">
+                        <div className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm group-hover:shadow-xl transition-all duration-300 ease-out cursor-pointer h-full">
                           <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 bg-[#F3F4F6] rounded-xl text-[#111827] group-hover:bg-[#EEF2FF] group-hover:text-[#6366F1] transition-colors">
+                            <div className="p-2 bg-[#F3F4F6] rounded-xl text-[#111827] transition-colors">
                               <stat.icon className="w-5 h-5" />
                             </div>
 
@@ -572,9 +581,9 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <p className="text-xs text-[#6B7280] font-bold uppercase tracking-wider group-hover:text-[#4B5563] transition-colors">{stat.label}</p>
-                          <p className="text-3xl font-black text-[#111827] mt-1 group-hover:text-[#6366F1] transition-colors">{stat.value}</p>
+                          <p className="text-3xl font-black text-[#111827] mt-1 transition-colors">{stat.value}</p>
                         </div>
-                      </button>
+                      </motion.button>
                     ))}
                   </motion.div>
                 )}
@@ -593,13 +602,13 @@ export default function Dashboard() {
                       <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                     </motion.div>
                   ) : (
-                    <motion.div key="content-growth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Workforce Growth Trend'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col lg:col-span-2 cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                    <motion.div key="content-growth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Workforce Growth Trend'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col lg:col-span-2 cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                       <div className="flex items-center justify-between mb-6">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <TrendingUp className="w-5 h-5 text-[#9CA3AF]" />
                         Workforce Growth Trend
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
@@ -640,13 +649,13 @@ export default function Dashboard() {
                       <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                     </motion.div>
                   ) : (
-                    <motion.div key="content-hires" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Recent Hires Pipeline'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col lg:col-span-1 cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                    <motion.div key="content-hires" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Recent Hires Pipeline'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col lg:col-span-1 cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                       <div className="flex items-center justify-between mb-6">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <UserPlus className="w-5 h-5 text-[#9CA3AF]" />
                         Recent Hires Pipeline
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
@@ -697,14 +706,14 @@ export default function Dashboard() {
                     <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                   </motion.div>
                 ) : (
-                  <motion.div key="content-dept" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Department Distribution'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                  <motion.div key="content-dept" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Department Distribution'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <BarChart3 className="w-5 h-5 text-[#9CA3AF]" />
                         Department Distribution
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
@@ -769,13 +778,13 @@ export default function Dashboard() {
                     <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                   </motion.div>
                 ) : (
-                  <motion.div key="content-work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Work Arrangement'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                  <motion.div key="content-work" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Work Arrangement'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                     <div className="flex items-center justify-between mb-6">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <MapPin className="w-5 h-5 text-[#9CA3AF]" />
                       Work Arrangement
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
@@ -837,13 +846,13 @@ export default function Dashboard() {
                     <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                   </motion.div>
                 ) : (
-                  <motion.div key="content-attrition" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Employee Turnover'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col xl:col-span-1 cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                  <motion.div key="content-attrition" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Employee Turnover'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col xl:col-span-1 cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                     <div className="flex items-center justify-between mb-6">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <Activity className="w-5 h-5 text-[#9CA3AF]" />
                       Employee Turnover
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
@@ -882,13 +891,13 @@ export default function Dashboard() {
                     <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                   </motion.div>
                 ) : (
-                  <motion.div key="content-sec" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Security Compliance'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                  <motion.div key="content-sec" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Security Compliance'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                     <div className="flex items-center justify-between mb-6">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <Shield className="w-5 h-5 text-[#9CA3AF]" />
                       Security Compliance
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
@@ -933,13 +942,13 @@ export default function Dashboard() {
                     <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                   </motion.div>
                 ) : (
-                  <motion.div key="content-dept-comp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Compliance by Department'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col xl:col-span-1 cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                  <motion.div key="content-dept-comp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Compliance by Department'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col xl:col-span-1 cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                     <div className="flex items-center justify-between mb-6">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <FileCheck className="w-5 h-5 text-[#9CA3AF]" />
                       Compliance by Department
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
@@ -976,13 +985,13 @@ export default function Dashboard() {
                     <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                   </motion.div>
                 ) : (
-                  <motion.div key="content-alerts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Security Alerts'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                  <motion.div key="content-alerts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Security Alerts'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                     <div className="flex items-center justify-between mb-6">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <AlertTriangle className="w-5 h-5 text-[#9CA3AF]" />
                       Security Alerts
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
@@ -1030,14 +1039,14 @@ export default function Dashboard() {
                     <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
                   </motion.div>
                 ) : (
-                  <motion.div key="content-logs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} onClick={(e) => { e.stopPropagation(); setActiveModal('Recent Activity Logs'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:border-[#6366F1] hover:shadow-md transition-all group">
+                  <motion.div key="content-logs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Recent Activity Logs'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
   <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
     <Clock className="w-5 h-5 text-[#9CA3AF]" />
                         Recent Activity Logs
   </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] group-hover:text-[#6366F1] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
+  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
     View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
