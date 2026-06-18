@@ -11,6 +11,14 @@ function normalizeEmail(email) {
 
 
 
+async function publicUser(profile) {
+  const capabilities = Array.isArray(profile.capabilities)
+    ? profile.capabilities
+    : await RoleService.resolveUserCapabilities(profile);
+
+  return publicUserPayload(profile, capabilities);
+}
+
 function authErrorMessage(error) {
   const message = error?.message || '';
   if (/already|duplicate|registered/i.test(message)) return 'An account with this email already exists';
