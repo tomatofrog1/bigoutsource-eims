@@ -14,6 +14,7 @@ import RegisterForm from '@/src/features/auth/components/RegisterForm';
 import { roleService, type CapabilityItem, type Role } from '@/src/features/settings/services/roleService';
 import { RolesPanel } from '@/src/features/settings/components/RolesPanel';
 import { CapabilityChecklist } from '@/src/features/settings/components/CapabilityChecklist';
+import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 
 const EDITABLE_ACCOUNT_STATUSES = [
   { value: 'active' as const, label: 'Active' },
@@ -107,6 +108,7 @@ export default function UserManagement() {
   const [siteOptions, setSiteOptions] = useState<string[]>([]);
   const [disableUser, setDisableUser] = useState<AppUser | null>(null);
   const [enableUser, setEnableUser] = useState<AppUser | null>(null);
+  const [showMissingDepartmentModal, setShowMissingDepartmentModal] = useState(false);
   const [deleteUser, setDeleteUser] = useState<AppUser | null>(null);
   const [deleteInput, setDeleteInput] = useState('');
   const [showRegister, setShowRegister] = useState(false);
@@ -115,6 +117,12 @@ export default function UserManagement() {
   const [permsTarget, setPermsTarget] = useState<AppUser | null>(null);
   const [permsDraft, setPermsDraft] = useState<string[]>([]);
   const [permsSaving, setPermsSaving] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useRealtimeSubscription({
+    table: 'user_profiles',
+    onChange: () => setRefreshTrigger(prev => prev + 1)
+  });
 
   async function loadUsers() {
     setIsLoading(true);
@@ -129,7 +137,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [refreshTrigger]);
 
   useEffect(() => {
     function syncRefreshedAccounts(event: Event) {
@@ -437,7 +445,16 @@ export default function UserManagement() {
           </div>
           <button
             type="button"
-            onClick={() => setShowRegister(true)}
+            onClick={() => {
+              const validDepartments = departmentOptions.filter(d => Boolean(d && String(d).trim()));
+              if (validDepartments.length === 0) {
+                setShowMissingDepartmentModal(true);
+                setShowRegister(false);
+              } else {
+                setShowRegister(true);
+                setShowMissingDepartmentModal(false);
+              }
+            }}
             className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#111827] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#374151] active:scale-[0.98]"
           >
             <UserPlus className="h-4 w-4" />
@@ -1197,6 +1214,49 @@ export default function UserManagement() {
                   >
                     {permsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     Save
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        {showMissingDepartmentModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#111827]/40 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+            >
+              <div className="border-b border-[#E5E7EB] px-6 py-4">
+                <h2 className="text-lg font-black text-[#111827]">Add Department First</h2>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-[#4B5563]">
+                  You must add at least one department before you can register a new user account.
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowMissingDepartmentModal(false)}
+                    className="rounded-xl border border-[#D1D5DB] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/departments')}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151]"
+                  >
+                    Go to Departments
                   </button>
                 </div>
               </div>

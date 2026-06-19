@@ -130,7 +130,7 @@ async function generateEmployeeMasterList(params?: any): Promise<ReportData> {
     'Windows License Key': e.windowsKey ?? '',
     'Rust Desk ID': e.rustDeskId ?? '',
     'ESET Status': capitalize(e.esetStatus),
-    'ActivityWatch': capitalize(e.activityWatchStatus),
+    'Activity Watch': capitalize(e.activityWatchStatus),
     'Archived': e.isArchived ? 'Yes' : 'No',
     'Created': formatDate(e.createdAt),
     'Last Updated': formatDate(e.updatedAt),
@@ -182,7 +182,7 @@ async function generateITAssetReport(params?: any): Promise<ReportData> {
     'Windows License Key': e.windowsKey ?? '',
     'Rust Desk ID': e.rustDeskId ?? '',
     'ESET Status': capitalize(e.esetStatus),
-    'ActivityWatch': capitalize(e.activityWatchStatus),
+    'Activity Watch': capitalize(e.activityWatchStatus),
   }));
 
   const safeScope = scope.replace(/[^a-zA-Z0-9]/g, '_');
@@ -212,14 +212,14 @@ async function generateSecurityAudit(): Promise<ReportData> {
     { 'Metric': 'Total Employees', 'Count': employees.length },
     { 'Metric': 'Non-Compliant (any issue)', 'Count': flagged.length },
     { 'Metric': 'ESET Inactive', 'Count': noEset.length },
-    { 'Metric': 'ActivityWatch Missing', 'Count': noAw.length },
+    { 'Metric': 'Activity Watch Missing', 'Count': noAw.length },
     { 'Metric': 'Missing Windows Key', 'Count': noKey.length },
   ];
 
   const detailRows = flagged.map((e) => {
     const issues: string[] = [];
     if (String(e.esetStatus ?? '').toLowerCase() !== 'active') issues.push('ESET Inactive');
-    if (String(e.activityWatchStatus ?? '').toLowerCase() !== 'installed') issues.push('ActivityWatch Missing');
+    if (String(e.activityWatchStatus ?? '').toLowerCase() !== 'installed') issues.push('Activity Watch Missing');
     if (!e.windowsKey) issues.push('No Windows Key');
     return {
       'Employee ID': e.id ?? '',
@@ -227,7 +227,7 @@ async function generateSecurityAudit(): Promise<ReportData> {
       'Site': e.site ?? '',
       'PC Name': e.pcName || 'No PC assigned',
       'ESET Status': capitalize(e.esetStatus),
-      'ActivityWatch': capitalize(e.activityWatchStatus),
+      'Activity Watch': capitalize(e.activityWatchStatus),
       'Windows Key': e.windowsKey ? 'Present' : 'Missing',
       'Issues': issues.join('; '),
     };
@@ -597,7 +597,7 @@ const REPORTS: ReportDef[] = [
   },
   {
     title: 'Security Compliance Audit',
-    desc: 'List of devices missing ESET or ActivityWatch software.',
+    desc: 'List of devices missing ESET or Activity Watch software.',
     icon: ShieldAlert,
     color: 'text-red-600 bg-red-50 border-red-100 group-hover:bg-red-600 group-hover:border-red-600 group-hover:text-white',
     generate: generateSecurityAudit,

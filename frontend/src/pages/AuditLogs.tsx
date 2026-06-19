@@ -8,6 +8,7 @@ import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage'
 import { auditLogService } from '@/src/features/reports/services/auditLogService';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { cn } from '@/src/lib/utils';
+import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 
 function asArray(value: any) {
   return Array.isArray(value) ? value : [];
@@ -44,6 +45,8 @@ function cleanString(str: string) {
 }
 
 function formatFieldName(field: string) {
+  if (field === 'boEmail') return 'Big Outsource Email';
+  if (field === 'pcName') return 'PC Name';
   return field
     .replace(/([A-Z])/g, ' $1')
     .replace(/_/g, ' ')
@@ -67,7 +70,14 @@ function formatValue(value: any) {
 
     return summary || 'Recorded';
   }
-  return String(value);
+  
+  const strValue = String(value);
+  const lowerValue = strValue.toLowerCase();
+  if (['missing', 'installed', 'active', 'inactive'].includes(lowerValue)) {
+    return strValue.charAt(0).toUpperCase() + strValue.slice(1);
+  }
+  
+  return strValue;
 }
 
 function detailsItems(details: any) {
@@ -148,6 +158,11 @@ export default function AuditLogs() {
   const [isUndoing, setIsUndoing] = useState(false);
   const recordsPerPage = 5;
   const todayDate = useMemo(() => getTodayDateInputValue(), []);
+
+  useRealtimeSubscription({
+    table: 'audit_logs',
+    onChange: () => setRefreshTrigger(prev => prev + 1)
+  });
 
   useEffect(() => {
     setCurrentPage(1);
@@ -624,12 +639,12 @@ function AuditDetails({ details }: { details: any }) {
         <div key={index} className="flex flex-col gap-1">
           <span className="text-[0.625rem] font-black uppercase tracking-widest text-[#6B7280]">{item.field}</span>
           {'to' in item ? (
-            <div className="flex items-center gap-2 text-xs text-[#6B7280]">
-              <span className="line-through text-red-500">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-[#6B7280]">
+              <span className="line-through text-red-500 break-all">
                 {item.from || '-'}
               </span>
               <span className="font-bold text-[#9CA3AF]">&rarr;</span>
-              <span className="font-bold text-green-600">
+              <span className="font-bold text-green-600 break-all">
                 {item.to || '-'}
               </span>
             </div>

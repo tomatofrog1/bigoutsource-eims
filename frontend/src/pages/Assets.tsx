@@ -12,6 +12,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { AccountOption, normalizeAccountList } from '@/src/pages/Directory';
 import { AccountFilterDropdown } from '@/src/features/employees/components/DirectoryUI';
 import { cn } from '@/src/lib/utils';
+import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 
 export type AssetFieldKey = 'assigneeName' | 'pcName' | 'biosDate' | 'windowsKey' | 'rustdeskId' | 'activityWatchStatus' | 'esetStatus';
 
@@ -57,7 +58,13 @@ export default function Assets() {
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [accountFilter, setAccountFilter] = useState('All Account');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const recordsPerPage = 10;
+
+  useRealtimeSubscription({
+    table: 'employees',
+    onChange: () => setRefreshTrigger(prev => prev + 1)
+  });
   
   const [isEditMode, setIsEditMode] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, Partial<any>>>({});
@@ -202,7 +209,7 @@ export default function Assets() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshTrigger]);
 
   const filteredDevices = useMemo(() => {
     let result = devices;
