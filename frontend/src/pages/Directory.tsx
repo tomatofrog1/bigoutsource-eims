@@ -46,6 +46,7 @@ import {
   Select,
   ReviewGrid,
 } from '@/src/features/employees/components/DirectoryUI';
+import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 
 type SiteOption = {
   id: string;
@@ -490,6 +491,7 @@ export default function Directory() {
   const [selectedFields, setSelectedFields] = useState<DirectoryFieldKey[] | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showMissingDepartmentModal, setShowMissingDepartmentModal] = useState(false);
+  const [showClearDraftModal, setShowClearDraftModal] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isSiteDropdownOpen, setIsSiteDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -506,6 +508,14 @@ export default function Directory() {
   const [isBoEmailEdited, setIsBoEmailEdited] = useState(false);
   const [isLmsAccountEdited, setIsLmsAccountEdited] = useState(false);
   const [isPcNameEdited, setIsPcNameEdited] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useRealtimeSubscription({
+    table: 'employees',
+    onChange: () => {
+      setRefreshTrigger(prev => prev + 1);
+    }
+  });
 
   const regenerateField = (field: 'boEmail' | 'lmsAccount' | 'pcName') => {
     const account = accounts.find((acc) => acc.name === form.accountAssignment);
@@ -575,7 +585,7 @@ export default function Directory() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [refreshTrigger, canManageRecords]);
 
   // Sync the status filter when navigated to with a ?status= param (e.g. the
   // header's "Inactive" button) even if this page is already mounted.
@@ -986,12 +996,7 @@ export default function Directory() {
     toast.success('Draft saved locally');
   };
 
-  const clearDraft = () => {
-    if (!draftSavedAt) return;
-
-    const confirmed = window.confirm('Clear the saved employee onboarding draft? This cannot be undone.');
-    if (!confirmed) return;
-
+  const handleClearDraft = () => {
     localStorage.removeItem(draftStorageKey);
     setDraftSavedAt(null);
     setIsDraftRestored(false);
@@ -1002,7 +1007,13 @@ export default function Directory() {
     setIsBoEmailEdited(false);
     setIsLmsAccountEdited(false);
     setIsPcNameEdited(false);
+    setShowClearDraftModal(false);
     toast.success('Draft cleared');
+  };
+
+  const clearDraft = () => {
+    if (!draftSavedAt) return;
+    setShowClearDraftModal(true);
   };
 
   const generateTempEmployeeId = () => {
@@ -1222,7 +1233,8 @@ export default function Directory() {
               {can('employees.create') && (
                 <button
                   onClick={() => {
-                    if (accounts.length === 0) {
+                    const validAccounts = accounts.filter(a => Boolean(a && a.name && String(a.name).trim()));
+                    if (validAccounts.length === 0) {
                       setShowMissingDepartmentModal(true);
                     } else {
                       setIsModalOpen(true);
@@ -1984,6 +1996,52 @@ export default function Directory() {
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-[#11182720] transition-all hover:bg-[#374151] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
                   >
                     Go to Departments
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showClearDraftModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            >
+              <div className="p-6">
+                <div className="mb-6 flex flex-col items-center text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600">
+                    <ShieldAlert className="h-8 w-8" />
+                  </div>
+                  <h2 className="text-xl font-black text-[#111827]">Clear Saved Draft</h2>
+                  <p className="mt-2 text-sm text-[#4B5563]">
+                    Are you sure you want to clear the saved employee onboarding draft? This action cannot be undone.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowClearDraftModal(false)}
+                    className="rounded-xl border border-[#D1D5DB] dark:border-[#3A4257] bg-white px-4 py-2.5 text-sm font-bold text-[#4B5563] transition-all hover:bg-[#F9FAFB] hover:text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearDraft}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-black text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
+                  >
+                    Clear Draft
                   </button>
                 </div>
               </div>

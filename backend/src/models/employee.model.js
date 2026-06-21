@@ -2,6 +2,9 @@ import { supabaseRequest } from '../config/supabase.js';
 import { generateLmsAccount } from '../utils/lmsAccount.js';
 
 export const SITE_OPTIONS = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
+export const STATUS_OPTIONS = ['active', 'inactive', 'pending'];
+export const ESET_OPTIONS = ['active', 'inactive'];
+export const ACTIVITY_WATCH_OPTIONS = ['active', 'inactive'];
 
 function blankToNull(value) {
   if (value === undefined) return undefined;

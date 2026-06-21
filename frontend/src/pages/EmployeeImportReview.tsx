@@ -122,7 +122,7 @@ const fieldLabels: Array<[string, string]> = [
   ['rustdeskId', 'RustDesk ID'],
   ['esetStatus', 'ESET'],
   ['biosDate', 'BIOS Date'],
-  ['activityWatchStatus', 'ActivityWatch'],
+  ['activityWatchStatus', 'Activity Watch'],
   ['windowsKey', 'Windows Key'],
   ['is_archived', 'Archived'],
 ];
@@ -1015,7 +1015,7 @@ function MergeRowsModal({
                 <Input type="date" value={form.biosDate || ''} onChange={(value) => onChange('biosDate', value)} />
               </Field>
               <SelectDropdown
-                label="ActivityWatch"
+                label="Activity Watch"
                 value={form.activityWatchStatus || 'missing'}
                 options={[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }]}
                 onSelect={(val) => onChange('activityWatchStatus', val)}
@@ -1520,7 +1520,7 @@ function EditRowModal({
                   onSelect={(val) => onChange('esetStatus', val)}
                 />
                 <SelectDropdown
-                  label="ActivityWatch"
+                  label="Activity Watch"
                   value={form.activityWatchStatus || 'missing'}
                   options={[{ id: 'installed', name: 'Installed' }, { id: 'missing', name: 'Missing' }]}
                   onSelect={(val) => onChange('activityWatchStatus', val)}

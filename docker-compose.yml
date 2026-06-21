@@ -1,24 +1,33 @@
-
-
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    command: npm run dev
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
     ports:
       - "5001:5001"
     env_file:
       - ./backend/.env
-    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: builder
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
-      - "3000:80"
+      - "3000:3000"
     env_file:
       - ./frontend/.env
     depends_on:
       - backend
-    restart: unless-stopped
+    environment:
+      - NODE_ENV=development

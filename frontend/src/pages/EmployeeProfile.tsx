@@ -32,6 +32,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 import { cn } from '@/src/lib/utils';
 import { generateLmsAccount } from '@/src/lib/lmsAccount';
 import { employeeService } from '@/src/features/employees/services/employeeService';
@@ -297,6 +298,8 @@ function actionLabel(action: string) {
 }
 
 function formatFieldName(field: string) {
+  if (field === 'boEmail') return 'Big Outsource Email';
+  if (field === 'pcName') return 'PC Name';
   return field
     .replace(/([A-Z])/g, ' $1')
     .replace(/_/g, ' ')
@@ -304,9 +307,16 @@ function formatFieldName(field: string) {
 }
 
 function formatValue(value: any) {
-  if (value === null || value === undefined || value === '') return 'ΓÇö';
+  if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  return String(value);
+  
+  const strValue = String(value);
+  const lowerValue = strValue.toLowerCase();
+  if (['missing', 'installed', 'active', 'inactive'].includes(lowerValue)) {
+    return strValue.charAt(0).toUpperCase() + strValue.slice(1);
+  }
+  
+  return strValue;
 }
 
 function detailsText(details: any) {
@@ -386,6 +396,10 @@ export default function EmployeeProfile() {
   const [isActivityWatchDropdownOpen, setIsActivityWatchDropdownOpen] = useState(false);
   const [visibleLogsCount, setVisibleLogsCount] = useState(3);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  useRealtimeSubscription({ table: 'employees', onChange: () => setRefreshTrigger(prev => prev + 1) });
+  useRealtimeSubscription({ table: 'audit_logs', onChange: () => setRefreshTrigger(prev => prev + 1) });
+
   const [undoTargetLog, setUndoTargetLog] = useState<any | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
 
@@ -1377,7 +1391,7 @@ export default function EmployeeProfile() {
                       </div>
                     </ComplianceField>
                     <ComplianceField
-                      label="ActivityWatch"
+                      label="Activity Watch"
                       value={employee.activityWatchStatus === 'installed' ? 'Installed' : 'Missing'}
                       editing={editingIT}
                       status={employee.activityWatchStatus === 'installed'}
@@ -1517,14 +1531,14 @@ export default function EmployeeProfile() {
                                               {item.field}
                                             </span>
 
-                                            <div className="flex items-center gap-2 text-[#6B7280]">
-                                              <span className="line-through text-red-500">
+                                            <div className="flex flex-wrap items-center gap-2 text-[#6B7280]">
+                                              <span className="line-through text-red-500 break-all">
                                                 {item.from}
                                               </span>
 
                                               <span className="font-bold text-[#9CA3AF]">&rarr;</span>
 
-                                              <span className="font-bold text-green-600">
+                                              <span className="font-bold text-green-600 break-all">
                                                 {item.to}
                                               </span>
                                             </div>

@@ -23,6 +23,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { cn } from '@/src/lib/utils';
 import { accountService } from '@/src/services/accountService';
 import { employeeService } from '@/src/features/employees/services/employeeService';
+import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 
 type DepartmentType = 'internal' | 'external';
 
@@ -130,7 +131,13 @@ export default function Departments() {
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({});
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const cachedCounts = useMemo(getCachedDeptCounts, []);
+
+  useRealtimeSubscription({
+    table: 'accounts',
+    onChange: () => setRefreshTrigger(prev => prev + 1)
+  });
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -206,7 +213,7 @@ export default function Departments() {
 
   useEffect(() => {
     loadDepartments();
-  }, []);
+  }, [refreshTrigger]);
 
   const filteredDepartments = useMemo(() => {
     const kw = search.trim().toLowerCase();

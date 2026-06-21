@@ -45,7 +45,7 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
 
     return [
         { name: 'Antivirus (ESET)', passed: devices.length - missingEset, failed: missingEset, total: devices.length },
-        { name: 'ActivityWatch', passed: devices.length - missingAw, failed: missingAw, total: devices.length },
+        { name: 'Activity Watch', passed: devices.length - missingAw, failed: missingAw, total: devices.length },
         { name: 'OS Licensing', passed: devices.length - unlicensed, failed: unlicensed, total: devices.length },
         { name: 'Password Compliance', passed: passwordCompliance, failed: devices.length - passwordCompliance, total: devices.length },
         { name: 'Device Encryption', passed: encrypted, failed: devices.length - encrypted, total: devices.length },

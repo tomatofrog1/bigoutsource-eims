@@ -23,6 +23,7 @@ import { employeeService } from '@/src/features/employees/services/employeeServi
 import { deviceService } from '@/src/features/assets/services/deviceService';
 import { auditLogService } from '@/src/features/reports/services/auditLogService';
 import { accountService } from '@/src/services/accountService';
+import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend
@@ -118,6 +119,11 @@ export default function Dashboard() {
   const [deptFilterType, setDeptFilterType] = useState<'internal' | 'external'>('internal');
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'hr' | 'it' | 'audit'>('overview');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useRealtimeSubscription({ table: 'employees', onChange: () => setRefreshTrigger(prev => prev + 1) });
+  useRealtimeSubscription({ table: 'audit_logs', onChange: () => setRefreshTrigger(prev => prev + 1) });
+  useRealtimeSubscription({ table: 'accounts', onChange: () => setRefreshTrigger(prev => prev + 1) });
 
   useEffect(() => {
     let isMounted = true;
@@ -178,7 +184,7 @@ export default function Dashboard() {
     return () => {
       isMounted = false;
     };
-  }, [canViewAssets, canViewAuditLogs, canViewDepartments, canViewEmployees]);
+  }, [canViewAssets, canViewAuditLogs, canViewDepartments, canViewEmployees, refreshTrigger]);
 
   const turnoverStats = useMemo(() => {
     const active = employees.filter(e => e.status === 'active').length;
@@ -358,7 +364,7 @@ export default function Dashboard() {
     const results = [];
     if (fullyCompliant > 0) results.push({ name: 'Fully Compliant', count: fullyCompliant, color: '#10B981' });
     if (missingEset > 0) results.push({ name: 'Missing ESET', count: missingEset, color: '#EF4444' });
-    if (missingActivityWatch > 0) results.push({ name: 'Missing ActivityWatch', count: missingActivityWatch, color: '#F59E0B' });
+    if (missingActivityWatch > 0) results.push({ name: 'Missing Activity Watch', count: missingActivityWatch, color: '#F59E0B' });
     if (unlicensed > 0) results.push({ name: 'Unlicensed OS', count: unlicensed, color: '#FCD34D' });
 
     return results;
