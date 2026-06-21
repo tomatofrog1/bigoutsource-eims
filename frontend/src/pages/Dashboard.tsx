@@ -19,15 +19,14 @@ const SecurityAlertsModal = lazy(() => import('@/src/features/dashboard/componen
 const RecentActivityLogsModal = lazy(() => import('@/src/features/dashboard/components/modals/RecentActivityLogsModal').then(m => ({ default: m.RecentActivityLogsModal })));
 import { useTheme } from '@/src/contexts/ThemeContext';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { employeeService } from '@/src/features/employees/services/employeeService';
-import { deviceService } from '@/src/features/assets/services/deviceService';
-import { auditLogService } from '@/src/features/reports/services/auditLogService';
-import { accountService } from '@/src/services/accountService';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Legend
-} from 'recharts';
+import { useEmployeesQuery, useDevicesQuery, useAuditLogsQuery, useAccountsQuery } from '@/src/hooks/queries';
+const GrowthChart = lazy(() => import('@/src/features/dashboard/components/DashboardCharts').then(m => ({ default: m.GrowthChart })));
+const AttritionChart = lazy(() => import('@/src/features/dashboard/components/DashboardCharts').then(m => ({ default: m.AttritionChart })));
+const DepartmentChart = lazy(() => import('@/src/features/dashboard/components/DashboardCharts').then(m => ({ default: m.DepartmentChart })));
+const SiteChart = lazy(() => import('@/src/features/dashboard/components/DashboardCharts').then(m => ({ default: m.SiteChart })));
+const ComplianceChart = lazy(() => import('@/src/features/dashboard/components/DashboardCharts').then(m => ({ default: m.ComplianceChart })));
+const SecurityOverviewChart = lazy(() => import('@/src/features/dashboard/components/DashboardCharts').then(m => ({ default: m.SecurityOverviewChart })));
 
 function asArray(value: any) {
   return Array.isArray(value) ? value : [];
@@ -125,66 +124,30 @@ export default function Dashboard() {
   useRealtimeSubscription({ table: 'audit_logs', onChange: () => setRefreshTrigger(prev => prev + 1) });
   useRealtimeSubscription({ table: 'accounts', onChange: () => setRefreshTrigger(prev => prev + 1) });
 
+  const { data: fetchedEmployees = [], isLoading: isEmployeesLoading } = useEmployeesQuery({ refreshTrigger });
+  const { data: fetchedDevices = [], isLoading: isDevicesLoading } = useDevicesQuery({ refreshTrigger });
+  const { data: fetchedLogs = [], isLoading: isLogsLoading } = useAuditLogsQuery({ limit: 8, refreshTrigger });
+  const { data: fetchedAccounts = [], isLoading: isAccountsLoading } = useAccountsQuery({ refreshTrigger });
+
   useEffect(() => {
-    let isMounted = true;
+    setEmployees(fetchedEmployees.filter((emp: any) => !emp.isArchived && !emp.is_archived));
+    setEmployeesLoading(isEmployeesLoading);
+  }, [fetchedEmployees, isEmployeesLoading]);
 
-    async function loadEmployees() {
-      try {
-        const result = await employeeService.list();
-        if (!isMounted) return;
-        setEmployees(asArray(result).filter((emp: any) => !emp.isArchived && !emp.is_archived));
-      } catch {
-        if (isMounted) setEmployees([]);
-      } finally {
-        if (isMounted) setEmployeesLoading(false);
-      }
-    }
+  useEffect(() => {
+    setDevices(fetchedDevices);
+    setDevicesLoading(isDevicesLoading);
+  }, [fetchedDevices, isDevicesLoading]);
 
-    async function loadDevices() {
-      try {
-        const result = await deviceService.list();
-        if (!isMounted) return;
-        setDevices(asArray(result));
-      } catch {
-        if (isMounted) setDevices([]);
-      } finally {
-        if (isMounted) setDevicesLoading(false);
-      }
-    }
+  useEffect(() => {
+    setLogs(fetchedLogs);
+    setLogsLoading(isLogsLoading);
+  }, [fetchedLogs, isLogsLoading]);
 
-    async function loadLogs() {
-      try {
-        const result = await auditLogService.list({ limit: 8 });
-        if (!isMounted) return;
-        setLogs(asArray(result));
-      } catch {
-        setLogs([]);
-      } finally {
-        setLogsLoading(false);
-      }
-    }
-
-    async function loadAccounts() {
-      setAccountsLoading(true);
-      try {
-        const result = await accountService.list();
-        if (!isMounted) return;
-        setAccounts(asArray(result));
-      } catch {
-        if (isMounted) setAccounts([]);
-      } finally {
-        if (isMounted) setAccountsLoading(false);
-      }
-    }
-
-    loadEmployees();
-    loadDevices();
-    loadLogs();
-    loadAccounts();
-    return () => {
-      isMounted = false;
-    };
-  }, [canViewAssets, canViewAuditLogs, canViewDepartments, canViewEmployees, refreshTrigger]);
+  useEffect(() => {
+    setAccounts(fetchedAccounts);
+    setAccountsLoading(isAccountsLoading);
+  }, [fetchedAccounts, isAccountsLoading]);
 
   const turnoverStats = useMemo(() => {
     const active = employees.filter(e => e.status === 'active').length;
@@ -620,15 +583,9 @@ export default function Dashboard() {
 </div>
                       <div className="flex-1 min-h-[300px]">
                         {growthTrend.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={growthTrend} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                              <XAxis dataKey="month" label={{ value: 'Month & Year', position: 'bottom', fill: '#9CA3AF', fontSize: '0.6875rem', fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: '0.75rem', fill: '#6B7280', fontWeight: 'bold' }} dy={10} />
-                              <YAxis label={{ value: 'Employees', angle: -90, position: 'insideLeft', offset: -5, fill: '#9CA3AF', fontSize: '0.6875rem', fontWeight: 'bold' }} axisLine={false} tickLine={false} tick={{ fontSize: '0.75rem', fill: '#6B7280', fontWeight: 'bold' }} />
-                              <RechartsTooltip content={<CustomTooltip chartType="growth" />} cursor={{ stroke: isDark ? '#2D3344' : '#E5E7EB', strokeWidth: 2 }} wrapperStyle={{ zIndex: 9999 }} />
-                              <Line type="monotone" dataKey="count" stroke="#6366F1" strokeWidth={3} dot={{ r: 4, fill: '#6366F1', strokeWidth: 2, stroke: '#ffffff' }} activeDot={{ r: 6 }} />
-                            </LineChart>
-                          </ResponsiveContainer>
+                        <Suspense fallback={<div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">Loading chart...</div>}>
+                          <GrowthChart data={growthTrend} CustomTooltip={CustomTooltip} isDark={isDark} />
+                        </Suspense>
                         ) : (
                           <div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">No growth data available.</div>
                         )}
@@ -755,15 +712,9 @@ export default function Dashboard() {
                           className="absolute inset-0"
                         >
                           {departmentDistribution.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={departmentDistribution} layout="vertical" margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E5E7EB" />
-                                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: '0.75rem', fill: '#6B7280', fontWeight: 'bold' }} />
-                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: '0.6875rem', fill: '#111827', fontWeight: 'bold' }} width={90} />
-                                <RechartsTooltip content={<CustomTooltip chartType="department" />} cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F9FAFB' }} wrapperStyle={{ zIndex: 9999 }} />
-                                <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={24} />
-                              </BarChart>
-                            </ResponsiveContainer>
+                            <Suspense fallback={<div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">Loading chart...</div>}>
+                              <DepartmentChart data={departmentDistribution} CustomTooltip={CustomTooltip} COLORS={COLORS} />
+                            </Suspense>
                           ) : (
                             <div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">No data available.</div>
                           )}
@@ -797,25 +748,9 @@ export default function Dashboard() {
                     <div className="flex-1 min-h-[300px] flex items-center justify-center relative">
                       {siteDistribution.length > 0 ? (
                         <>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={siteDistribution}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={70}
-                                outerRadius={100}
-                                paddingAngle={2}
-                                dataKey="count"
-                                stroke="none"
-                              >
-                                {siteDistribution.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={SITE_COLORS[entry.site] || COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <RechartsTooltip content={<CustomTooltip chartType="site" />} wrapperStyle={{ zIndex: 9999 }} />
-                            </PieChart>
-                          </ResponsiveContainer>
+                          <Suspense fallback={<div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">Loading chart...</div>}>
+                            <SiteChart data={siteDistribution} CustomTooltip={CustomTooltip} SITE_COLORS={SITE_COLORS} />
+                          </Suspense>
                           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
                             <span className="text-3xl font-black text-[#111827]">{totalPersonnel}</span>
                             <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280]">Total</span>
@@ -864,17 +799,9 @@ export default function Dashboard() {
 </div>
                     <div className="flex-1 min-h-[300px]">
                       {attritionTimeline.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={attritionTimeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: '0.6875rem', fill: '#6B7280', fontWeight: 'bold' }} dy={10} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: '0.75rem', fill: '#6B7280', fontWeight: 'bold' }} />
-                            <RechartsTooltip content={<CustomTooltip chartType="attrition" />} cursor={{ stroke: isDark ? '#2D3344' : '#E5E7EB', strokeWidth: 2 }} wrapperStyle={{ zIndex: 9999 }} />
-                            <Legend wrapperStyle={{ fontSize: '0.75rem', fontWeight: 'bold', paddingTop: '10px' }} />
-                            <Line type="monotone" dataKey="hires" name="New Hires" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                            <Line type="monotone" dataKey="separations" name="Separations" stroke="#EF4444" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                          </LineChart>
-                        </ResponsiveContainer>
+                        <Suspense fallback={<div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">Loading chart...</div>}>
+                          <AttritionChart data={attritionTimeline} CustomTooltip={CustomTooltip} isDark={isDark} />
+                        </Suspense>
                       ) : (
                         <div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">No turnover data available.</div>
                       )}
@@ -909,25 +836,9 @@ export default function Dashboard() {
 </div>
                     <div className="flex-1 min-h-[300px] flex items-center justify-center relative">
                       {securityCompliance.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={securityCompliance}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={90}
-                              paddingAngle={2}
-                              dataKey="count"
-                              stroke="none"
-                            >
-                              {securityCompliance.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <RechartsTooltip content={<CustomTooltip chartType="compliance" />} wrapperStyle={{ zIndex: 9999 }} />
-                          </PieChart>
-                        </ResponsiveContainer>
+                        <Suspense fallback={<div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">Loading chart...</div>}>
+                          <SecurityOverviewChart data={securityCompliance} CustomTooltip={CustomTooltip} />
+                        </Suspense>
                       ) : (
                         <div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">No compliance data.</div>
                       )}
@@ -960,17 +871,9 @@ export default function Dashboard() {
 </div>
                     <div className="flex-1 min-h-[300px]">
                       {complianceByDepartment.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={complianceByDepartment} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: '0.6875rem', fill: '#6B7280', fontWeight: 'bold' }} dy={10} tickFormatter={(val) => val.length > 10 ? val.substring(0, 10) + '...' : val} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: '0.75rem', fill: '#6B7280', fontWeight: 'bold' }} />
-                            <RechartsTooltip content={<CustomTooltip chartType="complianceDept" />} cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F9FAFB' }} wrapperStyle={{ zIndex: 9999 }} />
-                            <Legend wrapperStyle={{ fontSize: '0.75rem', fontWeight: 'bold', paddingTop: '10px' }} />
-                            <Bar dataKey="Compliant" stackId="a" fill="#10B981" radius={[0, 0, 4, 4]} barSize={32} />
-                            <Bar dataKey="NonCompliant" name="Non-Compliant" stackId="a" fill="#DC2626" radius={[4, 4, 0, 0]} barSize={32} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                        <Suspense fallback={<div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">Loading chart...</div>}>
+                          <ComplianceChart data={complianceByDepartment} CustomTooltip={CustomTooltip} isDark={isDark} />
+                        </Suspense>
                       ) : (
                         <div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">No data available.</div>
                       )}

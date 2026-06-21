@@ -10,6 +10,7 @@ import { TextSizeProvider } from './contexts/TextSizeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import React, { Suspense } from 'react';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
+import { GlobalNotifications } from './components/GlobalNotifications';
 
 // Lazy-loaded pages
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -24,8 +25,11 @@ const AuditLogs = React.lazy(() => import('./pages/AuditLogs'));
 const UserManagement = React.lazy(() => import('./pages/UserManagement'));
 const EmployeeImportReview = React.lazy(() => import('./pages/EmployeeImportReview'));
 
+import { QueryProvider } from './providers/QueryProvider';
+
 export default function App() {
   return (
+    <QueryProvider>
     <AuthProvider>
     <ThemeProvider>
     <TextSizeProvider>
@@ -66,10 +70,12 @@ export default function App() {
           </Routes>
         </Suspense>
         <Toaster position="bottom-right" />
+        <GlobalNotifications />
       </Router>
     </TextSizeProvider>
     </ThemeProvider>
     </AuthProvider>
+    </QueryProvider>
   );
 }
 

@@ -5,6 +5,7 @@ import { authService } from '@/src/features/auth/services/authService';
 import { clearAuthToken, getAuthToken } from '@/src/lib/api';
 import { connectAccessSocket } from '@/src/services/realtimeService';
 import { userCan, type Capability } from '@/src/lib/permissions';
+import { supabase } from '@/src/lib/supabase';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -89,6 +90,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', syncCurrentUser);
     };
   }, [refreshUser]);
+
+  useEffect(() => {
+    // Listen for Supabase session changes (e.g. token expired, revoked, signed out globally)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        clearAuthToken();
+        setUser(null);
+        toast.error('Session expired or revoked. Please log in again.');
+      } else if (event === 'TOKEN_REFRESHED' && !session) {
+        clearAuthToken();
+        setUser(null);
+        toast.error('Session expired. Please log in again.');
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (!user?.uid) return undefined;

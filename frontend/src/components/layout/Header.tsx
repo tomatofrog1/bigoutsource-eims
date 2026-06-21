@@ -10,9 +10,11 @@ import { AppUser } from '@/src/types';
 import { ImportIssuesButton } from '@/src/features/imports/components/ImportIssuesButton';
 import { InactiveEmployeesButton } from '@/src/features/employees/components/InactiveEmployeesButton';
 import { BackButton } from '@/src/components/layout/BackButton';
+import { usePresence } from '@/src/hooks/usePresence';
+import { useUsersQuery, useNotificationsQuery } from '@/src/hooks/queries';
+import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
 
 const SEEN_PENDING_REGISTRATIONS_KEY = 'eims_seen_pending_registration_ids';
-const NOTIFICATION_REFRESH_MS = 10000;
 export const USER_ACCOUNTS_REFRESHED_EVENT = 'eims:user-accounts-refreshed';
 
 function readSeenPendingRegistrationIds() {
@@ -46,6 +48,7 @@ function formatNotificationTimestamp(value?: string) {
 
 export function Header({ title, backFallback }: { title: string, backFallback?: string }) {
   const { user } = useAuth();
+  const { onlineUsers } = usePresence(user);
   const name = user?.fullName || user?.email || 'User';
   const initials = name
     .split(/\s+/)
@@ -67,6 +70,14 @@ export function Header({ title, backFallback }: { title: string, backFallback?: 
         <div className="flex items-center gap-4">
           <ImportIssuesButton />
           <InactiveEmployeesButton />
+          
+          <div className="flex items-center gap-2 pl-4 border-l" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs font-bold text-green-600 dark:text-green-400">
+              {onlineUsers.length} Online
+            </span>
+          </div>
+
           <NotificationBell />
           
           <div className="flex items-center gap-3 pl-4 border-l" style={{ borderColor: 'var(--color-border)' }}>
@@ -165,60 +176,46 @@ function NotificationBell() {
     }
   };
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useRealtimeSubscription({
+    table: 'notifications',
+    onChange: () => setRefreshTrigger(prev => prev + 1)
+  });
+
+  useRealtimeSubscription({
+    table: 'user_profiles',
+    onChange: () => setRefreshTrigger(prev => prev + 1)
+  });
+
+  const { data: fetchedUsers = [], isLoading: isUsersLoading } = useUsersQuery({ refreshTrigger });
+  const { data: fetchedNotifications = [], isLoading: isNotificationsLoading } = useNotificationsQuery({ limit: 30, refreshTrigger });
+
   useEffect(() => {
-    if (!canManageUsers && !canReceiveEmployeeAddedNotifications) {
-      setNotifyRegistrationAttempts(false);
-      setUsers([]);
-      setEmployeeNotifications([]);
-      setActiveNotificationIds(new Set());
-      setActiveEmployeeNotificationIds(new Set());
-      return;
-    }
-
+    if (!canManageUsers) return;
     let isMounted = true;
-
-    async function loadNotifications() {
-      setIsLoading(true);
-
-      try {
-        const [settingsResult, accountListResult, employeeNotificationResult] = await Promise.allSettled([
-          canManageUsers ? settingsService.get() : Promise.resolve(null),
-          canManageUsers ? userService.list() : Promise.resolve([]),
-          canReceiveEmployeeAddedNotifications ? notificationService.list({ limit: 30 }) : Promise.resolve([]),
-        ]);
-        if (!isMounted) return;
-
-        if (canManageUsers && settingsResult.status === 'fulfilled' && settingsResult.value) {
-          setNotifyRegistrationAttempts(Boolean(settingsResult.value.notifyRegistrationAttempts));
-        }
-
-        const nextUsers = canManageUsers && accountListResult.status === 'fulfilled' && Array.isArray(accountListResult.value) ? accountListResult.value : [];
-        setUsers(nextUsers);
-        window.dispatchEvent(new CustomEvent(USER_ACCOUNTS_REFRESHED_EVENT, { detail: { users: nextUsers } }));
-
-        const nextEmployeeNotifications =
-          canReceiveEmployeeAddedNotifications && employeeNotificationResult.status === 'fulfilled' && Array.isArray(employeeNotificationResult.value)
-            ? employeeNotificationResult.value
-            : [];
-        setEmployeeNotifications(nextEmployeeNotifications);
-      } catch (error) {
-        if (!isMounted) return;
-
-        setUsers([]);
-        setEmployeeNotifications([]);
-      } finally {
-        if (isMounted) setIsLoading(false);
+    settingsService.get().then((settingsResult: any) => {
+      if (isMounted && settingsResult) {
+        setNotifyRegistrationAttempts(Boolean(settingsResult.notifyRegistrationAttempts));
       }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [canManageUsers]);
+
+  useEffect(() => {
+    if (!canManageUsers && !canReceiveEmployeeAddedNotifications) return;
+    
+    if (canManageUsers) {
+      setUsers(fetchedUsers);
     }
-
-    loadNotifications();
-    const intervalId = window.setInterval(loadNotifications, NOTIFICATION_REFRESH_MS);
-
-    return () => {
-      isMounted = false;
-      window.clearInterval(intervalId);
-    };
-  }, [canManageUsers, canReceiveEmployeeAddedNotifications]);
+    if (canReceiveEmployeeAddedNotifications) {
+      setEmployeeNotifications(fetchedNotifications);
+    }
+    setIsLoading(isUsersLoading || isNotificationsLoading);
+  }, [
+    fetchedUsers, fetchedNotifications, isUsersLoading, isNotificationsLoading, 
+    canManageUsers, canReceiveEmployeeAddedNotifications
+  ]);
 
   return (
     <>

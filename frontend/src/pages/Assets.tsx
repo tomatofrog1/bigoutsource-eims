@@ -13,6 +13,7 @@ import { AccountOption, normalizeAccountList } from '@/src/pages/Directory';
 import { AccountFilterDropdown } from '@/src/features/employees/components/DirectoryUI';
 import { cn } from '@/src/lib/utils';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 export type AssetFieldKey = 'assigneeName' | 'pcName' | 'biosDate' | 'windowsKey' | 'rustdeskId' | 'activityWatchStatus' | 'esetStatus';
 
@@ -51,6 +52,7 @@ function asArray(value: any) {
 export default function Assets() {
   const { can } = useAuth();
   const [devices, setDevices] = useState<any[]>([]);
+  const [allDevices, setAllDevices] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -191,7 +193,9 @@ export default function Assets() {
         if (!isMounted) return;
 
         if (devicesResult.status === 'fulfilled') {
-          const activeDevices = asArray(devicesResult.value).filter(
+          const fetchedDevices = asArray(devicesResult.value);
+          setAllDevices(fetchedDevices.filter((d: any) => !d.isArchived));
+          const activeDevices = fetchedDevices.filter(
             (device: any) => device.assigneeStatus === 'active' && !device.isArchived
           );
           setDevices(activeDevices);
@@ -390,6 +394,48 @@ export default function Assets() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Asset Allocation Chart */}
+        {!isLoading && allDevices.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm w-full lg:w-1/2">
+            <h3 className="text-lg font-bold text-[#111827] mb-6 flex items-center gap-2">
+              <Laptop className="w-5 h-5 text-[#9CA3AF]" />
+              Asset Allocation
+            </h3>
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Assigned', value: allDevices.filter(d => d.assigneeStatus === 'active').length },
+                      { name: 'Unassigned', value: allDevices.filter(d => d.assigneeStatus !== 'active').length }
+                    ].filter(d => d.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                    animationDuration={1000}
+                    animationEasing="ease-out"
+                  >
+                    {[
+                      { name: 'Assigned', value: allDevices.filter(d => d.assigneeStatus === 'active').length },
+                      { name: 'Unassigned', value: allDevices.filter(d => d.assigneeStatus !== 'active').length }
+                    ].filter(d => d.value > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.name === 'Assigned' ? '#3B82F6' : '#9CA3AF'} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontWeight: 'bold' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '0.75rem', fontWeight: 'bold' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (

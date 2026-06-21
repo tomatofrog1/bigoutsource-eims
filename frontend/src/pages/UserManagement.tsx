@@ -16,6 +16,7 @@ import { roleService, type CapabilityItem, type Role } from '@/src/features/sett
 import { RolesPanel } from '@/src/features/settings/components/RolesPanel';
 import { CapabilityChecklist } from '@/src/features/settings/components/CapabilityChecklist';
 import { useRealtimeSubscription } from '@/src/hooks/useRealtimeSubscription';
+import { useUsersQuery } from '@/src/hooks/queries';
 
 const EDITABLE_ACCOUNT_STATUSES = [
   { value: 'active' as const, label: 'Active' },
@@ -121,25 +122,17 @@ export default function UserManagement() {
   const [permsSaving, setPermsSaving] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  const { data: fetchedUsers = [], isLoading: isUsersLoading } = useUsersQuery(refreshTrigger);
+
   useRealtimeSubscription({
     table: 'user_profiles',
     onChange: () => setRefreshTrigger(prev => prev + 1)
   });
 
-  async function loadUsers() {
-    setIsLoading(true);
-    try {
-      setUsers(asArray(await userService.list()));
-    } catch (error: any) {
-      toast.error(error.message || 'Unable to load users');
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   useEffect(() => {
-    loadUsers();
-  }, [refreshTrigger]);
+    setUsers(fetchedUsers);
+    setIsLoading(isUsersLoading);
+  }, [fetchedUsers, isUsersLoading]);
 
   useEffect(() => {
     function syncRefreshedAccounts(event: Event) {
@@ -252,12 +245,18 @@ export default function UserManagement() {
 
   const confirmDisableUser = async (id: string) => {
     setBusyId(id);
+    const prevUsers = [...users];
+    
+    // Optimistic update
+    setUsers(users.map(u => u.uid === id ? { ...u, status: 'disabled' } : u));
+    setDisableUser(null);
+
     try {
       await userService.disable(id);
       toast.success('User disabled');
-      setDisableUser(null);
-      await loadUsers();
+      // No need to loadUsers() here as we have realtime subscriptions catching updates
     } catch (error: any) {
+      setUsers(prevUsers); // Rollback
       toast.error(error.message || 'Unable to disable user');
     } finally {
       setBusyId(null);
@@ -266,12 +265,17 @@ export default function UserManagement() {
 
   const enableUserAccount = async (id: string) => {
     setBusyId(id);
+    const prevUsers = [...users];
+    
+    // Optimistic update
+    setUsers(users.map(u => u.uid === id ? { ...u, status: 'active' } : u));
+    setEnableUser(null);
+
     try {
       await userService.update(id, { status: 'active' });
       toast.success('User enabled');
-      setEnableUser(null);
-      await loadUsers();
     } catch (error: any) {
+      setUsers(prevUsers); // Rollback
       toast.error(error.message || 'Unable to enable user');
     } finally {
       setBusyId(null);
@@ -282,14 +286,21 @@ export default function UserManagement() {
     if (!deleteUser) return;
 
     setBusyId(deleteUser.uid);
+    const prevUsers = [...users];
+    
+    // Optimistic update
+    setUsers(users.filter(u => u.uid !== deleteUser.uid));
+    const targetId = deleteUser.uid;
+    
+    if (editingId === targetId) cancelEditing();
+    if (disableUser?.uid === targetId) setDisableUser(null);
+    setDeleteUser(null);
+
     try {
-      await userService.remove(deleteUser.uid);
+      await userService.remove(targetId);
       toast.success('User deleted');
-      setDeleteUser(null);
-      if (editingId === deleteUser.uid) cancelEditing();
-      if (disableUser?.uid === deleteUser.uid) setDisableUser(null);
-      await loadUsers();
     } catch (error: any) {
+      setUsers(prevUsers); // Rollback
       toast.error(error.message || 'Unable to delete user');
     } finally {
       setBusyId(null);
@@ -321,6 +332,18 @@ export default function UserManagement() {
     }
 
     setBusyId(id);
+    const prevUsers = [...users];
+    
+    // Optimistic update
+    setUsers(users.map(u => u.uid === id ? { 
+      ...u, 
+      department: editDraft.department.trim(),
+      site: editDraft.site.trim(),
+      role: editDraft.role,
+      status: editDraft.status
+    } : u));
+    cancelEditing();
+
     try {
       await userService.update(id, {
         department: editDraft.department.trim(),
@@ -329,9 +352,8 @@ export default function UserManagement() {
         status: editDraft.status,
       });
       toast.success('User updated');
-      cancelEditing();
-      await loadUsers();
     } catch (error: any) {
+      setUsers(prevUsers); // Rollback
       toast.error(error.message || 'Unable to update user');
     } finally {
       setBusyId(null);
