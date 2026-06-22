@@ -28,8 +28,8 @@ for (const [key, value] of required) {
 export const env = {
   nodeEnv,
   port: Number(process.env.PORT || 5001),
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:3000')
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000,https://bigoutsource-eims.vercel.app',
+  corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:3000,https://bigoutsource-eims.vercel.app')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
