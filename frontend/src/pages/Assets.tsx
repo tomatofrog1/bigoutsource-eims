@@ -366,7 +366,7 @@ export default function Assets() {
             </div>
           </div>
 
-          <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="wait" initial={false}>
             {isLoading ? (
               <motion.div key="skeleton-stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[...Array(4)].map((_, i) => (
@@ -395,37 +395,6 @@ export default function Assets() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          <AnimatePresence mode="wait" initial={false}>
-            {isLoading ? (
-              <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
-                <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
-                  <thead>
-                    <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
-                      {visibleFields.map((header) => {
-                        const isActiveSort = sortConfig?.key === header.key;
-                        const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
-
-                        return (
-                          <th key={header.key} className={`px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
-                            <button
-                              type="button"
-                              onClick={() => toggleSort(header.key)}
-                              className={`flex items-center gap-1.5 hover:text-[#111827] transition-colors ${isActiveSort ? 'text-[#111827]' : ''}`}
-                            >
-                              <span className="truncate">{header.label}</span>
-                              <SortIcon className="w-3.5 h-3.5 shrink-0" />
-                            </button>
-                          </th>
-                        );
-                      })}
-                      <th className="px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
-                  <p className="text-2xl font-black text-[#111827]">{stat.value}</p>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Asset Allocation Chart */}
         {!isLoading && allDevices.length > 0 && (
@@ -503,17 +472,8 @@ export default function Assets() {
                       ))}
                       <td className="px-6 py-4 text-right"><div className="h-4 bg-gray-200 rounded w-16 ml-auto"></div></td>
                     </tr>
-                  </thead>
-                  <tbody className="">
-                    {[...Array(recordsPerPage)].map((_, i) => (
-                      <tr key={i} className="animate-pulse border-b border-[#F3F4F6] last:border-0">
-                        {visibleFields.map((f) => (
-                          <td key={f.key} className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
-                        ))}
-                        <td className="px-6 py-4 text-right"><div className="h-4 bg-gray-200 rounded w-16 ml-auto"></div></td>
-                      </tr>
-                    ))}
-                  </tbody>
+                  ))}
+                </tbody>
                 </table>
 
                 <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
