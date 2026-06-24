@@ -400,7 +400,7 @@ export default function UserManagement() {
       await userService.setCapabilities(permsTarget.uid, reset ? null : permsDraft);
       toast.success(reset ? 'Reverted to role defaults' : 'Permissions updated');
       setPermsTarget(null);
-      await loadUsers();
+      setRefreshTrigger(prev => prev + 1);
     } catch (error: any) {
       toast.error(error.message || 'Unable to update permissions');
     } finally {
@@ -412,19 +412,28 @@ export default function UserManagement() {
     <PageLayout title="System Permissions & Users" contentClassName="w-full max-w-[1600px] mx-auto">
       <div className="flex flex-col gap-6 w-full">
         <div className="inline-flex w-fit items-center gap-1 rounded-xl border p-1" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
-          {(['users', 'roles'] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setView(tab)}
-              className="min-h-10 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
-              style={view === tab
-                ? { backgroundColor: 'var(--color-accent)', color: 'var(--color-surface)' }
-                : { color: 'var(--color-text-muted)' }}
-            >
-              {tab === 'users' ? 'Users' : 'Roles & Permissions'}
-            </button>
-          ))}
+          {(['users', 'roles'] as const).map((tab) => {
+            const isActive = view === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setView(tab)}
+                className="relative min-h-10 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
+                style={{ color: isActive ? 'var(--color-surface)' : 'var(--color-text-muted)' }}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="userManagementTabPill"
+                    className="absolute inset-0 rounded-lg"
+                    style={{ backgroundColor: 'var(--color-accent)' }}
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="relative z-10">{tab === 'users' ? 'Users' : 'Roles & Permissions'}</span>
+              </button>
+            );
+          })}
         </div>
 
         {view === 'roles' ? (
@@ -1165,7 +1174,7 @@ export default function UserManagement() {
                   } catch (error: any) {
                     toast.error(error?.message || 'Account created, but activation failed — approve it manually.');
                   }
-                  await loadUsers();
+                  setRefreshTrigger(prev => prev + 1);
                 }}
               />
             </motion.div>
