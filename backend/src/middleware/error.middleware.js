@@ -4,7 +4,7 @@ export function notFound(req, res, next) {
 }
 
 export function errorHandler(error, req, res, next) {
-  const statusCode = error.statusCode || (res.statusCode >= 400 ? res.statusCode : 500);
+  const statusCode = error.statusCode || error.status || (res.statusCode >= 400 ? res.statusCode : 500);
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (statusCode >= 500) {
