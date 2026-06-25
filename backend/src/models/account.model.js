@@ -8,11 +8,10 @@ function normalizeType(value) {
   return ACCOUNT_TYPES.includes(next) ? next : 'external';
 }
 
-function blankToNull(value) {
+function stringOrEmpty(value) {
   if (value === undefined) return undefined;
-  if (value === null) return null;
-  const next = String(value).trim();
-  return next === '' ? null : next;
+  if (value === null) return '';
+  return String(value).trim();
 }
 
 function normalize(row) {
@@ -79,7 +78,7 @@ export const AccountModel = {
   async create(data) {
     const row = await prisma.account.create({
       data: {
-        name: blankToNull(data.name),
+        name: stringOrEmpty(data.name),
         accountType: normalizeType(data.accountType || data.account_type),
         departmentCode: sanitizeDepartmentCode(data.departmentCode || data.department_code),
         lastUsedAt: new Date(),
@@ -90,7 +89,7 @@ export const AccountModel = {
 
   async update(id, data) {
     const updateData = {};
-    if (data.name !== undefined) updateData.name = blankToNull(data.name);
+    if (data.name !== undefined) updateData.name = stringOrEmpty(data.name);
 
     const accountType = data.accountType ?? data.account_type;
     if (accountType !== undefined) updateData.accountType = normalizeType(accountType);

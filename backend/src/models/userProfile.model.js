@@ -59,7 +59,7 @@ export const UserProfileModel = {
         site: String(data.site || 'HQ').trim() || 'HQ',
         approvedById: data.approvedBy,
         approvedAt: data.approvedAt ? new Date(data.approvedAt) : undefined,
-        capabilityOverrides: data.capabilityOverrides,
+        capabilityOverrides: Array.isArray(data.capabilityOverrides) ? data.capabilityOverrides : [],
         passwordHash: data.passwordHash || '',
       },
     });
@@ -76,7 +76,7 @@ export const UserProfileModel = {
     if (data.site !== undefined) updateData.site = String(data.site || 'HQ').trim() || 'HQ';
     if (data.approvedBy !== undefined) updateData.approvedById = data.approvedBy;
     if (data.approvedAt !== undefined) updateData.approvedAt = data.approvedAt ? new Date(data.approvedAt) : null;
-    if (data.capabilityOverrides !== undefined) updateData.capabilityOverrides = data.capabilityOverrides;
+    if (data.capabilityOverrides !== undefined) updateData.capabilityOverrides = Array.isArray(data.capabilityOverrides) ? data.capabilityOverrides : [];
     if (data.passwordHash !== undefined) updateData.passwordHash = data.passwordHash;
 
     const row = await prisma.userProfile.update({
