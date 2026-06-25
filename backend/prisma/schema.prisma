@@ -107,15 +107,18 @@ model Notification {
 
 model EmployeeImportStaging {
   id             String   @id @default(uuid())
-  importId       String   @map("import_id")
-  employeeNumber String   @map("employee_number")
-  name           String
-  site           String
-  account        String
-  rawData        Json     @map("raw_data")
-  status         String   @default("pending")
-  errors         String[]
+  importBatchId  String   @map("import_batch_id")
+  sourceSheet    String   @map("source_sheet")
+  sourceRow      Int?     @map("source_row")
+  rawData        Json     @default("{}") @map("raw_data")
+  normalizedData Json     @default("{}") @map("normalized_data")
+  issues         Json     @default("[]")
+  status         String   @default("issue")
+  duplicateKey   String?  @map("duplicate_key")
+  resolution     Json?
+  createdById    String?  @map("created_by_id")
   createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("employee_import_staging")
 }

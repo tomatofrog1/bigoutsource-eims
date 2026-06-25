@@ -6,11 +6,16 @@ export const STATUS_OPTIONS = ['active', 'inactive', 'pending'];
 export const ESET_OPTIONS = ['active', 'inactive'];
 export const ACTIVITY_WATCH_OPTIONS = ['active', 'inactive'];
 
-function blankToNull(value) {
-  if (value === undefined) return undefined;
-  if (value === null) return null;
+function undefinedIfBlank(value) {
+  if (value === undefined || value === null) return undefined;
   const next = String(value).trim();
-  return next === '' ? null : next;
+  return next === '' ? undefined : next;
+}
+
+function stringOrEmpty(value) {
+  if (value === undefined) return undefined;
+  if (value === null) return '';
+  return String(value).trim();
 }
 
 function toBoolean(value) {
@@ -55,37 +60,39 @@ function normalizeEset(value) {
 
 function toDatabasePayload(data, { includeId = false } = {}) {
   const payload = {};
-  const id = blankToNull(valueFrom(data, 'id', 'employeeId', 'employeeNumber'));
-  const name = blankToNull(valueFrom(data, 'name', 'fullName'));
-  const account = blankToNull(valueFrom(data, 'account', 'accountAssignment'));
-  const site = blankToNull(valueFrom(data, 'site', 'siteName', 'siteId'));
-  const lmsAccount = valueFrom(data, 'lmsAccount', 'lms_account') !== undefined
-    ? blankToNull(valueFrom(data, 'lmsAccount', 'lms_account'))
+  const idRaw = valueFrom(data, 'id', 'employeeId', 'employeeNumber');
+  const id = undefinedIfBlank(idRaw);
+  const name = stringOrEmpty(valueFrom(data, 'name', 'fullName'));
+  const account = stringOrEmpty(valueFrom(data, 'account', 'accountAssignment'));
+  const site = stringOrEmpty(valueFrom(data, 'site', 'siteName', 'siteId'));
+  const lmsRaw = valueFrom(data, 'lmsAccount', 'lms_account');
+  const lmsAccount = lmsRaw !== undefined
+    ? stringOrEmpty(lmsRaw)
     : (name !== undefined ? generateLmsAccount(name || '') : undefined);
 
   if (includeId || id !== undefined) payload.id = id;
   if (name !== undefined) payload.name = name;
   if (account !== undefined) payload.account = account;
-  if (valueFrom(data, 'phone', 'phoneNumber') !== undefined) payload.phone_number = blankToNull(valueFrom(data, 'phone', 'phoneNumber'));
-  if (data?.address !== undefined) payload.address = blankToNull(data.address);
+  if (valueFrom(data, 'phone', 'phoneNumber') !== undefined) payload.phone_number = stringOrEmpty(valueFrom(data, 'phone', 'phoneNumber'));
+  if (data?.address !== undefined) payload.address = stringOrEmpty(data.address);
   if (valueFrom(data, 'boEmail', 'bigoutsourceEmail') !== undefined) {
-    payload.bigoutsource_email = blankToNull(valueFrom(data, 'boEmail', 'bigoutsourceEmail'));
+    payload.bigoutsource_email = stringOrEmpty(valueFrom(data, 'boEmail', 'bigoutsourceEmail'));
   }
-  if (data?.emailPassword !== undefined) payload.email_password = blankToNull(data.emailPassword);
+  if (data?.emailPassword !== undefined) payload.email_password = stringOrEmpty(data.emailPassword);
   if (lmsAccount !== undefined) payload.lms_account = lmsAccount;
   if (data?.status !== undefined) payload.status = canonical(data.status, STATUS_OPTIONS, data.status);
   if (site !== undefined) payload.site = normalizeSite(site);
-  if (data?.pcName !== undefined) payload.pc_name = blankToNull(data.pcName);
+  if (data?.pcName !== undefined) payload.pc_name = stringOrEmpty(data.pcName);
   if (valueFrom(data, 'rustdeskId', 'rustDeskId') !== undefined) {
-    payload.rustdesk_id = blankToNull(valueFrom(data, 'rustdeskId', 'rustDeskId'));
+    payload.rustdesk_id = stringOrEmpty(valueFrom(data, 'rustdeskId', 'rustDeskId'));
   }
   if (data?.esetStatus !== undefined) payload.eset = normalizeEset(data.esetStatus);
-  if (data?.biosDate !== undefined) payload.bios_date = blankToNull(data.biosDate);
+  if (data?.biosDate !== undefined) payload.bios_date = stringOrEmpty(data.biosDate);
   if (data?.activityWatchStatus !== undefined) {
     payload.activitywatch = canonical(data.activityWatchStatus, ACTIVITY_WATCH_OPTIONS, data.activityWatchStatus);
   }
   if (valueFrom(data, 'windowsKey', 'windowsLicenseKey') !== undefined) {
-    payload.windows_license_key = blankToNull(valueFrom(data, 'windowsKey', 'windowsLicenseKey'));
+    payload.windows_license_key = stringOrEmpty(valueFrom(data, 'windowsKey', 'windowsLicenseKey'));
   }
   const isArchived = valueFrom(data, 'is_archived', 'isArchived');
   if (isArchived !== undefined) {
