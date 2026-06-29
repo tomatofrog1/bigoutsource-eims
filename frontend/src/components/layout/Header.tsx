@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Bell, Loader2, ShieldAlert, UserPlus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -106,6 +106,7 @@ function NotificationBell() {
   const [seenPendingIds, setSeenPendingIds] = useState<Set<string>>(() => readSeenPendingRegistrationIds());
   const [activeNotificationIds, setActiveNotificationIds] = useState<Set<string>>(new Set());
   const [activeEmployeeNotificationIds, setActiveEmployeeNotificationIds] = useState<Set<string>>(new Set());
+  const [isRinging, setIsRinging] = useState(false);
 
   const canManageUsers = can('users.manage');
   const canReceiveEmployeeAddedNotifications = can('notifications.employee_added');
@@ -130,6 +131,18 @@ function NotificationBell() {
   const unreadCount =
     (canManageUsers && notifyRegistrationAttempts ? unreadPendingUsers.length : 0) +
     (canReceiveEmployeeAddedNotifications ? unreadEmployeeNotifications.length : 0);
+
+  const prevUnread = useRef(unreadCount);
+
+  useEffect(() => {
+    if (unreadCount > prevUnread.current) {
+      setIsRinging(true);
+      const timer = setTimeout(() => setIsRinging(false), 1000);
+      prevUnread.current = unreadCount;
+      return () => clearTimeout(timer);
+    }
+    prevUnread.current = unreadCount;
+  }, [unreadCount]);
 
   const openNotifications = () => {
     setIsOpen(true);
@@ -226,11 +239,21 @@ function NotificationBell() {
         style={{ color: 'var(--color-text-secondary)' }}
         aria-label="Open notifications"
       >
-        <Bell className="h-5 w-5" />
+        <motion.div
+          animate={isRinging ? { rotate: [0, -15, 15, -15, 15, -10, 10, 0] } : {}}
+          transition={{ duration: 0.6 }}
+        >
+          <Bell className="h-5 w-5" />
+        </motion.div>
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#EF4444] px-1 text-[0.625rem] font-black text-white">
+          <motion.span
+            key={unreadCount}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#EF4444] px-1 text-[0.625rem] font-black text-white"
+          >
             {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
+          </motion.span>
         )}
       </button>
 
