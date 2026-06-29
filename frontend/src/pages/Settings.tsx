@@ -451,10 +451,11 @@ function TabButton({
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className="flex min-h-24 w-full items-center justify-between rounded-2xl border px-5 text-left"
+      whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }}
+      className="flex min-h-24 w-full items-center justify-between rounded-2xl border px-5 text-left transition-all duration-300 ease-out hover:shadow-xl"
       style={active ? {
         borderColor: 'var(--color-text-primary)',
         backgroundColor: 'var(--color-text-primary)',
@@ -470,7 +471,7 @@ function TabButton({
         {label}
       </span>
       {Boolean(badge) && <span className="rounded-full bg-amber-100 px-2 py-1 text-[0.625rem] font-black text-amber-800">{badge}</span>}
-    </button>
+    </motion.button>
   );
 }
 
