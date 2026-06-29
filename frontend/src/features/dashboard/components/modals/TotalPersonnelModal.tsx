@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Users, Search, Download, Filter } from 'lucide-react';
+import { useTheme } from '@/src/contexts/ThemeContext';
 import { BaseDashboardModal } from './BaseDashboardModal';
 import { CustomSelect } from '@/src/components/CustomSelect';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
@@ -13,9 +14,21 @@ interface TotalPersonnelModalProps {
 const COLORS = ['#6366F1', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
 export function TotalPersonnelModal({ isOpen, onClose, employees }: TotalPersonnelModalProps) {
+  const { isDark } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+    borderColor: isDark ? '#374151' : '#E5E7EB',
+    color: isDark ? '#F9FAFB' : '#111827',
+  };
+  const labelStyle = {
+    color: isDark ? '#F9FAFB' : '#111827',
+    fontWeight: 'bold',
+    marginBottom: '4px',
+  };
 
   // Summaries
   const stats = useMemo(() => {
@@ -99,7 +112,7 @@ export function TotalPersonnelModal({ isOpen, onClose, employees }: TotalPersonn
         {[
           { label: 'Total', value: stats.total, color: 'text-[#111827]' },
           { label: 'Active', value: stats.active, color: 'text-green-600' },
-          { label: 'Inactive', value: stats.inactive, color: 'text-gray-500' },
+          { label: 'Inactive', value: stats.inactive, color: 'text-[#EF4444]' },
         ].map((s, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-center items-center text-center">
             <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280]">{s.label}</p>
@@ -111,28 +124,28 @@ export function TotalPersonnelModal({ isOpen, onClose, employees }: TotalPersonn
       {/* Workforce Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-sm">
-          <h3 className="text-xs font-black uppercase tracking-wider text-[#6B7280] mb-4 text-center">By Department</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-[#6B7280] mb-4 text-center cursor-default select-none">By Department</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={deptBreakdown} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={2} dataKey="value">
                   {deptBreakdown.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={labelStyle} />
               <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-sm">
-          <h3 className="text-xs font-black uppercase tracking-wider text-[#6B7280] mb-4 text-center">By Employment Type</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-[#6B7280] mb-4 text-center cursor-default select-none">By Employment Type</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={typeBreakdown} layout="vertical" margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={80} />
-                <Tooltip />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 10, fill: isDark ? '#D1D5DB' : '#111827' }} axisLine={false} tickLine={false} width={80} />
+                <Tooltip cursor={{ fill: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F9FAFB' }} contentStyle={tooltipStyle} labelStyle={labelStyle} />
                 <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
                 <Bar dataKey="value" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={20} />
               </BarChart>
@@ -140,16 +153,15 @@ export function TotalPersonnelModal({ isOpen, onClose, employees }: TotalPersonn
           </div>
         </div>
         <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-sm">
-          <h3 className="text-xs font-black uppercase tracking-wider text-[#6B7280] mb-4 text-center">By Work Arrangement</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-[#6B7280] mb-4 text-center cursor-default select-none">By Work Arrangement</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={siteBreakdown} cx="50%" cy="50%" outerRadius={60} dataKey="value">
                   {siteBreakdown.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />)}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={labelStyle} />
                <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-                <Legend wrapperStyle={{ fontSize: '10px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
