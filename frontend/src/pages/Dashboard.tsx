@@ -847,40 +847,7 @@ export default function Dashboard() {
                 )}
               </AnimatePresence>
 
-              <AnimatePresence mode="wait" initial={false}>
-                {employeesLoading || devicesLoading ? (
-                  <motion.div key="skeleton-dept-comp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm animate-pulse relative flex flex-col xl:col-span-1">
-                    <div className="w-56 h-6 bg-slate-200 rounded-full mb-8" />
-                    <div className="flex-1 min-h-[300px] flex items-end justify-between gap-4 border-b border-slate-100 pb-2">
-                      {[60, 80, 40, 100, 70, 50].map((h, i) => (
-                        <div key={i} className="w-full bg-slate-100 rounded-t-md" style={{ height: `${h}%` }} />
-                      ))}
-                    </div>
-                    <SkeletonLoadingMessage message="Preparing dashboard statistics..." />
-                  </motion.div>
-                ) : (
-                  <motion.div key="content-dept-comp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} whileHover={{ y: -4, transition: { type: 'spring', stiffness: 380, damping: 30 } }} onClick={(e) => { e.stopPropagation(); setActiveModal('Compliance by Department'); }} className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col xl:col-span-1 cursor-pointer hover:shadow-xl transition-[box-shadow,border-color] duration-300 ease-out group">
-                    <div className="flex items-center justify-between mb-6">
-  <h3 className="text-lg font-bold text-[#111827] flex items-center gap-2">
-    <FileCheck className="w-5 h-5 text-[#9CA3AF]" />
-                      Compliance by Department
-  </h3>
-  <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
-    View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-  </span>
-</div>
-                    <div className="flex-1 min-h-[300px]">
-                      {complianceByDepartment.length > 0 ? (
-                        <Suspense fallback={<div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">Loading chart...</div>}>
-                          <ComplianceChart data={complianceByDepartment} CustomTooltip={CustomTooltip} isDark={isDark} />
-                        </Suspense>
-                      ) : (
-                        <div className="h-full flex items-center justify-center text-[#9CA3AF] text-sm font-bold">No data available.</div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+
 
               <AnimatePresence mode="wait" initial={false}>
                 {devicesLoading ? (

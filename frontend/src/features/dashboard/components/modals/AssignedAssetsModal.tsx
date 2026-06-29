@@ -27,8 +27,7 @@ export function AssignedAssetsModal({ isOpen, onClose, devices, employees }: Ass
     const total = devices.length;
     const assigned = devices.filter(d => d.status === 'assigned').length;
     const available = devices.filter(d => d.status === 'available').length;
-    const maintenance = devices.filter(d => d.status === 'maintenance' || d.status === 'repair').length;
-    return { total, assigned, available, maintenance };
+    return { total, assigned, available };
   }, [devices]);
 
   const distributionData = useMemo(() => {
@@ -90,12 +89,11 @@ export function AssignedAssetsModal({ isOpen, onClose, devices, employees }: Ass
       redirectLabel="Open Asset Management"
     >
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { label: 'Total Assets', value: stats.total, color: 'text-[#111827]' },
           { label: 'Assigned', value: stats.assigned, color: 'text-blue-600' },
           { label: 'Available', value: stats.available, color: 'text-green-600' },
-          { label: 'Under Maintenance', value: stats.maintenance, color: 'text-orange-600' },
         ].map((s, i) => (
           <div key={i} className="bg-white p-4 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col justify-center items-center text-center">
             <p className="text-[0.625rem] font-black uppercase tracking-wider text-[#6B7280]">{s.label}</p>
