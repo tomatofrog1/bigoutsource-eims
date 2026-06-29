@@ -40,7 +40,7 @@ export function AuthInput({
           placeholder={placeholder}
           className={`peer w-full pl-11 pr-4 py-3.5 rounded-2xl text-[0.9375rem] focus:ring-4 transition-all outline-none shadow-sm shadow-gray-900/5 ${
             error 
-              ? 'bg-red-50 border border-[#DC2626] text-[#DC2626] placeholder:text-red-300 focus:border-[#DC2626] focus:ring-red-500/20' 
+              ? 'bg-red-50 border border-[#DC2626] text-[#111827] placeholder:text-red-300 focus:border-[#DC2626] focus:ring-red-500/20' 
               : 'bg-gray-50 border border-gray-200 text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-gray-900 focus:ring-gray-900/5'
           }`}
         />
@@ -198,7 +198,7 @@ export function PasswordInput({
           placeholder={placeholder}
           className={`peer w-full pl-11 pr-12 py-3.5 rounded-2xl text-[0.9375rem] focus:ring-4 transition-all outline-none shadow-sm shadow-gray-900/5 ${
             error 
-              ? 'bg-red-50 border border-[#DC2626] text-[#DC2626] placeholder:text-red-300 focus:border-[#DC2626] focus:ring-red-500/20' 
+              ? 'bg-red-50 border border-[#DC2626] text-[#111827] placeholder:text-red-300 focus:border-[#DC2626] focus:ring-red-500/20' 
               : 'bg-gray-50 border border-gray-200 text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-gray-900 focus:ring-gray-900/5'
           }`}
         />
