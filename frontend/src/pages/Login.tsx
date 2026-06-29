@@ -27,11 +27,13 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [authStatusError, setAuthStatusError] = useState<{ type: 'pending' | 'disabled'; message: string } | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const canSubmit = email.trim().length > 0 && password.length > 0;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setLoginError(null);
 
     if (!canSubmit) return;
 
@@ -44,11 +46,13 @@ export default function Login() {
         navigate('/', { replace: true });
       }, 500);
     } catch (error: any) {
-      const msg = error.message || '';
+      const msg = error.message || 'Invalid email or password';
       if (msg.toLowerCase().includes('pending')) {
         setAuthStatusError({ type: 'pending', message: msg });
       } else if (msg.toLowerCase().includes('disabled')) {
         setAuthStatusError({ type: 'disabled', message: msg });
+      } else {
+        setLoginError(msg);
       }
     } finally {
       // Only set loading to false if we are not navigating away to avoid state update warning
@@ -92,6 +96,7 @@ export default function Login() {
               value={email}
               onChange={setEmail}
               placeholder="name@bigoutsource.com"
+              error={!!loginError}
               required
             />
             <PasswordInput
@@ -100,6 +105,7 @@ export default function Login() {
               onChange={setPassword}
               showPassword={showPassword}
               onToggleVisibility={() => setShowPassword(!showPassword)}
+              error={loginError || undefined}
             />
             <button
               type="submit"
@@ -144,11 +150,10 @@ export default function Login() {
               <div className={`h-40 w-full absolute top-0 left-0 ${authStatusError.type === 'pending' ? 'bg-gradient-to-b from-amber-500/10 to-transparent' : 'bg-gradient-to-b from-red-500/10 to-transparent'}`} />
 
               <div className="px-8 pt-12 pb-10 relative z-10 flex flex-col items-center text-center">
-                <div className={`flex h-24 w-24 items-center justify-center rounded-full mb-6 shadow-xl ${
-                  authStatusError.type === 'pending'
+                <div className={`flex h-24 w-24 items-center justify-center rounded-full mb-6 shadow-xl ${authStatusError.type === 'pending'
                     ? 'bg-gradient-to-tr from-amber-400 to-amber-200 shadow-amber-500/20'
                     : 'bg-gradient-to-tr from-red-500 to-red-300 shadow-red-500/20'
-                }`}>
+                  }`}>
                   {authStatusError.type === 'pending' ? (
                     <Clock className="h-10 w-10 text-amber-900" />
                   ) : (
@@ -169,11 +174,10 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setAuthStatusError(null)}
-                  className={`w-full rounded-2xl py-4 text-[0.9375rem] font-bold text-white transition-all shadow-lg active:scale-[0.98] ${
-                    authStatusError.type === 'pending'
+                  className={`w-full rounded-2xl py-4 text-[0.9375rem] font-bold text-white transition-all shadow-lg active:scale-[0.98] ${authStatusError.type === 'pending'
                       ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/25'
                       : 'bg-[#DC2626] hover:bg-[#B91C1C] shadow-red-600/25'
-                  }`}
+                    }`}
                 >
                   Return to Login
                 </button>

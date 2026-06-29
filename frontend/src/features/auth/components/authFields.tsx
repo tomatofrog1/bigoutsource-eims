@@ -24,25 +24,29 @@ export function AuthInput({
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
-  error?: string;
+  error?: string | boolean;
   required?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-bold text-[#374151] uppercase tracking-wider cursor-default select-none">{label}</label>
       <div className="relative">
-        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] peer-focus:text-[#111827] transition-colors pointer-events-none" />
+        <Icon className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors pointer-events-none ${error ? 'text-[#DC2626]' : 'text-[#9CA3AF] peer-focus:text-[#111827]'}`} />
         <input
           type={type}
           required={required}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="peer w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-[0.9375rem] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 transition-all outline-none placeholder:text-gray-400 shadow-sm shadow-gray-900/5"
+          className={`peer w-full pl-11 pr-4 py-3.5 rounded-2xl text-[0.9375rem] focus:ring-4 transition-all outline-none shadow-sm shadow-gray-900/5 ${
+            error 
+              ? 'bg-red-50 border border-[#DC2626] text-[#DC2626] placeholder:text-red-300 focus:border-[#DC2626] focus:ring-red-500/20' 
+              : 'bg-gray-50 border border-gray-200 text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-gray-900 focus:ring-gray-900/5'
+          }`}
         />
       </div>
       <AnimatePresence initial={false}>
-        {error && (
+        {typeof error === 'string' && error && (
           <motion.p
             initial={{ opacity: 0, height: 0, marginTop: 0 }}
             animate={{ opacity: 1, height: 'auto', marginTop: 4 }}
@@ -178,13 +182,13 @@ export function PasswordInput({
   onToggleVisibility: () => void;
   placeholder?: string;
   minLength?: number;
-  error?: string;
+  error?: string | boolean;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-bold text-[#374151] uppercase tracking-wider cursor-default select-none">{label}</label>
       <div className="relative">
-        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] peer-focus:text-[#111827] transition-colors pointer-events-none" />
+        <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors pointer-events-none ${error ? 'text-[#DC2626]' : 'text-[#9CA3AF] peer-focus:text-[#111827]'}`} />
         <input
           type={showPassword ? 'text' : 'password'}
           required
@@ -192,7 +196,11 @@ export function PasswordInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="peer w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-[0.9375rem] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 transition-all outline-none placeholder:text-gray-400 shadow-sm shadow-gray-900/5"
+          className={`peer w-full pl-11 pr-12 py-3.5 rounded-2xl text-[0.9375rem] focus:ring-4 transition-all outline-none shadow-sm shadow-gray-900/5 ${
+            error 
+              ? 'bg-red-50 border border-[#DC2626] text-[#DC2626] placeholder:text-red-300 focus:border-[#DC2626] focus:ring-red-500/20' 
+              : 'bg-gray-50 border border-gray-200 text-[#111827] placeholder:text-gray-400 focus:bg-white focus:border-gray-900 focus:ring-gray-900/5'
+          }`}
         />
         <button
           type="button"
@@ -204,7 +212,7 @@ export function PasswordInput({
         </button>
       </div>
       <AnimatePresence initial={false}>
-        {error && (
+        {typeof error === 'string' && error && (
           <motion.p
             initial={{ opacity: 0, height: 0, marginTop: 0 }}
             animate={{ opacity: 1, height: 'auto', marginTop: 4 }}
