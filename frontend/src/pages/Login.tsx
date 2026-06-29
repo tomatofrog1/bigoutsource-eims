@@ -76,10 +76,10 @@ export default function Login() {
 
           <div className="flex flex-col items-center mb-8 relative z-10">
             <img src={logoUrl} alt="Big Outsource" className="w-20 h-auto mb-6 relative z-10 object-contain" />
-            <h1 className="text-[2rem] font-black text-[#111827] tracking-tight text-center">
+            <h1 className="text-[2rem] font-black text-[#111827] tracking-tight text-center cursor-default select-none">
               Welcome Back
             </h1>
-            <p className="text-[#6B7280] text-[0.9375rem] mt-3 text-center text-balance leading-relaxed">
+            <p className="text-[#6B7280] text-[0.9375rem] mt-3 text-center text-balance leading-relaxed cursor-default select-none">
               Enter your credentials to access your dashboard.
             </p>
           </div>
@@ -115,10 +115,10 @@ export default function Login() {
           </form>
 
           <div className="mt-8 pt-8 border-t border-[#F3F4F6] text-center">
-            <p className="text-[0.625rem] text-[#9CA3AF] uppercase tracking-widest font-bold">
+            <p className="text-[0.625rem] text-[#9CA3AF] uppercase tracking-widest font-bold cursor-default select-none">
               © 2026 BIG OUTSOURCE
             </p>
-            <p className="mt-2 text-[0.625rem] text-[#9CA3AF]">
+            <p className="mt-2 text-[0.625rem] text-[#9CA3AF] cursor-default select-none">
               Secure access for authorized users
             </p>
           </div>
@@ -156,11 +156,11 @@ export default function Login() {
                   )}
                 </div>
 
-                <h2 className="text-[1.75rem] font-black text-[#111827] mb-4 tracking-tight">
+                <h2 className="text-[1.75rem] font-black text-[#111827] mb-4 tracking-tight cursor-default select-none">
                   {authStatusError.type === 'pending' ? 'Pending Approval' : 'Access Revoked'}
                 </h2>
 
-                <p className="text-[0.9375rem] text-[#4B5563] leading-relaxed mb-10 max-w-[340px]">
+                <p className="text-[0.9375rem] text-[#4B5563] leading-relaxed mb-10 max-w-[340px] cursor-default select-none">
                   {authStatusError.type === 'pending'
                     ? 'Your account has been created successfully, but requires administrator approval before you can log in.'
                     : 'Your account access has been revoked. If you believe this is a mistake, please contact your IT administrator.'}

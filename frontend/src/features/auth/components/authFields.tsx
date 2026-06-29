@@ -29,7 +29,7 @@ export function AuthInput({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-bold text-[#374151] uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-bold text-[#374151] uppercase tracking-wider cursor-default select-none">{label}</label>
       <div className="relative">
         <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] peer-focus:text-[#111827] transition-colors pointer-events-none" />
         <input
@@ -85,7 +85,7 @@ export function SelectInput({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-bold text-[#374151] uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-bold text-[#374151] uppercase tracking-wider cursor-default select-none">{label}</label>
       <div className="relative group">
         <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] group-focus-within:text-[#111827] transition-colors z-10 pointer-events-none" />
         <button
@@ -182,7 +182,7 @@ export function PasswordInput({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-bold text-[#374151] uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-bold text-[#374151] uppercase tracking-wider cursor-default select-none">{label}</label>
       <div className="relative">
         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] peer-focus:text-[#111827] transition-colors pointer-events-none" />
         <input

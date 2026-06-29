@@ -85,7 +85,7 @@ export function Sidebar() {
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: 'auto' }}
                   exit={{ opacity: 0, width: 0 }}
-                  className="font-bold text-l tracking-tight whitespace-nowrap overflow-hidden"
+                  className="font-bold text-l tracking-tight whitespace-nowrap overflow-hidden cursor-default select-none"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
                   Big Outsource EIMS
@@ -178,7 +178,7 @@ export function Sidebar() {
                     initial={{ opacity: 0, width: 0 }}
                     animate={{ opacity: 1, width: 'auto' }}
                     exit={{ opacity: 0, width: 0 }}
-                    className="min-w-0 overflow-hidden"
+                    className="min-w-0 overflow-hidden cursor-default select-none"
                   >
                     <p className="text-xs font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{user.email}</p>
                     <p className="text-[0.625rem] uppercase font-bold tracking-tighter truncate" style={{ color: 'var(--color-text-muted)' }}>{user.role.replace('_', ' ')}</p>

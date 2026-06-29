@@ -1281,7 +1281,7 @@ export default function Directory() {
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       {visibleFields.map((field) => (
                         <th key={field.key} className={cn('h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
-                          <div className="truncate">{field.label}</div>
+                          <div className="truncate cursor-default select-none">{field.label}</div>
                         </th>
                       ))}
                       <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
@@ -1309,10 +1309,10 @@ export default function Directory() {
                 </table>
                 <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
                   <div>
-                    <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest">
+                    <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest cursor-default select-none">
                       Total Personnel: {filteredEmployees.length}
                     </p>
-                    <p className="mt-1 text-xs font-black text-[#111827]">
+                    <p className="mt-1 text-xs font-black text-[#111827] cursor-default select-none">
                       Page {currentPage} of {totalPages}
                     </p>
                   </div>
@@ -1358,7 +1358,7 @@ export default function Directory() {
                                 <SortIcon className={cn('h-3.5 w-3.5 shrink-0', isActiveSort ? 'text-[#111827]' : 'text-[#9CA3AF]')} />
                               </button>
                             ) : (
-                              <div className="truncate">{field.label}</div>
+                              <div className="truncate cursor-default select-none">{field.label}</div>
                             )}
                           </th>
                         );
@@ -1379,7 +1379,7 @@ export default function Directory() {
                           <td
                             key={field.key}
                             className={cn(
-                              'py-0 align-middle text-sm font-bold text-[#111827]',
+                              'py-0 align-middle text-sm font-bold text-[#111827] cursor-default select-none',
                               field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
                             )}
                           >
@@ -1409,8 +1409,8 @@ export default function Directory() {
                             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F3F4F6]">
                               <Search className="h-8 w-8 text-[#D1D5DB]" />
                             </div>
-                            <h3 className="text-lg font-bold text-[#111827]">No records found</h3>
-                            <p className="text-sm text-[#6B7280]">Try adjusting your filters or search keywords.</p>
+                            <h3 className="text-lg font-bold text-[#111827] cursor-default select-none">No records found</h3>
+                            <p className="text-sm text-[#6B7280] cursor-default select-none">Try adjusting your filters or search keywords.</p>
                           </div>
                         </td>
                       </tr>
@@ -1420,10 +1420,10 @@ export default function Directory() {
 
                 <div className="px-6 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between">
                   <div>
-                    <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest">
+                    <p className="text-[0.625rem] font-bold text-[#6B7280] uppercase tracking-widest cursor-default select-none">
                       Total Personnel: {filteredEmployees.length}
                     </p>
-                    <p className="mt-1 text-xs font-black text-[#111827]">
+                    <p className="mt-1 text-xs font-black text-[#111827] cursor-default select-none">
                       Page {currentPage} of {totalPages}
                     </p>
                   </div>

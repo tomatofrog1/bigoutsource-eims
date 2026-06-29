@@ -61,7 +61,7 @@ export function Header({ title, backFallback }: { title: string, backFallback?: 
     <header className="h-16 border-b flex items-center justify-between px-8" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
       <div className="flex items-center gap-4">
         {backFallback && <BackButton fallback={backFallback} />}
-        <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>{title}</h1>
+        <h1 className="text-lg font-semibold cursor-default select-none" style={{ color: 'var(--color-text-primary)' }}>{title}</h1>
       </div>
       
       <div className="flex items-center gap-6">
@@ -73,7 +73,7 @@ export function Header({ title, backFallback }: { title: string, backFallback?: 
           
           <div className="flex items-center gap-2 pl-4 border-l" style={{ borderColor: 'var(--color-border)' }}>
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-bold text-green-600 dark:text-green-400">
+            <span className="text-xs font-bold text-green-600 dark:text-green-400 cursor-default select-none">
               {onlineUsers.length} Online
             </span>
           </div>
@@ -82,10 +82,10 @@ export function Header({ title, backFallback }: { title: string, backFallback?: 
           
           <div className="flex items-center gap-3 pl-4 border-l" style={{ borderColor: 'var(--color-border)' }}>
             <div className="text-right">
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{name}</p>
-              <p className="text-xs capitalize" style={{ color: 'var(--color-text-muted)' }}>{user?.role?.replace('_', ' ') || 'User'}</p>
+              <p className="text-sm font-medium cursor-default select-none" style={{ color: 'var(--color-text-primary)' }}>{name}</p>
+              <p className="text-xs capitalize cursor-default select-none" style={{ color: 'var(--color-text-muted)' }}>{user?.role?.replace('_', ' ') || 'User'}</p>
             </div>
-            <div className="w-8 h-8 rounded-full bg-[#111827] flex items-center justify-center text-white text-xs font-bold">
+            <div className="w-8 h-8 rounded-full bg-[#111827] flex items-center justify-center text-white text-xs font-bold cursor-default select-none">
               {initials}
             </div>
           </div>
