@@ -24,7 +24,13 @@ let cache = { at: 0, bySlug: new Map() };
 const GRANTABLE_CAPABILITIES = ALL_CAPABILITIES.filter((cap) => !META_CAPABILITIES.includes(cap));
 
 function inheritsRoleCapabilities(profile, slug) {
-  return profile.role === slug && !Array.isArray(profile.capabilityOverrides);
+  if (profile.role !== slug) return false;
+  const overrides = profile.capabilityOverrides;
+  if (overrides === null) return true;
+  if (Array.isArray(overrides)) {
+    if (overrides.length === 0 || overrides.includes('__INHERIT__')) return true;
+  }
+  return false;
 }
 
 async function loadRoles() {
@@ -96,7 +102,20 @@ export const RoleService = {
   /** Effective capabilities for an account: per-account override if set, else the role's. */
   async resolveUserCapabilities(profile) {
     if (profile?.role === 'super_admin') return [...ALL_CAPABILITIES];
-    if (profile && Array.isArray(profile.capabilityOverrides)) return profile.capabilityOverrides;
+    if (profile) {
+      const overrides = profile.capabilityOverrides;
+      if (Array.isArray(overrides)) {
+        if (overrides.length === 0 || overrides.includes('__INHERIT__')) {
+          // Inherit from role (fall through)
+        } else if (overrides.length === 1 && overrides[0] === '__NONE__') {
+          return [];
+        } else {
+          return overrides;
+        }
+      } else if (overrides === null) {
+        // Inherit from role (fall through)
+      }
+    }
     return this.resolveCapabilities(profile?.role);
   },
 

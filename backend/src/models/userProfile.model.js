@@ -3,6 +3,17 @@ import { prisma } from '../config/db.js';
 function normalize(row) {
   if (!row) return null;
 
+  let overrides = null;
+  if (Array.isArray(row.capabilityOverrides)) {
+    if (row.capabilityOverrides.length === 0 || row.capabilityOverrides.includes('__INHERIT__')) {
+      overrides = null;
+    } else if (row.capabilityOverrides.length === 1 && row.capabilityOverrides[0] === '__NONE__') {
+      overrides = [];
+    } else {
+      overrides = row.capabilityOverrides;
+    }
+  }
+
   return {
     id: row.id,
     uid: row.id,
@@ -13,7 +24,7 @@ function normalize(row) {
     status: row.status || 'pending',
     department: row.department || 'Unassigned',
     site: row.site || 'HQ',
-    capabilityOverrides: Array.isArray(row.capabilityOverrides) ? row.capabilityOverrides : null,
+    capabilityOverrides: overrides,
     approvedBy: row.approvedById || null,
     approvedAt: row.approvedAt ? row.approvedAt.toISOString() : null,
     createdAt: row.createdAt ? row.createdAt.toISOString() : '',
@@ -48,6 +59,14 @@ export const UserProfileModel = {
   },
 
   async create(data) {
+    let capabilityOverrides = ['__INHERIT__'];
+    if (data.capabilityOverrides === null) {
+      capabilityOverrides = ['__INHERIT__'];
+    } else if (Array.isArray(data.capabilityOverrides)) {
+      if (data.capabilityOverrides.length === 0) capabilityOverrides = ['__NONE__'];
+      else capabilityOverrides = data.capabilityOverrides;
+    }
+
     const row = await prisma.userProfile.create({
       data: {
         id: data.id,
@@ -59,7 +78,7 @@ export const UserProfileModel = {
         site: String(data.site || 'HQ').trim() || 'HQ',
         approvedById: data.approvedBy,
         approvedAt: data.approvedAt ? new Date(data.approvedAt) : undefined,
-        capabilityOverrides: Array.isArray(data.capabilityOverrides) ? data.capabilityOverrides : [],
+        capabilityOverrides,
         passwordHash: data.passwordHash || '',
       },
     });
@@ -76,7 +95,14 @@ export const UserProfileModel = {
     if (data.site !== undefined) updateData.site = String(data.site || 'HQ').trim() || 'HQ';
     if (data.approvedBy !== undefined) updateData.approvedById = data.approvedBy;
     if (data.approvedAt !== undefined) updateData.approvedAt = data.approvedAt ? new Date(data.approvedAt) : null;
-    if (data.capabilityOverrides !== undefined) updateData.capabilityOverrides = Array.isArray(data.capabilityOverrides) ? data.capabilityOverrides : [];
+    if (data.capabilityOverrides !== undefined) {
+      if (data.capabilityOverrides === null) {
+        updateData.capabilityOverrides = ['__INHERIT__'];
+      } else if (Array.isArray(data.capabilityOverrides)) {
+        if (data.capabilityOverrides.length === 0) updateData.capabilityOverrides = ['__NONE__'];
+        else updateData.capabilityOverrides = data.capabilityOverrides;
+      }
+    }
     if (data.passwordHash !== undefined) updateData.passwordHash = data.passwordHash;
 
     const row = await prisma.userProfile.update({

@@ -384,21 +384,32 @@ export default function UserManagement() {
 
   const openPermissions = (account: AppUser) => {
     const roleCaps = rolesBySlug.get(account.role)?.capabilities || [];
-    const effective = Array.isArray(account.capabilityOverrides) ? account.capabilityOverrides : roleCaps;
     setPermsTarget(account);
-    setPermsDraft([...effective]);
+    setPermsDraft([...roleCaps]);
   };
 
   const togglePerm = (key: string) => {
     setPermsDraft((current) => (current.includes(key) ? current.filter((cap) => cap !== key) : [...current, key]));
   };
 
-  const savePermissions = async (reset = false) => {
+  const savePermissions = async () => {
     if (!permsTarget) return;
     setPermsSaving(true);
     try {
-      await userService.setCapabilities(permsTarget.uid, reset ? null : permsDraft);
-      toast.success(reset ? 'Reverted to role defaults' : 'Permissions updated');
+      const roleObj = rolesBySlug.get(permsTarget.role);
+      if (!roleObj) throw new Error('Role not found');
+      
+      await roleService.update(permsTarget.role, { 
+        name: roleObj.name, 
+        capabilities: permsDraft 
+      });
+      
+      toast.success(`${roleLabel(permsTarget.role)} role updated`);
+      
+      setRoles(current => current.map(r => 
+        r.slug === permsTarget.role ? { ...r, capabilities: permsDraft } : r
+      ));
+      
       setPermsTarget(null);
       setRefreshTrigger(prev => prev + 1);
     } catch (error: any) {
@@ -1202,9 +1213,9 @@ export default function UserManagement() {
             >
               <div className="flex items-start justify-between gap-4 border-b px-6 py-5" style={{ borderColor: 'var(--color-border)' }}>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-black" style={{ color: 'var(--color-text-primary)' }}>Account Permissions</h2>
+                  <h2 className="text-lg font-black" style={{ color: 'var(--color-text-primary)' }}>Edit {roleLabel(permsTarget.role)} Permissions</h2>
                   <p className="mt-1 truncate text-xs font-bold" style={{ color: 'var(--color-text-muted)' }}>
-                    {permsTarget.fullName || permsTarget.email} — {Array.isArray(permsTarget.capabilityOverrides) ? 'custom override' : `inheriting ${roleLabel(permsTarget.role)} defaults`}
+                    Changes apply to {permsTarget.fullName} and all other {roleLabel(permsTarget.role)} users
                   </p>
                 </div>
                 <button
@@ -1220,15 +1231,7 @@ export default function UserManagement() {
               <div className="flex-1 overflow-y-auto p-6">
                 <CapabilityChecklist catalog={capabilityCatalog} selected={permsDraft} onToggle={togglePerm} />
               </div>
-              <div className="flex items-center justify-between gap-3 border-t px-6 py-4" style={{ borderColor: 'var(--color-border)' }}>
-                <button
-                  type="button"
-                  onClick={() => savePermissions(true)}
-                  disabled={permsSaving || !Array.isArray(permsTarget.capabilityOverrides)}
-                  className="text-xs font-bold text-[#4B5563] underline transition-opacity hover:text-[#111827] disabled:no-underline disabled:opacity-40"
-                >
-                  Reset to role defaults
-                </button>
+              <div className="flex items-center justify-end gap-3 border-t px-6 py-4" style={{ borderColor: 'var(--color-border)' }}>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -1241,12 +1244,12 @@ export default function UserManagement() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => savePermissions(false)}
+                    onClick={() => savePermissions()}
                     disabled={permsSaving}
                     className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#111827] px-6 py-2.5 text-sm font-black text-white shadow-lg transition-all hover:bg-[#374151] disabled:opacity-60"
                   >
                     {permsSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    Save
+                    Save Role
                   </button>
                 </div>
               </div>
