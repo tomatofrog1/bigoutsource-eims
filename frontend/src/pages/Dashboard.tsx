@@ -923,7 +923,7 @@ export default function Dashboard() {
                         Recent Activity Logs
   </h3>
   <span className="text-[0.625rem] font-black uppercase tracking-wider text-[#9CA3AF] transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100">
-    View <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+    <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
   </span>
 </div>
                       {canViewAuditLogs && (
