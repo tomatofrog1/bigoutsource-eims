@@ -18,14 +18,7 @@ export function useRealtimeSubscription({
   enabled = true
 }: RealtimeConfig) {
   useEffect(() => {
-    if (!enabled) return;
-
     // Supabase Realtime removed in self-hosted migration.
-    // Fallback polling for live updates.
-    const interval = setInterval(() => {
-      onChange({} as any);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [enabled, onChange]);
+    // We could implement polling or socket.io rooms here later.
+  }, [table, schema, event, onChange, enabled]);
 }

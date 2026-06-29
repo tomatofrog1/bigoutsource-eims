@@ -1096,8 +1096,6 @@ export default function Directory() {
 
       setEmployees((current) => [createdEmployee, ...current]);
       queryClient.invalidateQueries({ queryKey: ['employees'] });
-      queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       if (selectedAccount) {
         await selectAccount(selectedAccount);
       }
