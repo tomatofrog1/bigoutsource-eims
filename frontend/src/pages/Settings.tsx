@@ -222,7 +222,7 @@ export default function Settings() {
                     color: 'var(--color-text-primary)',
                   }}
                 >
-                  <span className="flex items-center gap-3 text-sm font-black">
+                  <span className="flex items-center gap-3 text-sm font-black cursor-default select-none">
                     {isDark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
                     Dark Mode
                   </span>
@@ -236,7 +236,7 @@ export default function Settings() {
                     color: 'var(--color-text-primary)',
                   }}
                 >
-                  <span className="flex items-center gap-3 text-sm font-black">
+                  <span className="flex items-center gap-3 text-sm font-black cursor-default select-none">
                     <Type className="h-5 w-5" />
                     <span className="flex flex-col">
                       Text Size
