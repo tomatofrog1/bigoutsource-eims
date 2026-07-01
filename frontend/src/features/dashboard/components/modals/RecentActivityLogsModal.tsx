@@ -81,25 +81,27 @@ export function RecentActivityLogsModal({ isOpen, onClose, logs }: RecentActivit
             <Clock className="w-4 h-4 text-[#9CA3AF]" />
             Activity Timeline
           </h3>
-          <div className="flex-1 overflow-y-auto pr-2 relative">
-            <div className="absolute left-2.5 top-2 bottom-0 w-0.5 bg-[#E5E7EB]" />
-            <div className="space-y-6 relative z-10">
-                {timelineLogs.map((log) => (
-                    <div key={log.id} className="flex gap-4">
-                        <div className="w-5 h-5 rounded-full bg-white border-2 border-[#6366F1] shrink-0 mt-0.5" />
-                        <div className="flex-1 pb-1">
-                            <p className="text-xs text-[#9CA3AF] font-bold mb-1">{formatTime(log.createdAt)}</p>
-                            <p className="text-sm font-bold text-[#111827]">
-                                {log.userEmail || 'System'}
-                                <span className="font-medium text-[#6B7280]"> {actionLabel(log.action).toLowerCase()}</span>
-                            </p>
-                            <div className="mt-1.5 p-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded text-[0.6875rem] text-[#4B5563] font-mono break-all">
-                                Module: {log.entityType || 'General'}<br/>
-                                Target: {log.details?.fullName || log.details?.employeeNumber || 'System Config'}
+          <div className="flex-1 overflow-y-auto pr-2">
+            <div className="relative">
+                <div className="absolute left-2.5 top-2 bottom-0 w-0.5 bg-[#E5E7EB]" />
+                <div className="space-y-6 relative z-10">
+                    {timelineLogs.map((log) => (
+                        <div key={log.id} className="flex gap-4">
+                            <div className="w-5 h-5 rounded-full bg-white border-2 border-[#6366F1] shrink-0 mt-0.5" />
+                            <div className="flex-1 pb-1">
+                                <p className="text-xs text-[#9CA3AF] font-bold mb-1">{formatTime(log.createdAt)}</p>
+                                <p className="text-sm font-bold text-[#111827]">
+                                    <span className="block">{log.userEmail || 'System'}</span>
+                                    <span className="block font-medium text-[#6B7280]">{actionLabel(log.action).toLowerCase()}</span>
+                                </p>
+                                <div className="mt-1.5 p-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded text-[0.6875rem] text-[#4B5563] font-mono break-all">
+                                    Module: {log.entityType || 'General'}<br/>
+                                    Target: {log.details?.fullName || log.details?.employeeNumber || 'System Config'}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
           </div>
         </div>

@@ -22,7 +22,7 @@ export function SecurityAlertsModal({ isOpen, onClose, devices }: SecurityAlerts
         if (d.esetStatus === 'inactive' || d.esetStatus === 'Inactive') {
             alerts.push({
                 id: `ALT-${d.id.substring(0, 4)}-ESET`,
-                asset: d.name,
+                asset: d.pcName || d.name || 'Unknown Asset',
                 issue: 'Missing Antivirus (ESET)',
                 severity: 'Critical',
                 dateDetected: d.updatedAt || new Date().toISOString(),
@@ -32,7 +32,7 @@ export function SecurityAlertsModal({ isOpen, onClose, devices }: SecurityAlerts
         if (d.activityWatchStatus === 'missing' || d.activityWatchStatus === 'Missing') {
             alerts.push({
                 id: `ALT-${d.id.substring(0, 4)}-AW`,
-                asset: d.name,
+                asset: d.pcName || d.name || 'Unknown Asset',
                 issue: 'Missing ActivityWatch',
                 severity: 'High',
                 dateDetected: d.updatedAt || new Date().toISOString(),
@@ -42,7 +42,7 @@ export function SecurityAlertsModal({ isOpen, onClose, devices }: SecurityAlerts
         if (!d.windowsKey) {
             alerts.push({
                 id: `ALT-${d.id.substring(0, 4)}-OS`,
-                asset: d.name,
+                asset: d.pcName || d.name || 'Unknown Asset',
                 issue: 'Unlicensed Windows OS',
                 severity: 'Medium',
                 dateDetected: d.updatedAt || new Date().toISOString(),
@@ -105,12 +105,11 @@ export function SecurityAlertsModal({ isOpen, onClose, devices }: SecurityAlerts
       redirectLabel="Open Security Monitoring"
     >
       {/* Alert Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
             { label: 'Critical', value: stats.critical, color: 'text-red-600', border: 'border-red-200', bg: 'bg-red-50' },
             { label: 'High', value: stats.high, color: 'text-orange-600', border: 'border-orange-200', bg: 'bg-orange-50' },
             { label: 'Medium', value: stats.medium, color: 'text-yellow-600', border: 'border-yellow-200', bg: 'bg-yellow-50' },
-            { label: 'Low', value: stats.low, color: 'text-gray-600', border: 'border-gray-200', bg: 'bg-gray-50' },
         ].map((s, i) => (
           <div key={i} className={`${s.bg} p-4 rounded-xl border ${s.border} flex flex-col justify-center items-center text-center shadow-sm`}>
             <p className={`text-[0.625rem] font-black uppercase tracking-wider ${s.color}`}>{s.label}</p>
@@ -122,7 +121,7 @@ export function SecurityAlertsModal({ isOpen, onClose, devices }: SecurityAlerts
       {/* Alert Trend Chart */}
       <div className="bg-white p-6 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col">
         <h3 className="text-sm font-bold text-[#111827] mb-6">Security Incidents Trend (Last 7 Days)</h3>
-        <div className="flex-1 min-h-[250px]">
+        <div className="h-[250px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
@@ -135,7 +134,9 @@ export function SecurityAlertsModal({ isOpen, onClose, devices }: SecurityAlerts
               <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} allowDecimals={false} />
               <Tooltip 
-                contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                cursor={{ stroke: 'var(--color-border)' }}
+                contentStyle={{ backgroundColor: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', color: 'var(--color-text-primary)' }}
+                itemStyle={{ color: 'var(--color-text-primary)', fontWeight: 'bold' }}
               />
               <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
               <Area type="monotone" dataKey="incidents" name="Incidents" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#colorIncidents)" />

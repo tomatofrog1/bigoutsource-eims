@@ -1411,10 +1411,10 @@ export default function Directory() {
                         <td className="px-4 py-0 text-right align-middle">
                           <Link
                             to={`/employee/${emp.id}`}
-                            className="inline-flex h-9 items-center gap-2 rounded-xl p-2 text-xs font-bold text-[#9CA3AF] transition-all hover:bg-white hover:text-[#111827]"
+                            className="group inline-flex h-9 items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-[#9CA3AF] transition-all duration-300 ease-out hover:bg-white hover:text-[#111827] hover:shadow-sm"
                           >
                             <span className="truncate">View Profile</span>
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-4 h-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
                           </Link>
                         </td>
                       </motion.tr>

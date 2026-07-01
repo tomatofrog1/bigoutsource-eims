@@ -59,17 +59,18 @@ export function AssignedAssetsModal({ isOpen, onClose, devices, employees }: Ass
                             (d.serialNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (d.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = !statusFilter || d.status === statusFilter;
-      const matchesType = !typeFilter || d.type === typeFilter;
+      const deviceType = d.deviceType || d.type || 'unknown';
+      const matchesType = !typeFilter || deviceType === typeFilter;
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [mappedDevices, searchTerm, statusFilter, typeFilter]);
 
-  const uniqueTypes = useMemo(() => Array.from(new Set(devices.map(d => d.type || 'unknown'))), [devices]);
+  const uniqueTypes = useMemo(() => Array.from(new Set(devices.map(d => d.deviceType || d.type || 'unknown'))), [devices]);
   const uniqueStatuses = useMemo(() => Array.from(new Set(devices.map(d => d.status || 'unknown'))), [devices]);
 
   const handleExport = () => {
     const csvContent = "data:text/csv;charset=utf-8,Asset ID,Asset Type,Employee,Department,Assigned Date,Status\n" +
-      filteredDevices.map(d => `"${d.serialNumber || d.id || ''}","${d.type || ''}","${d.employeeName}","${d.department}","${formatTime(d.assignedDate || d.updatedAt)}","${d.status || ''}"`).join("\n");
+      filteredDevices.map(d => `"${d.serialNumber || d.id || ''}","${d.deviceType || d.type || ''}","${d.employeeName}","${d.department}","${formatTime(d.assignedDate || d.updatedAt)}","${d.status || ''}"`).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -105,15 +106,34 @@ export function AssignedAssetsModal({ isOpen, onClose, devices, employees }: Ass
       {/* Distribution Chart */}
       <div className="bg-white p-5 rounded-xl border border-[#E5E7EB] shadow-sm flex flex-col">
         <h3 className="text-sm font-bold text-[#111827] mb-4">Assigned Assets by Department</h3>
-        <div className="flex-1 min-h-[250px]">
+        <div className="h-[250px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={distributionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6B7280' }} />
-              <Tooltip cursor={{ fill: '#F9FAFB' }} />
-              <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
+              <Tooltip 
+                cursor={{ fill: 'var(--color-border)' }}
+                contentStyle={{ backgroundColor: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                itemStyle={{ color: 'var(--color-text-primary)' }}
+                labelStyle={{ color: 'var(--color-text-primary)' }}
+              />
+              <Legend 
+                content={(props: any) => {
+                  const { payload } = props;
+                  return (
+                    <div className="flex justify-center items-center pt-2">
+                      {payload?.map((entry: any, index: number) => (
+                        <div key={`item-${index}`} className="flex items-center gap-1.5 text-[10px] font-bold" style={{ color: entry.color }}>
+                          <div style={{ width: 12, height: 12, backgroundColor: entry.color }} />
+                          <span>{entry.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }} 
+              />
+              <Bar dataKey="value" name="Assets" radius={[4, 4, 0, 0]} barSize={40} fill="#6366F1">
                 {distributionData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
               </Bar>
             </BarChart>
@@ -165,7 +185,7 @@ export function AssignedAssetsModal({ isOpen, onClose, devices, employees }: Ass
               {filteredDevices.slice(0, 50).map(device => (
                 <tr key={device.id} className="hover:bg-[#F9FAFB]">
                   <td className="px-6 py-3 text-sm text-[#4B5563] font-mono">{device.serialNumber || device.id}</td>
-                  <td className="px-6 py-3 text-sm font-bold text-[#111827]">{device.type}</td>
+                  <td className="px-6 py-3 text-sm font-bold text-[#111827] capitalize">{device.deviceType || device.type || 'N/A'}</td>
                   <td className="px-6 py-3 text-sm text-[#4B5563]">{device.employeeName}</td>
                   <td className="px-6 py-3 text-sm text-[#4B5563]">{device.department}</td>
                   <td className="px-6 py-3">

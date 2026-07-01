@@ -20,13 +20,13 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, L
 export type AssetFieldKey = 'assigneeName' | 'pcName' | 'biosDate' | 'windowsKey' | 'rustdeskId' | 'activityWatchStatus' | 'esetStatus';
 
 export const assetFields: Array<{ key: AssetFieldKey; label: string; width: string }> = [
-  { key: 'assigneeName', label: 'Assignee', width: 'w-[20%]' },
-  { key: 'pcName', label: 'PC Name', width: 'w-[16%]' },
-  { key: 'biosDate', label: 'BIOS Date', width: 'w-[12%]' },
-  { key: 'windowsKey', label: 'Windows License Key', width: 'w-[20%]' },
+  { key: 'assigneeName', label: 'Assignee', width: 'w-[16%]' },
+  { key: 'pcName', label: 'PC Name', width: 'w-[12%]' },
+  { key: 'biosDate', label: 'BIOS Date', width: 'w-[11%]' },
+  { key: 'windowsKey', label: 'Windows License Key', width: 'w-[21%]' },
   { key: 'rustdeskId', label: 'RustDesk ID', width: 'w-[12%]' },
-  { key: 'activityWatchStatus', label: 'Activity Watch', width: 'w-[12%]' },
-  { key: 'esetStatus', label: 'ESET Status', width: 'w-[12%]' },
+  { key: 'activityWatchStatus', label: 'Activity Watch', width: 'w-[10%]' },
+  { key: 'esetStatus', label: 'ESET Status', width: 'w-[10%]' },
 ];
 
 
@@ -418,7 +418,7 @@ export default function Assets() {
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
             <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
-              <table className={cn("text-left border-collapse table-fixed min-w-[900px]", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
+              <table className={cn("text-left border-collapse table-fixed min-w-[1200px]", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                     {visibleFields.map((header) => {
@@ -474,7 +474,7 @@ export default function Assets() {
               </motion.div>
             ) : (
               <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-                <table className={cn("text-left border-collapse table-fixed min-w-[900px]", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
+                <table className={cn("text-left border-collapse table-fixed min-w-[1200px]", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       {visibleFields.map((header) => {
@@ -583,7 +583,7 @@ export default function Assets() {
                             }
                           />
                         ))}
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 text-right align-middle">
                           <Link to={`/employee/${device.assigneeId || device.id}`} className="text-[0.625rem] font-black uppercase text-[#111827] hover:underline flex items-center justify-end gap-1">
                             <ExternalLink className="w-3 h-3" /> Details
                           </Link>
@@ -710,7 +710,7 @@ export default function Assets() {
 
 function AnimatedCell({ isEditMode, editContent, viewContent, className = '' }: any) {
   return (
-    <td className={`px-6 py-4 align-top ${className}`}>
+    <td className={`px-6 py-4 align-middle ${className}`}>
       <AnimatePresence mode="wait">
         {isEditMode ? (
           <motion.div

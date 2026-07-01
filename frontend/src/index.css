@@ -343,6 +343,11 @@
 .dark .text-amber-500, .dark .text-amber-600, .dark .text-amber-700, .dark .text-amber-800 { color: #fbbf24 !important; }
 .dark .border-amber-100, .dark .border-amber-200, .dark .border-amber-300 { border-color: color-mix(in srgb, #f59e0b 35%, transparent) !important; }
 
+/* yellow */
+.dark .bg-yellow-50, .dark .bg-yellow-100 { background-color: color-mix(in srgb, #eab308 15%, transparent) !important; }
+.dark .text-yellow-500, .dark .text-yellow-600, .dark .text-yellow-700, .dark .text-yellow-800 { color: #facc15 !important; }
+.dark .border-yellow-100, .dark .border-yellow-200, .dark .border-yellow-300 { border-color: color-mix(in srgb, #eab308 35%, transparent) !important; }
+
 /* green */
 .dark .bg-green-50, .dark .bg-green-100 { background-color: color-mix(in srgb, #22c55e 15%, transparent) !important; }
 .dark .text-green-500, .dark .text-green-600, .dark .text-green-700, .dark .text-green-800 { color: #4ade80 !important; }
@@ -408,4 +413,10 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Hide native Edge password reveal button */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
 }

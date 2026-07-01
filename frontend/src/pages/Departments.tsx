@@ -630,7 +630,7 @@ export default function Departments() {
                       className={cn(
                         'relative rounded-xl border px-4 py-2.5 text-xs font-black capitalize transition-colors z-10',
                         isActive
-                          ? 'border-[#111827] text-white'
+                          ? 'border-[#111827] text-white dark:text-[#111827]'
                           : 'border-[#E5E7EB] text-[#4B5563] hover:bg-[#F9FAFB]'
                       )}
                     >

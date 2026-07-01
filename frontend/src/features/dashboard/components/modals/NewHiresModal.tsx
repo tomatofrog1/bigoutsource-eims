@@ -27,7 +27,7 @@ export function NewHiresModal({ isOpen, onClose, recentHires }: NewHiresModalPro
   const trendData = useMemo(() => {
     const days: Record<string, number> = {};
     const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
     
     // Initialize last 30 days
     for(let i=0; i<30; i++) {

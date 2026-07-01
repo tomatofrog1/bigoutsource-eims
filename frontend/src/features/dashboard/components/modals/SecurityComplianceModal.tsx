@@ -77,7 +77,7 @@ export function SecurityComplianceModal({ isOpen, onClose, devices, employees }:
         if (issues.length > 0) {
             assets.push({
                 id: d.id,
-                assetName: d.name,
+                assetName: d.pcName || d.name || 'Unknown Asset',
                 serialNumber: d.serialNumber,
                 department: dept,
                 issues: issues.join(', '),
