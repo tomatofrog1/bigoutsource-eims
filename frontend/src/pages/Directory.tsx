@@ -210,16 +210,28 @@ const directoryFields: Array<{ key: DirectoryFieldKey; label: string; render: (e
   {
     key: 'status',
     label: 'Status',
-    render: (emp) => (
-      <span
-        className={cn(
-          'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
-          emp.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'
-        )}
-      >
-        {emp.status}
-      </span>
-    ),
+    render: (emp) => {
+      const normalizedStatus = (emp.status || '').toLowerCase();
+      let statusStr = emp.status;
+      let colors = 'bg-gray-100 text-gray-700';
+      if (normalizedStatus === 'active') colors = 'bg-green-50 text-green-700';
+      else if (normalizedStatus === 'floating') colors = 'bg-orange-50 text-orange-700';
+      else {
+        colors = 'bg-red-50 text-red-700';
+        statusStr = 'Separated'; // Fallback for old inactive statuses
+      }
+
+      return (
+        <span
+          className={cn(
+            'px-2 py-1 rounded-lg text-[0.625rem] font-black uppercase tracking-tighter',
+            colors
+          )}
+        >
+          {statusStr}
+        </span>
+      );
+    },
   },
   { key: 'site', label: 'Site', render: (emp) => emp.site || 'Unassigned' },
 ];
@@ -485,7 +497,7 @@ export default function Directory() {
   const [siteFilter, setSiteFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState(() => {
     const value = searchParams.get('status');
-    return value && ['Active', 'Inactive', 'Archived'].includes(value) ? value : 'All';
+    return value && ['Active', 'Separated', 'Floating'].includes(value) ? value : 'All';
   });
   const [accountFilter, setAccountFilter] = useState(() => searchParams.get('account') || 'All Account');
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
@@ -610,7 +622,7 @@ export default function Directory() {
   // header's "Inactive" button) even if this page is already mounted.
   useEffect(() => {
     const value = searchParams.get('status');
-    if (value && ['Active', 'Inactive', 'Archived'].includes(value)) {
+    if (value && ['Active', 'Separated', 'Floating'].includes(value)) {
       setStatusFilter(value);
     }
   }, [searchParams]);
@@ -620,21 +632,22 @@ export default function Directory() {
     [employees, sites]
   );
 
-  const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
+const normalizedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
   const hasSearchTerm = normalizedSearchTerm.length > 0;
 
   const baseFilteredEmployees = employees
     .filter((emp) => {
-      if (hasSearchTerm) {
-        return statusFilter === 'Archived' ? emp.isArchived : true;
-      }
-
-      return statusFilter === 'Archived' ? emp.isArchived : !emp.isArchived;
+      if (hasSearchTerm) return true;
+      if (statusFilter === 'All') return true;
+      if (statusFilter === 'Active') return !emp.isArchived;
+      return true; // For Separated/Floating, we keep them here and filter by status below
     })
     .filter((emp) => {
       const searchableValues = [
         emp.fullName,
         emp.employeeId,
+        emp.phone,
+        emp.address,
         emp.accountAssignment,
         emp.boEmail,
         emp.lmsAccount,
@@ -644,7 +657,17 @@ export default function Directory() {
         searchableValues.some((value) => String(value || '').toLowerCase().includes(normalizedSearchTerm));
 
       const matchesSite = siteFilter === 'All' || emp.site === siteFilter;
-      const matchesStatus = statusFilter === 'All' || statusFilter === 'Archived' || emp.status === statusFilter.toLowerCase();
+      
+      let matchesStatus = true;
+      if (statusFilter !== 'All') {
+        const normalizedEmpStatus = (emp.status || '').toLowerCase();
+        if (statusFilter === 'Separated') {
+          matchesStatus = normalizedEmpStatus === 'separated' || normalizedEmpStatus === 'inactive';
+        } else {
+          matchesStatus = normalizedEmpStatus === statusFilter.toLowerCase();
+        }
+      }
+
       const matchesAccount = accountFilter === 'All Account' || emp.accountAssignment === accountFilter;
 
       return matchesSearch && matchesSite && matchesStatus && matchesAccount;
@@ -1216,8 +1239,8 @@ export default function Directory() {
                   options={[
                     { value: 'All', label: 'All Status' },
                     { value: 'Active', label: 'Active' },
-                    { value: 'Inactive', label: 'Inactive' },
-                    { value: 'Archived', label: 'Archived' },
+                    { value: 'Separated', label: 'Separated' },
+                    { value: 'Floating', label: 'Floating' },
                   ]}
                 />
                 <AccountFilterDropdown

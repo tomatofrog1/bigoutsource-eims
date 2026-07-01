@@ -2,7 +2,7 @@ import { prisma } from '../config/db.js';
 import { generateLmsAccount } from '../utils/lmsAccount.js';
 
 export const SITE_OPTIONS = ['HQ', 'Candelaria', 'WFH', 'Hybrid'];
-export const STATUS_OPTIONS = ['active', 'inactive', 'pending'];
+export const STATUS_OPTIONS = ['active', 'pending', 'separated', 'floating'];
 export const ESET_OPTIONS = ['active', 'inactive'];
 export const ACTIVITY_WATCH_OPTIONS = ['active', 'inactive'];
 
@@ -98,7 +98,6 @@ function toDatabasePayload(data, { includeId = false } = {}) {
   const isArchived = valueFrom(data, 'is_archived', 'isArchived');
   if (isArchived !== undefined) {
     payload.is_archived = toBoolean(isArchived);
-    if (payload.is_archived) payload.status = 'inactive';
   }
   return payload;
 }
