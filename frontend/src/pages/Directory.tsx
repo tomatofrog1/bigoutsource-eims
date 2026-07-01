@@ -24,6 +24,7 @@ import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { Pagination } from '@/src/components/Pagination';
+import { ResizableHeader } from '@/src/components/ResizableHeader';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { MOCK_EMPLOYEES, Employee } from '@/src/types';
@@ -510,6 +511,23 @@ export default function Directory() {
   const [isLmsAccountEdited, setIsLmsAccountEdited] = useState(false);
   const [isPcNameEdited, setIsPcNameEdited] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const [colWidths, setColWidths] = useState<Record<string, number>>({});
+
+  const handleResize = (key: string, width: number) => {
+    setColWidths(prev => {
+      if (Object.keys(prev).length === 0) {
+        const newWidths: Record<string, number> = {};
+        const ths = document.querySelectorAll('th[data-col-key]');
+        ths.forEach(th => {
+          const k = th.getAttribute('data-col-key');
+          if (k) newWidths[k] = th.getBoundingClientRect().width;
+        });
+        return { ...newWidths, [key]: width };
+      }
+      return { ...prev, [key]: width };
+    });
+  };
 
   useRealtimeSubscription({
     table: 'employees',
@@ -1272,19 +1290,19 @@ export default function Directory() {
           <AnimatePresence mode="wait" initial={false}>
             {isLoading ? (
               <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
-                <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
+                <table className={cn("min-w-[920px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                   <colgroup>
                     {visibleFields.map((field) => (
-                      <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
+                      <col key={field.key} style={{ width: colWidths[field.key] ? `${colWidths[field.key]}px` : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
                     ))}
                     <col style={{ width: actionColumnWidth }} />
                   </colgroup>
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       {visibleFields.map((field) => (
-                        <th key={field.key} className={cn('h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
+                        <ResizableHeader key={field.key} columnKey={field.key} onResize={handleResize} className={cn('h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle', field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3')}>
                           <div className="truncate cursor-default select-none">{field.label}</div>
-                        </th>
+                        </ResizableHeader>
                       ))}
                       <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>
                     </tr>
@@ -1324,10 +1342,10 @@ export default function Directory() {
               </motion.div>
             ) : (
               <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-                <table className="w-full min-w-[920px] table-fixed border-collapse text-left">
+                <table className={cn("min-w-[920px] table-fixed border-collapse text-left", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                   <colgroup>
                     {visibleFields.map((field) => (
-                      <col key={field.key} style={{ width: `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
+                      <col key={field.key} style={{ width: colWidths[field.key] ? `${colWidths[field.key]}px` : `${((columnWeights[field.key] || 1) / visibleFieldWeightTotal) * 100}%` }} />
                     ))}
                     <col style={{ width: actionColumnWidth }} />
                   </colgroup>
@@ -1339,8 +1357,10 @@ export default function Directory() {
                         const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                         return (
-                          <th
+                          <ResizableHeader
                             key={field.key}
+                            columnKey={field.key}
+                            onResize={handleResize}
                             className={cn(
                               'h-14 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle',
                               field.key === 'fullName' ? 'pl-4 pr-3' : 'pl-6 pr-3'
@@ -1362,7 +1382,7 @@ export default function Directory() {
                             ) : (
                               <div className="truncate cursor-default select-none">{field.label}</div>
                             )}
-                          </th>
+                          </ResizableHeader>
                         );
                       })}
                       <th className="h-14 px-4 py-0 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest align-middle"></th>

@@ -4,6 +4,7 @@ import { Laptop, Cpu, Key, ExternalLink, ShieldCheck, Search, ArrowUp, ArrowDown
 import toast from 'react-hot-toast';
 import { PageLayout } from '@/src/components/layout/PageLayout';
 import { Pagination } from '@/src/components/Pagination';
+import { ResizableHeader } from '@/src/components/ResizableHeader';
 import { SkeletonLoadingMessage } from '@/src/components/SkeletonLoadingMessage';
 import { motion, AnimatePresence } from 'motion/react';
 import { deviceService } from '@/src/features/assets/services/deviceService';
@@ -62,6 +63,22 @@ export default function Assets() {
   const [accountFilter, setAccountFilter] = useState('All Account');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [colWidths, setColWidths] = useState<Record<string, number>>({});
+
+  const handleResize = (key: string, width: number) => {
+    setColWidths(prev => {
+      if (Object.keys(prev).length === 0) {
+        const newWidths: Record<string, number> = {};
+        const ths = document.querySelectorAll('th[data-col-key]');
+        ths.forEach(th => {
+          const k = th.getAttribute('data-col-key');
+          if (k) newWidths[k] = th.getBoundingClientRect().width;
+        });
+        return { ...newWidths, [key]: width };
+      }
+      return { ...prev, [key]: width };
+    });
+  };
   const recordsPerPage = 10;
 
   useRealtimeSubscription({
@@ -401,7 +418,7 @@ export default function Assets() {
         <AnimatePresence mode="wait" initial={false}>
           {isLoading ? (
             <motion.div key="skeleton-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto relative">
-              <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
+              <table className={cn("text-left border-collapse table-fixed min-w-[900px]", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                 <thead>
                   <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                     {visibleFields.map((header) => {
@@ -409,7 +426,13 @@ export default function Assets() {
                       const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                       return (
-                        <th key={header.key} className={`px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
+                        <ResizableHeader 
+                          key={header.key} 
+                          columnKey={header.key}
+                          onResize={handleResize}
+                          style={{ width: colWidths[header.key] ? `${colWidths[header.key]}px` : undefined }}
+                          className={`px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}
+                        >
                           <button
                             type="button"
                             onClick={() => toggleSort(header.key)}
@@ -418,7 +441,7 @@ export default function Assets() {
                             <span className="truncate">{header.label}</span>
                             <SortIcon className="w-3.5 h-3.5 shrink-0" />
                           </button>
-                        </th>
+                        </ResizableHeader>
                       );
                     })}
                     <th className="px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
@@ -451,7 +474,7 @@ export default function Assets() {
               </motion.div>
             ) : (
               <motion.div key="content-table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="bg-white border border-[#E5E7EB] rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
-                <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
+                <table className={cn("text-left border-collapse table-fixed min-w-[900px]", Object.keys(colWidths).length > 0 ? "w-max" : "w-full")}>
                   <thead>
                     <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB]">
                       {visibleFields.map((header) => {
@@ -459,7 +482,13 @@ export default function Assets() {
                         const SortIcon = isActiveSort ? (sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
                         return (
-                          <th key={header.key} className={`px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}>
+                          <ResizableHeader 
+                            key={header.key} 
+                            columnKey={header.key}
+                            onResize={handleResize}
+                            style={{ width: colWidths[header.key] ? `${colWidths[header.key]}px` : undefined }}
+                            className={`px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest text-left ${header.width}`}
+                          >
                             <button
                               type="button"
                               onClick={() => toggleSort(header.key)}
@@ -468,7 +497,7 @@ export default function Assets() {
                               <span className="truncate">{header.label}</span>
                               <SortIcon className="w-3.5 h-3.5 shrink-0" />
                             </button>
-                          </th>
+                          </ResizableHeader>
                         );
                       })}
                       <th className="px-6 py-4 text-[0.625rem] font-black text-[#9CA3AF] uppercase tracking-widest w-[8%]"></th>
