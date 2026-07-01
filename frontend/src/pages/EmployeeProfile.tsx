@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState, useRef } from 'react';
 import type { ElementType, ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Briefcase,
   Calendar,
+  Camera,
   ChevronRight,
   CheckCircle2,
   Clock,
@@ -75,6 +76,7 @@ type EmployeeForm = {
   esetStatus: 'active' | 'inactive';
   activityWatchStatus: 'installed' | 'missing';
   isArchived?: boolean;
+  avatarUrl?: string;
 };
 
 const emptyEmployee: EmployeeForm = {
@@ -100,6 +102,7 @@ const emptyEmployee: EmployeeForm = {
   esetStatus: 'inactive',
   activityWatchStatus: 'missing',
   isArchived: false,
+  avatarUrl: '',
 };
 
 const editableFields: Array<keyof EmployeeForm> = [
@@ -369,6 +372,7 @@ function normalizeEmployee(emp: any): EmployeeForm {
     esetStatus: normalizeEsetStatus(emp?.esetStatus || emp?.eset),
     activityWatchStatus: normalizeActivityWatch(emp?.activityWatchStatus),
     isArchived: emp?.is_archived ?? emp?.isArchived ?? false,
+    avatarUrl: emp?.avatarUrl || emp?.avatar_url || '',
   };
 }
 
@@ -402,6 +406,8 @@ export default function EmployeeProfile() {
 
   const [undoTargetLog, setUndoTargetLog] = useState<any | null>(null);
   const [isUndoing, setIsUndoing] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isBoEmailEdited, setIsBoEmailEdited] = useState(false);
   const [isLmsAccountEdited, setIsLmsAccountEdited] = useState(false);
@@ -541,6 +547,29 @@ export default function EmployeeProfile() {
       toast.error(error.message || 'Failed to undo action', { id: loadingToast });
     } finally {
       setIsUndoing(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+
+    // reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setIsUploadingAvatar(true);
+    const loadingToast = toast.loading('Uploading avatar...');
+    try {
+      const updated = await employeeService.uploadAvatar(id, file);
+      const normalized = normalizeEmployee(updated);
+      setEmployee(normalized);
+      setForm(normalized);
+      toast.success('Avatar uploaded successfully', { id: loadingToast });
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload avatar', { id: loadingToast });
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
@@ -808,8 +837,24 @@ export default function EmployeeProfile() {
 
               <div className="px-8 pb-8 pt-4 flex flex-col md:flex-row md:items-end gap-6 relative">
                 <div className="absolute -top-16 left-8">
-                  <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter">
-                    {employee.fullName?.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('') || 'EP'}
+                  <div className="w-28 h-28 rounded-full border-4 border-white bg-gradient-to-br from-[#F3F4F6] to-[#E5E7EB] shadow-lg flex items-center justify-center text-4xl font-black text-[#111827] uppercase tracking-tighter relative group overflow-hidden">
+                    {employee.avatarUrl ? (
+                      <img src={`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/api$/, '')}${employee.avatarUrl}`} alt={employee.fullName} className="w-full h-full object-cover" />
+                    ) : (
+                      employee.fullName?.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('') || 'EP'
+                    )}
+                    {canManageEmployee && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingAvatar}
+                        className="absolute bottom-0 left-0 right-0 bg-black/50 py-1.5 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 cursor-pointer"
+                        title="Upload Profile Picture"
+                      >
+                        {isUploadingAvatar ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Camera className="w-4 h-4 text-white" />}
+                      </button>
+                    )}
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
                   </div>
                 </div>
 

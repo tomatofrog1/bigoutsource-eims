@@ -51,6 +51,7 @@ model Employee {
   eset              String   @default("inactive")
   activitywatch     String   @default("missing")
   isArchived        Boolean  @default(false) @map("is_archived")
+  avatarUrl         String?  @map("avatar_url")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
 

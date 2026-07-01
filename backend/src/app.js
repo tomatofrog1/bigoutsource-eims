@@ -34,8 +34,10 @@ function resolveCorsOrigin(origin, callback) {
   callback(new Error(`Origin ${origin} is not allowed by CORS`));
 }
 
+import path from 'path';
+
 app.set('trust proxy', 1);
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(
   cors({
     origin: resolveCorsOrigin,
@@ -45,6 +47,7 @@ app.use(
   })
 );
 app.use(express.json({ limit: '50mb' }));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

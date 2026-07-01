@@ -17,6 +17,7 @@
     "express-rate-limit": "^7.5.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
     "otplib": "^13.4.1",
     "prisma": "^6.19.3",
     "qrcode": "^1.5.4",

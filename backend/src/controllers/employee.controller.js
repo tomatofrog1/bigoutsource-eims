@@ -71,4 +71,25 @@ export const EmployeeController = {
       return next(error);
     }
   },
+
+  async uploadAvatar(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      const employee = await EmployeeService.update(
+        req.params.id,
+        { avatarUrl },
+        req.user,
+        {
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+        }
+      );
+      return success(res, redactEmployeeForUser(employee, req.user), 'Avatar uploaded successfully');
+    } catch (error) {
+      return next(error);
+    }
+  },
 };

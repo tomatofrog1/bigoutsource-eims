@@ -15,13 +15,16 @@ export function clearAuthToken() {
 
 export async function apiRequest(path, options = {}) {
   const token = getAuthToken();
+  const isFormData = options.body instanceof FormData;
+  const headers = {
+    ...(!isFormData && { 'Content-Type': 'application/json' }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
+    headers,
   });
 
   const contentType = response.headers.get('content-type') || '';

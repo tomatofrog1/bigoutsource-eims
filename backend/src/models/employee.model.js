@@ -79,6 +79,7 @@ function toDatabasePayload(data, { includeId = false } = {}) {
     payload.bigoutsource_email = stringOrEmpty(valueFrom(data, 'boEmail', 'bigoutsourceEmail'));
   }
   if (data?.emailPassword !== undefined) payload.email_password = stringOrEmpty(data.emailPassword);
+  if (data?.avatarUrl !== undefined) payload.avatar_url = stringOrEmpty(data.avatarUrl);
   if (lmsAccount !== undefined) payload.lms_account = lmsAccount;
   if (data?.status !== undefined) payload.status = canonical(data.status, STATUS_OPTIONS, data.status);
   if (site !== undefined) payload.site = normalizeSite(site);
@@ -134,6 +135,7 @@ function normalize(row) {
     activityWatchStatus: row.activitywatch || 'missing',
     activitywatch: row.activitywatch || 'missing',
     isArchived: row.isArchived ?? row.is_archived ?? false,
+    avatarUrl: row.avatarUrl || row.avatar_url || null,
     createdAt: row.createdAt || row.created_at || '',
     updatedAt: row.updatedAt || row.updated_at || '',
   };
@@ -223,6 +225,7 @@ export const EmployeeModel = {
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
       isArchived: payload.is_archived,
+      avatarUrl: payload.avatar_url,
     };
     
     // remove undefined
@@ -256,6 +259,7 @@ export const EmployeeModel = {
         activitywatch: payload.activitywatch,
         windowsLicenseKey: payload.windows_license_key,
         isArchived: payload.is_archived,
+        avatarUrl: payload.avatar_url,
       };
       Object.keys(createData).forEach(key => createData[key] === undefined ? delete createData[key] : {});
       return createData;
@@ -291,6 +295,7 @@ export const EmployeeModel = {
       activitywatch: payload.activitywatch,
       windowsLicenseKey: payload.windows_license_key,
       isArchived: payload.is_archived,
+      avatarUrl: payload.avatar_url,
     };
     Object.keys(updateData).forEach(key => updateData[key] === undefined ? delete updateData[key] : {});
 

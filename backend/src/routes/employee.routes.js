@@ -3,6 +3,7 @@ import { EmployeeController } from '../controllers/employee.controller.js';
 import { requirePermission, requireAnyPermission } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createEmployeeValidator, updateEmployeeValidator } from '../utils/employee.validator.js';
+import { uploadAvatar } from '../utils/upload.js';
 
 const router = Router();
 
@@ -18,5 +19,12 @@ router.put(
   EmployeeController.update
 );
 router.delete('/:id', requirePermission('employees.delete'), EmployeeController.remove);
+
+router.post(
+  '/:id/avatar',
+  requireAnyPermission(['employees.edit', 'employees.it.edit', 'employees.secrets.edit']),
+  uploadAvatar.single('avatar'),
+  EmployeeController.uploadAvatar
+);
 
 export default router;
