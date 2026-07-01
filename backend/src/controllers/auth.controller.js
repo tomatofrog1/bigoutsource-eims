@@ -24,6 +24,15 @@ export const AuthController = {
   async login(req, res, next) {
     try {
       const data = await AuthService.login(req.body, { ipAddress: req.ip });
+      return success(res, data, data.requiresMfa ? 'MFA required' : 'Logged in');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async loginMfa(req, res, next) {
+    try {
+      const data = await AuthService.loginMfa(req.body);
       return success(res, data, 'Logged in');
     } catch (error) {
       return next(error);
@@ -45,6 +54,30 @@ export const AuthController = {
   async changePassword(req, res, next) {
     try {
       return success(res, await AuthService.changePassword(req.user, req.body), 'Password changed');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async setupMfa(req, res, next) {
+    try {
+      return success(res, await AuthService.setupMfa(req.user), 'MFA setup initiated');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async verifyMfa(req, res, next) {
+    try {
+      return success(res, await AuthService.verifyMfa(req.user, req.body));
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async disableMfa(req, res, next) {
+    try {
+      return success(res, await AuthService.disableMfa(req.user, req.body));
     } catch (error) {
       return next(error);
     }

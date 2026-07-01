@@ -6,13 +6,52 @@ export const authService = {
   },
 
   async login(email, password) {
+    const trustedDeviceToken = localStorage.getItem('eims_mfa_trusted');
     const data = await apiRequest('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, trustedDeviceToken }),
+    });
+
+    if (data.requiresMfa) {
+      return data;
+    }
+
+    setAuthToken(data.token);
+    if (data.trustedDeviceToken) {
+      localStorage.setItem('eims_mfa_trusted', data.trustedDeviceToken);
+    }
+    return data.user;
+  },
+
+  async loginMfa(mfaToken, code) {
+    const data = await apiRequest('/auth/login/mfa', {
+      method: 'POST',
+      body: JSON.stringify({ mfaToken, code }),
     });
 
     setAuthToken(data.token);
+    if (data.trustedDeviceToken) {
+      localStorage.setItem('eims_mfa_trusted', data.trustedDeviceToken);
+    }
     return data.user;
+  },
+
+  async setupMfa() {
+    return apiRequest('/auth/mfa/setup', { method: 'POST' });
+  },
+
+  async verifyMfa(secret, code) {
+    return apiRequest('/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ secret, code }),
+    });
+  },
+
+  async disableMfa(code) {
+    return apiRequest('/auth/mfa/disable', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
   },
 
   async register(input) {

@@ -9,7 +9,8 @@ import { userCan, type Capability } from '@/src/lib/permissions';
 interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<{ requiresMfa?: boolean; mfaToken?: string }>;
+  loginMfa: (mfaToken: string, code: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<AppUser>;
   refreshUser: () => Promise<AppUser | null>;
   logout: () => Promise<void>;
@@ -40,6 +41,7 @@ function toAppUser(apiUser: any): AppUser {
     site: apiUser.site || 'Unassigned',
     capabilities: Array.isArray(apiUser.capabilities) ? apiUser.capabilities : [],
     capabilityOverrides: Array.isArray(apiUser.capabilityOverrides) ? apiUser.capabilityOverrides : null,
+    mfaEnabled: apiUser.mfaEnabled || false,
   };
 }
 
@@ -121,13 +123,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, pass: string) => {
     try {
       const apiUser = await authService.login(email, pass);
+      if (apiUser.requiresMfa) {
+        return { requiresMfa: true, mfaToken: apiUser.mfaToken };
+      }
       setUser(toAppUser(apiUser));
       toast.success('Successfully logged in');
+      return { requiresMfa: false };
     } catch (error: any) {
       const msg = error.message || 'Login failed';
       if (!msg.toLowerCase().includes('pending') && !msg.toLowerCase().includes('disabled')) {
         toast.error(msg);
       }
+      throw error;
+    }
+  };
+
+  const loginMfa = async (mfaToken: string, code: string) => {
+    try {
+      const apiUser = await authService.loginMfa(mfaToken, code);
+      setUser(toAppUser(apiUser));
+      toast.success('Successfully logged in');
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid MFA code');
       throw error;
     }
   };
@@ -154,6 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     login,
+    loginMfa,
     register,
     refreshUser,
     logout,

@@ -17,9 +17,13 @@ const loginLimiter = rateLimit({
 
 router.post('/register', validate(registerValidator), AuthController.register);
 router.post('/login', loginLimiter, validate(loginValidator), AuthController.login);
+router.post('/login/mfa', loginLimiter, AuthController.loginMfa);
 router.get('/internal-departments', AuthController.internalDepartments);
 router.get('/me', authenticate, AuthController.me);
 router.post('/logout', authenticate, AuthController.logout);
 router.put('/password', authenticate, validate(changePasswordValidator), AuthController.changePassword);
+router.post('/mfa/setup', authenticate, AuthController.setupMfa);
+router.post('/mfa/verify', authenticate, AuthController.verifyMfa);
+router.post('/mfa/disable', authenticate, AuthController.disableMfa);
 
 export default router;

@@ -27,5 +27,6 @@ export function publicUserPayload(profile, capabilities = []) {
     siteId: profile.site,
     approvedBy: profile.approvedBy,
     approvedAt: profile.approvedAt,
+    mfaEnabled: profile.mfaEnabled || false,
   };
 }

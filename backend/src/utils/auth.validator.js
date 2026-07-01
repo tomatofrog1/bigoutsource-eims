@@ -1,6 +1,7 @@
 export const loginValidator = {
   email: { required: true, type: 'string', email: true },
   password: { required: true, type: 'string', min: 1 },
+  trustedDeviceToken: { type: 'string', required: false },
 };
 
 export const registerValidator = {

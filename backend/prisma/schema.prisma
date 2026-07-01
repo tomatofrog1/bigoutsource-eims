@@ -18,6 +18,8 @@ model UserProfile {
   department          String        @default("Unassigned")
   site                String        @default("HQ")
   capabilityOverrides String[]      @map("capability_overrides")
+  mfaSecret           String?       @map("mfa_secret")
+  mfaEnabled          Boolean       @default(false) @map("mfa_enabled")
   approvedById        String?       @map("approved_by")
   approvedBy          UserProfile?  @relation("Approver", fields: [approvedById], references: [id])
   approvedUsers       UserProfile[] @relation("Approver")

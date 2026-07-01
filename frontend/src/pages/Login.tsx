@@ -8,7 +8,7 @@ import logoUrl from '/logo-only-bigoutsource.svg';
 import { AuthInput, PasswordInput } from '@/src/features/auth/components/authFields';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginMfa } = useAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
 
@@ -28,8 +28,10 @@ export default function Login() {
   const [isExiting, setIsExiting] = useState(false);
   const [authStatusError, setAuthStatusError] = useState<{ type: 'pending' | 'disabled'; message: string } | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
 
-  const canSubmit = email.trim().length > 0 && password.length > 0;
+  const canSubmit = mfaToken ? mfaCode.trim().length > 0 : email.trim().length > 0 && password.length > 0;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -40,7 +42,17 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      if (mfaToken) {
+        await loginMfa(mfaToken, mfaCode);
+      } else {
+        const result = await login(email, password);
+        if (result?.requiresMfa && result.mfaToken) {
+          setMfaToken(result.mfaToken);
+          setIsLoading(false);
+          return;
+        }
+      }
+      
       setIsExiting(true);
       setTimeout(() => {
         navigate('/', { replace: true });
@@ -89,24 +101,39 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5 w-full relative" noValidate>
-            <AuthInput
-              icon={Mail}
-              label="Email Address"
-              type="email"
-              value={email}
-              onChange={setEmail}
-              placeholder="name@bigoutsource.com"
-              error={!!loginError}
-              required
-            />
-            <PasswordInput
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              showPassword={showPassword}
-              onToggleVisibility={() => setShowPassword(!showPassword)}
-              error={loginError || undefined}
-            />
+            {mfaToken ? (
+              <AuthInput
+                icon={Clock}
+                label="Authentication Code"
+                type="text"
+                value={mfaCode}
+                onChange={setMfaCode}
+                placeholder="123456"
+                error={loginError || undefined}
+                required
+              />
+            ) : (
+              <>
+                <AuthInput
+                  icon={Mail}
+                  label="Email Address"
+                  type="email"
+                  value={email}
+                  onChange={setEmail}
+                  placeholder="name@bigoutsource.com"
+                  error={!!loginError}
+                  required
+                />
+                <PasswordInput
+                  label="Password"
+                  value={password}
+                  onChange={setPassword}
+                  showPassword={showPassword}
+                  onToggleVisibility={() => setShowPassword(!showPassword)}
+                  error={loginError || undefined}
+                />
+              </>
+            )}
             <button
               type="submit"
               disabled={isLoading || !canSubmit}

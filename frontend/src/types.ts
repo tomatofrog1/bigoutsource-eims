@@ -35,6 +35,7 @@ export interface AppUser {
   capabilities?: string[];
   /** Per-account capability override; null/undefined means "inherit from role". */
   capabilityOverrides?: string[] | null;
+  mfaEnabled?: boolean;
 }
 
 interface AuditLog {

@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { generateSecret, generateURI, verifySync } from 'otplib';
+import qrcode from 'qrcode';
 import { prisma } from '../config/db.js';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/apiResponse.js';
@@ -62,7 +64,7 @@ export const AuthService = {
     };
   },
 
-  async login({ email, password }) {
+  async login({ email, password, trustedDeviceToken }) {
     const normalizedEmail = normalizeEmail(email);
     const profile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });
     if (!profile) {
@@ -76,12 +78,71 @@ export const AuthService = {
 
     await assertActiveProfile(profile.id);
 
+    if (profile.mfaEnabled) {
+      if (trustedDeviceToken) {
+        try {
+          const decoded = jwt.verify(trustedDeviceToken, process.env.JWT_SECRET);
+          if (decoded.id === profile.id && decoded.mfaTrusted) {
+            const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+              expiresIn: '30m',
+            });
+            return { token, user: await publicUser(profile) };
+          }
+        } catch (err) {
+          // Ignore invalid/expired trusted token
+        }
+      }
+
+      const mfaToken = jwt.sign({ id: profile.id, email: profile.email, mfaPending: true }, process.env.JWT_SECRET, {
+        expiresIn: '5m',
+      });
+      return { requiresMfa: true, mfaToken };
+    }
+
     const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
-      expiresIn: '7d',
+      expiresIn: '30m',
     });
 
     return {
       token,
+      user: await publicUser(profile),
+    };
+  },
+
+  async loginMfa({ mfaToken, code }) {
+    let decoded;
+    try {
+      decoded = jwt.verify(mfaToken, process.env.JWT_SECRET);
+    } catch (err) {
+      throw new AppError('Invalid or expired MFA token', 401);
+    }
+
+    if (!decoded.mfaPending) {
+      throw new AppError('Invalid MFA token', 401);
+    }
+
+    const profile = await assertActiveProfile(decoded.id);
+
+    if (!profile.mfaEnabled || !profile.mfaSecret) {
+      throw new AppError('MFA is not enabled for this account', 400);
+    }
+
+    const isValid = verifySync({ token: code, secret: profile.mfaSecret }).valid;
+    if (!isValid) {
+      throw new AppError('Invalid MFA code', 401);
+    }
+
+    const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+      expiresIn: '30m',
+    });
+
+    const trustedDeviceToken = jwt.sign({ id: profile.id, mfaTrusted: true }, process.env.JWT_SECRET, {
+      expiresIn: '30m',
+    });
+
+    return {
+      token,
+      trustedDeviceToken,
       user: await publicUser(profile),
     };
   },
@@ -106,6 +167,58 @@ export const AuthService = {
     });
 
     return { changed: true };
+  },
+
+  async setupMfa(user) {
+    const profile = await prisma.userProfile.findUnique({ where: { id: user.id } });
+    if (profile.mfaEnabled) {
+      throw new AppError('MFA is already enabled', 400);
+    }
+
+    const secret = generateSecret();
+    const otpauth = generateURI({ issuer: 'BigOutsource', label: profile.email, secret });
+    const qrCodeUrl = await qrcode.toDataURL(otpauth);
+
+    return { secret, qrCodeUrl };
+  },
+
+  async verifyMfa(user, { secret, code }) {
+    const isValid = verifySync({ token: code, secret }).valid;
+    if (!isValid) {
+      throw new AppError('Invalid verification code', 400);
+    }
+
+    await prisma.userProfile.update({
+      where: { id: user.id },
+      data: {
+        mfaSecret: secret,
+        mfaEnabled: true,
+      },
+    });
+
+    return { success: true, message: 'MFA enabled successfully' };
+  },
+
+  async disableMfa(user, { code }) {
+    const profile = await prisma.userProfile.findUnique({ where: { id: user.id } });
+    if (!profile.mfaEnabled) {
+      throw new AppError('MFA is not enabled', 400);
+    }
+
+    const isValid = verifySync({ token: code, secret: profile.mfaSecret }).valid;
+    if (!isValid) {
+      throw new AppError('Invalid verification code', 400);
+    }
+
+    await prisma.userProfile.update({
+      where: { id: user.id },
+      data: {
+        mfaSecret: null,
+        mfaEnabled: false,
+      },
+    });
+
+    return { success: true, message: 'MFA disabled successfully' };
   },
 
   async bootstrapSuperAdmin() {
