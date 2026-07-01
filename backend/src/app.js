@@ -36,7 +36,7 @@ function resolveCorsOrigin(origin, callback) {
 
 import path from 'path';
 
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(
   cors({
