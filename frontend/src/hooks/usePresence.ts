@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppUser } from '../types';
+import { connectPresenceSocket } from '../services/realtimeService';
 
 export interface PresenceUser {
   user_id: string;
@@ -16,15 +17,26 @@ export function usePresence(currentUser: AppUser | null) {
       setOnlineUsers([]);
       return;
     }
-    // Supabase presence removed in self-hosted migration.
-    // We could implement Socket.io presence here later.
-    setOnlineUsers([{
-      user_id: currentUser.uid,
-      email: currentUser.email,
-      full_name: currentUser.fullName,
-      online_at: new Date().toISOString()
-    }]);
-  }, [currentUser?.uid, currentUser?.email, currentUser?.fullName]);
+
+    const cleanup = connectPresenceSocket({
+      onSync: (users: PresenceUser[]) => {
+        setOnlineUsers(users);
+      },
+      onJoin: (user: PresenceUser) => {
+        setOnlineUsers((prev) => {
+          if (prev.some((u) => u.user_id === user.user_id)) return prev;
+          return [...prev, user];
+        });
+      },
+      onLeave: ({ user_id }: { user_id: string }) => {
+        setOnlineUsers((prev) => prev.filter((u) => u.user_id !== user_id));
+      }
+    });
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [currentUser?.uid]);
 
   return { onlineUsers };
 }
