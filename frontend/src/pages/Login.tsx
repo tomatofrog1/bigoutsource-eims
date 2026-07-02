@@ -8,7 +8,7 @@ import logoUrl from '/logo-only-bigoutsource.svg';
 import { AuthInput, PasswordInput } from '@/src/features/auth/components/authFields';
 
 export default function Login() {
-  const { login, loginMfa } = useAuth();
+  const { login, loginMfa, resendLoginMfa } = useAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
 
@@ -30,6 +30,14 @@ export default function Login() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const canSubmit = mfaToken ? mfaCode.trim().length > 0 : email.trim().length > 0 && password.length > 0;
 
@@ -48,6 +56,7 @@ export default function Login() {
         const result = await login(email, password);
         if (result?.requiresMfa && result.mfaToken) {
           setMfaToken(result.mfaToken);
+          setResendCooldown(300);
           setIsLoading(false);
           return;
         }
@@ -71,6 +80,22 @@ export default function Login() {
       setTimeout(() => {
         setIsLoading(false);
       }, 500);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!mfaToken || resendCooldown > 0 || isLoading) return;
+    setIsLoading(true);
+    setLoginError(null);
+    try {
+      const result = await resendLoginMfa(mfaToken);
+      setMfaToken(result.mfaToken);
+      setResendCooldown(300);
+      setMfaCode('');
+    } catch (error: any) {
+      setLoginError(error.message || 'Failed to resend OTP');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -116,6 +141,20 @@ export default function Login() {
                   error={loginError || undefined}
                   required
                 />
+                
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendCooldown > 0 || isLoading}
+                    className="text-sm font-bold text-[#111827] disabled:text-gray-400 transition-colors hover:text-blue-600 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    {resendCooldown > 0 
+                      ? `Resend OTP in ${resendCooldown}s`
+                      : 'Resend OTP'
+                    }
+                  </button>
+                </div>
               </div>
             ) : (
               <>

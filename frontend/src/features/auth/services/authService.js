@@ -36,26 +36,12 @@ export const authService = {
     return data.user;
   },
 
-  async setupMfa() {
-    return apiRequest('/auth/mfa/setup', { method: 'POST' });
-  },
-
-  async verifyMfa(setupToken, code) {
-    return apiRequest('/auth/mfa/verify', {
+  async resendLoginMfa(mfaToken) {
+    const data = await apiRequest('/auth/login/mfa/resend', {
       method: 'POST',
-      body: JSON.stringify({ setupToken, code }),
+      body: JSON.stringify({ mfaToken }),
     });
-  },
-
-  async requestDisableMfa() {
-    return apiRequest('/auth/mfa/disable/request', { method: 'POST' });
-  },
-
-  async disableMfa(disableToken, code) {
-    return apiRequest('/auth/mfa/disable', {
-      method: 'POST',
-      body: JSON.stringify({ disableToken, code }),
-    });
+    return data;
   },
 
   async register(input) {
@@ -64,6 +50,13 @@ export const authService = {
       body: JSON.stringify(input),
     });
     return data.user;
+  },
+
+  checkEmail(email) {
+    return apiRequest('/auth/check-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
   },
 
   me() {

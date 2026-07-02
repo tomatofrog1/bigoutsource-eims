@@ -28,8 +28,7 @@ import { authService } from '@/src/features/auth/services/authService';
 import { settingsService } from '@/src/features/settings/services/settingsService';
 import { userService } from '@/src/services/userService';
 
-type SettingsTab = 'profile' | 'notifications' | 'password' | 'security';
-
+type SettingsTab = 'profile' | 'notifications' | 'password';
 const PASSWORD_RULES = [
   { label: 'At least 8 characters', test: (value: string) => value.length >= 8 },
   { label: 'One uppercase letter', test: (value: string) => /[A-Z]/.test(value) },
@@ -62,9 +61,7 @@ export default function Settings() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [mfaSetupData, setMfaSetupData] = useState<string | null>(null);
-  const [mfaDisableToken, setMfaDisableToken] = useState<string | null>(null);
-  const [mfaCode, setMfaCode] = useState('');
+
 
   const changePasswordErrors = useMemo(() => {
     const errors: Record<string, string> = {};
@@ -118,7 +115,7 @@ export default function Settings() {
   }, [isSuperAdmin]);
 
   useEffect(() => {
-    if (!isSuperAdmin && activeTab !== 'password' && activeTab !== 'security') {
+    if (!isSuperAdmin && activeTab !== 'password') {
       setActiveTab(null);
     }
   }, [activeTab, isSuperAdmin]);
@@ -191,76 +188,11 @@ export default function Settings() {
         confirm: false,
       });
     }
-    if (activeTab === 'security') {
-      setMfaSetupData(null);
-      setMfaDisableToken(null);
-      setMfaCode('');
-    }
 
     setActiveTab(null);
   };
 
-  const openSecurityTab = async () => {
-    setActiveTab('security');
-    if (!user?.mfaEnabled) {
-      try {
-        setIsLoading(true);
-        const data = await authService.setupMfa();
-        setMfaSetupData(data.setupToken);
-      } catch (e: any) {
-        toast.error(e.message || 'Failed to initialize MFA setup');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
 
-  const verifyMfa = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!mfaSetupData) return;
-    setIsSaving(true);
-    try {
-      await authService.verifyMfa(mfaSetupData, mfaCode);
-      toast.success('MFA enabled successfully');
-      setMfaSetupData(null);
-      setMfaCode('');
-      await refreshUser();
-    } catch (e: any) {
-      toast.error(e.message || 'Invalid code');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const requestDisableMfa = async () => {
-    setIsSaving(true);
-    try {
-      const data = await authService.requestDisableMfa();
-      setMfaDisableToken(data.disableToken);
-      toast.success('Verification code sent to your email');
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to request disable code');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const disableMfa = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!mfaDisableToken) return;
-    setIsSaving(true);
-    try {
-      await authService.disableMfa(mfaDisableToken, mfaCode);
-      toast.success('MFA disabled successfully');
-      setMfaCode('');
-      setMfaDisableToken(null);
-      await refreshUser();
-    } catch (e: any) {
-      toast.error(e.message || 'Invalid code');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <PageLayout title="System Settings">
@@ -286,7 +218,6 @@ export default function Settings() {
                   </>
                 )}
                 <TabButton active={activeTab === 'password'} icon={Lock} label="Password" onClick={() => setActiveTab('password')} />
-                <TabButton active={activeTab === 'security'} icon={ShieldCheck} label="Security (MFA)" onClick={openSecurityTab} />
                 <div
                   className="flex min-h-24 w-full items-center justify-between rounded-2xl border px-5"
                   style={{
@@ -469,89 +400,7 @@ export default function Settings() {
               </section>
             )}
 
-            {activeTab === 'security' && (
-              <section>
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="rounded-xl bg-[#F3F4F6] p-3 text-[#111827]">
-                    <ShieldCheck className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-[#111827]">Security & MFA</h2>
-                    <p className="text-sm font-medium text-[#6B7280]">Manage Multi-Factor Authentication.</p>
-                  </div>
-                </div>
 
-                {!user?.mfaEnabled ? (
-                  mfaSetupData && (
-                    <form onSubmit={verifyMfa} className="grid max-w-xl gap-4">
-                      <div className="flex flex-col mb-4">
-                        <p className="text-sm font-bold text-gray-700 mb-2">We've sent a 6-digit verification code to your email.</p>
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-bold text-[#374151] uppercase tracking-wider">Verification Code</label>
-                        <input
-                          type="text"
-                          required
-                          value={mfaCode}
-                          onChange={(e) => setMfaCode(e.target.value)}
-                          placeholder="000000"
-                          className="w-full px-4 py-3 bg-[#F3F4F6] border-none rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={isSaving || mfaCode.length < 6}
-                        className="mt-2 inline-flex w-fit items-center gap-2 rounded-xl bg-[#111827] px-5 py-3 text-sm font-black text-white hover:bg-[#374151] disabled:opacity-50 transition-all active:scale-[0.98]"
-                      >
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                        Enable MFA
-                      </button>
-                    </form>
-                  )
-                ) : (
-                  <form onSubmit={disableMfa} className="grid max-w-xl gap-4">
-                    <p className="text-sm font-medium text-green-700 bg-green-50 p-4 rounded-xl border border-green-200">
-                      Multi-Factor Authentication is currently enabled.
-                    </p>
-                    
-                    {!mfaDisableToken ? (
-                      <button
-                        type="button"
-                        onClick={requestDisableMfa}
-                        disabled={isSaving}
-                        className="mt-2 inline-flex w-fit items-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-700 disabled:opacity-50 transition-all active:scale-[0.98]"
-                      >
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                        Send Disable Code
-                      </button>
-                    ) : (
-                      <>
-                        <div className="flex flex-col gap-1.5 mt-2">
-                          <label className="text-xs font-bold text-[#374151] uppercase tracking-wider">Verification Code</label>
-                          <input
-                            type="text"
-                            required
-                            value={mfaCode}
-                            onChange={(e) => setMfaCode(e.target.value)}
-                            placeholder="000000"
-                            className="w-full px-4 py-3 bg-[#F3F4F6] border-none rounded-xl text-sm focus:ring-2 focus:ring-[#111827] transition-all outline-none"
-                          />
-                          <p className="text-xs text-gray-500">Enter the code sent to your email to disable MFA.</p>
-                        </div>
-                        <button
-                          type="submit"
-                          disabled={isSaving || mfaCode.length < 6}
-                          className="mt-2 inline-flex w-fit items-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white hover:bg-red-700 disabled:opacity-50 transition-all active:scale-[0.98]"
-                        >
-                          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                          Disable MFA
-                        </button>
-                      </>
-                    )}
-                  </form>
-                )}
-              </section>
-            )}
 
             </SettingsModal>
           ) : null}
