@@ -103,13 +103,6 @@ export const AuthService = {
 
     await assertActiveProfile(profile.id);
 
-    if (profile.role === 'super_admin') {
-      const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
-        expiresIn: '30m',
-      });
-      return { token, user: await publicUser(profile) };
-    }
-
     if (trustedDeviceToken) {
       try {
         const decoded = jwt.verify(trustedDeviceToken, process.env.JWT_SECRET);
