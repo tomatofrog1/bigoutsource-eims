@@ -8,8 +8,7 @@ This document summarizes the recent changes made to the EIMS authentication flow
 
 ### A. Mandatory Email OTP Login
 - We completely removed the old Authenticator App MFA system (which required QR codes).
-- We implemented a mandatory **Email-based OTP** for all users logging in.
-- **Super Admin Exception:** The Super Admin role completely bypasses the OTP requirement and is logged in immediately with a password.
+- We implemented a mandatory **Email-based OTP** for all users logging in, including administrators.
 
 ### B. Domain Restrictions for Registration
 - The system now strictly enforces domain restrictions when creating new accounts.
@@ -30,8 +29,6 @@ This document summarizes the recent changes made to the EIMS authentication flow
   To ensure that only legitimate, authorized employees or specific contractors within the BigOutsource ecosystem can access the EIMS. This prevents random external users from registering.
 - **Email OTP (MFA):** 
   Provides robust Two-Factor Authentication without forcing employees to download third-party authenticator apps. It securely relies on the company's internal email infrastructure (Outlook/Snappy).
-- **Super Admin Bypass:** 
-  Ensures that the core administrator always has a "break-glass" way to access the system, even if the company's email servers experience an outage and cannot deliver OTP emails.
 
 ### D. Time Limits & Session Expiration
 - **OTP Code Lifespan:** Once requested, the 6-digit OTP code is valid for exactly **5 minutes**. If it is not used in that time, it expires and the user must request a new one.
