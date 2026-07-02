@@ -1,23 +1,26 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
-// Setup transporter for local SMTP (e.g. Mailpit/Mailhog for snappymail)
-// Adjust the default host/port if snappymail is configured differently
+// Setup transporter to use environment variables dynamically
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'mailpit',
   port: parseInt(process.env.SMTP_PORT || '1025', 10),
-  secure: false, // true for 465, false for other ports
-  // auth: {
-  //   user: process.env.SMTP_USER,
-  //   pass: process.env.SMTP_PASS,
-  // },
+  secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports (like 587)
+  auth: process.env.SMTP_USER ? {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  } : undefined,
+  tls: {
+    ciphers: 'SSLv3', // Often required by Office365
+    rejectUnauthorized: false
+  }
 });
 
 export const EmailService = {
   async sendMfaOtpEmail(toEmail, code) {
     try {
       const info = await transporter.sendMail({
-        from: '"BigOutsource EIMS" <no-reply@bigoutsource.com>',
+        from: process.env.SMTP_USER ? `"BigOutsource EIMS" <${process.env.SMTP_USER}>` : '"BigOutsource EIMS" <no-reply@bigoutsource.com>',
         to: toEmail,
         subject: 'Your MFA Verification Code',
         text: `Your MFA verification code is: ${code}\nThis code is valid for 5 minutes.`,

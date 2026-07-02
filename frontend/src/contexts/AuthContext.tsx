@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, pass: string) => Promise<{ requiresMfa?: boolean; mfaToken?: string }>;
   loginMfa: (mfaToken: string, code: string) => Promise<void>;
+  resendLoginMfa: (mfaToken: string) => Promise<{ mfaToken: string }>;
   register: (input: RegisterInput) => Promise<AppUser>;
   refreshUser: () => Promise<AppUser | null>;
   logout: () => Promise<void>;
@@ -149,6 +150,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resendLoginMfa = async (mfaToken: string) => {
+    return authService.resendLoginMfa(mfaToken);
+  };
+
   const register = async (input: RegisterInput) => {
     try {
       const apiUser = await authService.register(input);
@@ -205,6 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     login,
     loginMfa,
+    resendLoginMfa,
     register,
     refreshUser,
     logout,

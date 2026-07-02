@@ -12,6 +12,15 @@ export const AuthController = {
     }
   },
 
+  async checkEmail(req, res, next) {
+    try {
+      const data = await AuthService.checkEmail(req.body.email);
+      return success(res, data, 'Email check complete');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
   async register(req, res, next) {
     try {
       const data = await AuthService.register(req.body, { ipAddress: req.ip });
@@ -33,7 +42,16 @@ export const AuthController = {
   async loginMfa(req, res, next) {
     try {
       const data = await AuthService.loginMfa(req.body);
-      return success(res, data, 'Logged in');
+      return success(res, data, 'MFA successful, logged in');
+    } catch (error) {
+      return next(error);
+    }
+  },
+
+  async resendLoginMfa(req, res, next) {
+    try {
+      const data = await AuthService.resendLoginMfa(req.body);
+      return success(res, data, 'New MFA code sent');
     } catch (error) {
       return next(error);
     }
@@ -59,35 +77,4 @@ export const AuthController = {
     }
   },
 
-  async setupMfa(req, res, next) {
-    try {
-      return success(res, await AuthService.setupMfa(req.user), 'MFA setup initiated');
-    } catch (error) {
-      return next(error);
-    }
-  },
-
-  async verifyMfa(req, res, next) {
-    try {
-      return success(res, await AuthService.verifyMfa(req.user, req.body));
-    } catch (error) {
-      return next(error);
-    }
-  },
-
-  async disableMfaRequest(req, res, next) {
-    try {
-      return success(res, await AuthService.requestDisableMfa(req.user), 'Disable MFA requested');
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  async disableMfa(req, res, next) {
-    try {
-      return success(res, await AuthService.disableMfa(req.user, req.body));
-    } catch (error) {
-      return next(error);
-    }
-  },
 };

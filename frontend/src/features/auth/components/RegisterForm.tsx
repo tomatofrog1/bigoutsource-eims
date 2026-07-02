@@ -51,7 +51,16 @@ function getRegistrationErrors({
   if (fullName.trim().length < 2) errors.fullName = 'Full name must be at least 2 characters.';
   if (!department.trim()) errors.department = 'Select a department.';
   if (!site.trim()) errors.site = 'Select a site.';
-  if (!emailPattern.test(email.trim())) errors.email = 'Enter a valid email address.';
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!emailPattern.test(normalizedEmail)) {
+    errors.email = 'Enter a valid email address.';
+  } else if (
+    !normalizedEmail.endsWith('@bigoutsource.com') && 
+    !normalizedEmail.endsWith('@outlook.com') && 
+    !normalizedEmail.endsWith('@bigoutsource.ph')
+  ) {
+    errors.email = 'Only @bigoutsource.com, @outlook.com, and @bigoutsource.ph emails are allowed.';
+  }
 
   const missingPasswordRules = PASSWORD_RULES.filter((rule) => !rule.test(password)).map((rule) => rule.label.toLowerCase());
   if (missingPasswordRules.length) {
@@ -100,6 +109,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
   const [roleSlug, setRoleSlug] = useState('viewer');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailExistsError, setEmailExistsError] = useState('');
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>(0);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState<RegistrationStep>(0);
 
@@ -158,9 +168,11 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
     () => getRegistrationErrors({ email, password, confirmPassword, fullName, department, site }),
     [confirmPassword, department, email, fullName, password, site]
   );
+  
   const currentStepHasErrors =
     getStepHasErrors(registrationErrors, registrationStep) ||
-    (registrationStep === 1 && (isLoadingDepartments || Boolean(departmentOptionsError)));
+    (registrationStep === 1 && (isLoadingDepartments || Boolean(departmentOptionsError))) ||
+    Boolean(emailExistsError);
 
   const passwordStrengthScore = PASSWORD_RULES.filter((rule) => rule.test(password)).length;
   const passwordStrength = passwordStrengthScore <= 2 ? 'Weak' : passwordStrengthScore <= 4 ? 'Fair' : 'Strong';
@@ -168,8 +180,24 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
     passwordStrengthScore <= 2 ? 'bg-[#EF4444]' : passwordStrengthScore <= 4 ? 'bg-[#F59E0B]' : 'bg-[#10B981]';
   const canSubmit = Object.keys(registrationErrors).length === 0;
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (currentStepHasErrors) return;
+
+    if (registrationStep === 0) {
+      setIsLoading(true);
+      try {
+        const { exists } = await authService.checkEmail(email);
+        if (exists) {
+          setEmailExistsError('This email is already registered.');
+          return;
+        }
+      } catch (err: any) {
+        // Continue if check fails for some reason
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     const nextStep = Math.min(registrationStep + 1, 2) as RegistrationStep;
     setRegistrationStep(nextStep);
     setMaxUnlockedStep((current) => Math.max(current, nextStep) as RegistrationStep);
@@ -243,9 +271,9 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
                 label="Email Address"
                 type="email"
                 value={email}
-                onChange={setEmail}
+                onChange={(v) => { setEmail(v); setEmailExistsError(''); }}
                 placeholder="name@bigoutsource.com"
-                error={registrationErrors.email}
+                error={registrationErrors.email || emailExistsError}
                 required
               />
             </motion.div>

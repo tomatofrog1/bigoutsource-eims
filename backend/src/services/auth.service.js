@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import * as otplib from 'otplib';
+import crypto from 'crypto';
 const { generateSecret, generateURI, verifySync } = otplib;
 import qrcode from 'qrcode';
 import { prisma } from '../config/db.js';
@@ -10,8 +11,9 @@ import { RoleService } from '../services/role.service.js';
 import { publicUserPayload } from '../utils/publicUser.js';
 import { EmailService } from './email.service.js';
 
-function generateRandomCode(length = 6) {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+function generateRandomCode() {
+  // Use a cryptographically secure random number generator instead of Math.random
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 
@@ -46,8 +48,23 @@ async function assertActiveProfile(userId) {
 }
 
 export const AuthService = {
+  async checkEmail(email) {
+    const normalizedEmail = normalizeEmail(email);
+    const existingProfile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });
+    return { exists: !!existingProfile };
+  },
+
   async register({ email, password, fullName, department = 'Unassigned', site = 'HQ' }) {
     const normalizedEmail = normalizeEmail(email);
+    
+    if (
+      !normalizedEmail.endsWith('@bigoutsource.com') && 
+      !normalizedEmail.endsWith('@outlook.com') && 
+      !normalizedEmail.endsWith('@bigoutsource.ph')
+    ) {
+      throw new AppError('Only @bigoutsource.com, @outlook.com, and @bigoutsource.ph email addresses are allowed.', 400);
+    }
+
     const existingProfile = await prisma.userProfile.findUnique({ where: { email: normalizedEmail } });
     if (existingProfile) throw new AppError('An account with this email already exists', 409);
 
@@ -59,7 +76,8 @@ export const AuthService = {
         passwordHash,
         fullName,
         role: 'viewer',
-        status: 'pending',
+        status: 'active',
+        approvedAt: new Date(),
         department,
         site,
       },
@@ -67,7 +85,7 @@ export const AuthService = {
 
     return {
       user: await publicUser(profile),
-      message: 'Account created and pending Super Admin approval.',
+      message: 'Account created successfully.',
     };
   },
 
@@ -85,40 +103,37 @@ export const AuthService = {
 
     await assertActiveProfile(profile.id);
 
-    if (profile.mfaEnabled) {
-      if (trustedDeviceToken) {
-        try {
-          const decoded = jwt.verify(trustedDeviceToken, process.env.JWT_SECRET);
-          if (decoded.id === profile.id && decoded.mfaTrusted) {
-            const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
-              expiresIn: '30m',
-            });
-            return { token, user: await publicUser(profile) };
-          }
-        } catch (err) {
-          // Ignore invalid/expired trusted token
-        }
-      }
-
-      const code = generateRandomCode();
-      const codeHash = await bcrypt.hash(code, 10);
-      
-      await EmailService.sendMfaOtpEmail(profile.email, code);
-
-      const mfaToken = jwt.sign({ id: profile.id, email: profile.email, mfaPending: true, codeHash }, process.env.JWT_SECRET, {
-        expiresIn: '5m',
+    if (profile.role === 'super_admin') {
+      const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+        expiresIn: '30m',
       });
-      return { requiresMfa: true, mfaToken };
+      return { token, user: await publicUser(profile) };
     }
 
-    const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
-      expiresIn: '30m',
-    });
+    if (trustedDeviceToken) {
+      try {
+        const decoded = jwt.verify(trustedDeviceToken, process.env.JWT_SECRET);
+        if (decoded.id === profile.id && decoded.mfaTrusted) {
+          const token = jwt.sign({ id: profile.id, email: profile.email }, process.env.JWT_SECRET, {
+            expiresIn: '30m',
+          });
+          return { token, user: await publicUser(profile) };
+        }
+      } catch (err) {
+        // Ignore invalid/expired trusted token
+      }
+    }
 
-    return {
-      token,
-      user: await publicUser(profile),
-    };
+    const code = generateRandomCode();
+    const codeHash = await bcrypt.hash(code, 10);
+    
+    await EmailService.sendMfaOtpEmail(profile.email, code);
+
+    const mfaToken = jwt.sign({ id: profile.id, email: profile.email, mfaPending: true, codeHash }, process.env.JWT_SECRET, {
+      expiresIn: '5m',
+    });
+    
+    return { requiresMfa: true, mfaToken };
   },
 
   async loginMfa({ mfaToken, code }) {
@@ -134,10 +149,6 @@ export const AuthService = {
     }
 
     const profile = await assertActiveProfile(decoded.id);
-
-    if (!profile.mfaEnabled) {
-      throw new AppError('MFA is not enabled for this account', 400);
-    }
 
     if (!decoded.codeHash) {
       throw new AppError('Invalid MFA token format', 400);
@@ -163,6 +174,40 @@ export const AuthService = {
     };
   },
 
+  async resendLoginMfa({ mfaToken }) {
+    let decoded;
+    try {
+      // Ignore expiration on the resend so they can actually click the button after 5 mins,
+      // but we will manually verify it hasn't been too long since they typed their password.
+      decoded = jwt.verify(mfaToken, process.env.JWT_SECRET, { ignoreExpiration: true });
+    } catch (err) {
+      throw new AppError('Invalid MFA token. Please log in again.', 401);
+    }
+
+    if (!decoded.mfaPending) {
+      throw new AppError('Invalid MFA token', 401);
+    }
+    
+    // Prevent resending if the original login attempt is older than 15 minutes
+    const tokenAgeMs = Date.now() - (decoded.iat * 1000);
+    if (tokenAgeMs > 15 * 60 * 1000) {
+      throw new AppError('Session expired. Please log in again with your password.', 401);
+    }
+
+    const profile = await assertActiveProfile(decoded.id);
+
+    const code = generateRandomCode();
+    const codeHash = await bcrypt.hash(code, 10);
+    
+    await EmailService.sendMfaOtpEmail(profile.email, code);
+
+    const newMfaToken = jwt.sign({ id: profile.id, email: profile.email, mfaPending: true, codeHash }, process.env.JWT_SECRET, {
+      expiresIn: '5m',
+    });
+    
+    return { mfaToken: newMfaToken };
+  },
+
   async me(user) {
     return publicUser(user);
   },
@@ -185,101 +230,7 @@ export const AuthService = {
     return { changed: true };
   },
 
-  async setupMfa(user) {
-    const profile = await prisma.userProfile.findUnique({ where: { id: user.id } });
-    if (profile.mfaEnabled) {
-      throw new AppError('MFA is already enabled', 400);
-    }
 
-    const code = generateRandomCode();
-    const codeHash = await bcrypt.hash(code, 10);
-
-    await EmailService.sendMfaOtpEmail(profile.email, code);
-
-    const setupToken = jwt.sign({ id: profile.id, codeHash, mfaSetup: true }, process.env.JWT_SECRET, {
-      expiresIn: '5m',
-    });
-
-    return { setupToken };
-  },
-
-  async verifyMfa(user, { setupToken, code }) {
-    let decoded;
-    try {
-      decoded = jwt.verify(setupToken, process.env.JWT_SECRET);
-    } catch (err) {
-      throw new AppError('Invalid or expired setup token', 401);
-    }
-
-    if (!decoded.mfaSetup || decoded.id !== user.id) {
-      throw new AppError('Invalid setup token', 401);
-    }
-
-    const isMatch = await bcrypt.compare(code, decoded.codeHash);
-    if (!isMatch) {
-      throw new AppError('Invalid verification code', 400);
-    }
-
-    await prisma.userProfile.update({
-      where: { id: user.id },
-      data: {
-        mfaEnabled: true,
-      },
-    });
-
-    return { success: true, message: 'MFA enabled successfully' };
-  },
-
-  async requestDisableMfa(user) {
-    const profile = await prisma.userProfile.findUnique({ where: { id: user.id } });
-    if (!profile.mfaEnabled) {
-      throw new AppError('MFA is not enabled', 400);
-    }
-
-    const code = generateRandomCode();
-    const codeHash = await bcrypt.hash(code, 10);
-
-    await EmailService.sendMfaOtpEmail(profile.email, code);
-
-    const disableToken = jwt.sign({ id: profile.id, codeHash, mfaDisable: true }, process.env.JWT_SECRET, {
-      expiresIn: '5m',
-    });
-
-    return { disableToken };
-  },
-
-  async disableMfa(user, { disableToken, code }) {
-    const profile = await prisma.userProfile.findUnique({ where: { id: user.id } });
-    if (!profile.mfaEnabled) {
-      throw new AppError('MFA is not enabled', 400);
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(disableToken, process.env.JWT_SECRET);
-    } catch (err) {
-      throw new AppError('Invalid or expired disable token', 401);
-    }
-
-    if (!decoded.mfaDisable || decoded.id !== user.id) {
-      throw new AppError('Invalid disable token', 401);
-    }
-
-    const isMatch = await bcrypt.compare(code, decoded.codeHash);
-    if (!isMatch) {
-      throw new AppError('Invalid verification code', 400);
-    }
-
-    await prisma.userProfile.update({
-      where: { id: user.id },
-      data: {
-        mfaSecret: null,
-        mfaEnabled: false,
-      },
-    });
-
-    return { success: true, message: 'MFA disabled successfully' };
-  },
 
   async bootstrapSuperAdmin() {
     const email = normalizeEmail(env.seedSuperAdmin.email);
