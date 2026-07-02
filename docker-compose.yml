@@ -45,14 +45,5 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  mailpit:
-    image: axllent/mailpit
-    restart: unless-stopped
-    ports:
-      - "8025:8025"
-      - "1025:1025"
-    environment:
-      - MP_MAX_MESSAGES=5000
-
 volumes:
   pgdata:
