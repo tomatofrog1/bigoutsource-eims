@@ -13,10 +13,13 @@ export function usePresence(currentUser: AppUser | null) {
   const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([]);
 
   useEffect(() => {
+    console.log('[Presence] Hook triggered, currentUser:', currentUser?.uid);
     if (!currentUser?.uid) {
+      console.log('[Presence] No UID, skipping connection');
       setOnlineUsers([]);
       return;
     }
+    console.log('[Presence] Attempting connection...');
 
     const cleanup = connectPresenceSocket({
       onSync: (users: PresenceUser[]) => {

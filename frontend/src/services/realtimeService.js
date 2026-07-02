@@ -5,7 +5,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 function socketBaseUrl() {
   try {
-    return new URL(API_BASE_URL).origin;
+    const origin = new URL(API_BASE_URL).origin;
+    // If the origin is localhost but we are accessing the site via a network IP,
+    // we should use the current window's hostname to avoid connecting to the wrong localhost.
+    if (origin.includes('localhost') && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+      return `http://${window.location.hostname}:5001`;
+    }
+    return origin;
   } catch {
     return String(API_BASE_URL || '').replace(/\/api\/?$/, '');
   }
@@ -19,13 +25,20 @@ function getSocket() {
     const token = getAuthToken();
     if (!token) return null;
     
-    socketInstance = io(socketBaseUrl(), {
+    const url = socketBaseUrl();
+    fetch(`${API_BASE_URL.replace(/\/api\/?$/, '')}/health?socket_error=Connecting_to_${encodeURIComponent(url)}`).catch(() => {});
+    
+    socketInstance = io(url, {
       auth: { token },
       transports: ['websocket'],
     });
 
     socketInstance.on('disconnect', () => {
       // Optional logging or reconnection logic
+    });
+
+    socketInstance.on('connect_error', (error) => {
+      fetch(`${API_BASE_URL.replace(/\/api\/?$/, '')}/health?socket_error=${encodeURIComponent(error.message)}`).catch(() => {});
     });
   }
   return socketInstance;
@@ -69,6 +82,15 @@ export function connectPresenceSocket({ onSync, onJoin, onLeave }) {
   socket.on('presence:sync', onSync);
   socket.on('presence:join', onJoin);
   socket.on('presence:leave', onLeave);
+
+  // Request sync immediately in case we missed the initial broadcast upon connection
+  if (socket.connected) {
+    socket.emit('presence:request_sync');
+  } else {
+    socket.once('connect', () => {
+      socket.emit('presence:request_sync');
+    });
+  }
 
   return () => {
     socket.off('presence:sync', onSync);

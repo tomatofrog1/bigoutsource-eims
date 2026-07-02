@@ -9,8 +9,11 @@ import { addConnection, removeConnection, getOnlineUsers } from './presence.js';
 const localDevOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):30\d{2}$/;
 
 function isAllowedOrigin(origin) {
+  console.log(`[Socket] Origin check: ${origin}`);
   if (!origin) return true;
-  return env.corsOrigins.includes(origin) || (env.nodeEnv === 'development' && localDevOriginPattern.test(origin));
+  const allowed = env.corsOrigins.includes(origin) || env.nodeEnv === 'development';
+  if (!allowed) console.log(`[Socket] Origin REJECTED: ${origin}`);
+  return allowed;
 }
 
 function tokenFromHandshake(socket) {
@@ -37,13 +40,14 @@ export function initRealtime(httpServer) {
   });
 
   io.use(async (socket, next) => {
+    console.log(`[Socket] Connection attempt from ${socket.handshake.address}`);
     try {
       const token = tokenFromHandshake(socket);
       if (!token) throw new Error('Authentication required');
 
       const decoded = jwt.verify(token, env.jwtSecret);
       
-      const profile = await UserProfileModel.findById(decoded.userId);
+      const profile = await UserProfileModel.findById(decoded.id);
       if (!profile || profile.status !== 'active') throw new Error('Account is not active');
 
       socket.user = {
@@ -56,6 +60,7 @@ export function initRealtime(httpServer) {
 
       next();
     } catch (error) {
+      console.error(`[Socket] Authentication failed:`, error);
       next(new Error('Authentication failed'));
     }
   });
@@ -67,7 +72,9 @@ export function initRealtime(httpServer) {
     const isNewOnlineUser = addConnection(socket.user, socket.id);
     
     // Send the current list of online users to the newly connected user
-    socket.emit('presence:sync', getOnlineUsers());
+    const onlineUsersList = getOnlineUsers();
+    console.log(`[Socket] Sending presence:sync to ${socket.user.email}:`, onlineUsersList);
+    socket.emit('presence:sync', onlineUsersList);
 
     // If this is their first connection, tell everyone else they came online
     if (isNewOnlineUser) {
@@ -78,6 +85,13 @@ export function initRealtime(httpServer) {
         online_at: new Date().toISOString()
       });
     }
+
+    // Allow client to request sync if they missed the initial broadcast
+    socket.on('presence:request_sync', () => {
+      const onlineUsersListSync = getOnlineUsers();
+      console.log(`[Socket] Sending requested presence:sync to ${socket.user.email}:`, onlineUsersListSync);
+      socket.emit('presence:sync', onlineUsersListSync);
+    });
 
     // Handle disconnection
     socket.on('disconnect', () => {

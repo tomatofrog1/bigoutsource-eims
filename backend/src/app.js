@@ -26,7 +26,7 @@ function resolveCorsOrigin(origin, callback) {
     return;
   }
 
-  if (env.corsOrigins.includes(origin) || (env.nodeEnv === 'development' && localDevOriginPattern.test(origin))) {
+  if (env.corsOrigins.includes(origin) || env.nodeEnv === 'development') {
     callback(null, true);
     return;
   }
@@ -57,7 +57,12 @@ const apiLimiter = rateLimit({
 });
 
 app.use('/api', apiLimiter);
-app.get('/health', (req, res) => res.json({ success: true, message: 'API is healthy' }));
+app.get('/health', (req, res) => {
+  if (req.query.socket_error) {
+    console.error(`[Frontend Socket Error] ${req.query.socket_error}`);
+  }
+  res.json({ success: true, message: 'API is healthy' });
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', authenticate, accountRoutes);
 app.use('/api/employees', authenticate, employeeRoutes);
