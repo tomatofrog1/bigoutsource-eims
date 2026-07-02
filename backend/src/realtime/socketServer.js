@@ -4,6 +4,7 @@ import { env } from '../config/env.js';
 import { UserProfileModel } from '../models/userProfile.model.js';
 import { RoleService } from '../services/role.service.js';
 import { setRealtimeServer } from './accessEvents.js';
+import { addConnection, removeConnection, getOnlineUsers } from './presence.js';
 
 const localDevOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):30\d{2}$/;
 
@@ -47,6 +48,8 @@ export function initRealtime(httpServer) {
 
       socket.user = {
         id: profile.id,
+        email: profile.email,
+        fullName: profile.fullName,
         role: profile.role,
         capabilities: await RoleService.resolveUserCapabilities(profile),
       };
@@ -59,6 +62,32 @@ export function initRealtime(httpServer) {
 
   io.on('connection', (socket) => {
     socket.join(`user:${socket.user.id}`);
+
+    // Add to presence tracker
+    const isNewOnlineUser = addConnection(socket.user, socket.id);
+    
+    // Send the current list of online users to the newly connected user
+    socket.emit('presence:sync', getOnlineUsers());
+
+    // If this is their first connection, tell everyone else they came online
+    if (isNewOnlineUser) {
+      socket.broadcast.emit('presence:join', {
+        user_id: socket.user.id,
+        email: socket.user.email,
+        full_name: socket.user.fullName,
+        online_at: new Date().toISOString()
+      });
+    }
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+      const offlineProfile = removeConnection(socket.user.id, socket.id);
+      
+      // If this was their last connection, tell everyone they went offline
+      if (offlineProfile) {
+        io.emit('presence:leave', { user_id: offlineProfile.user_id });
+      }
+    });
   });
 
   setRealtimeServer(io);
