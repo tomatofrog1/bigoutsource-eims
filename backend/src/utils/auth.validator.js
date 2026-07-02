@@ -9,8 +9,8 @@ export const registerValidator = {
   password: {
     required: true,
     type: 'string',
-    min: 8,
-    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
+    min: 12,
+    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/,
     message: 'password must include uppercase, lowercase, number, and special character',
   },
   fullName: { required: true, type: 'string', min: 2 },
@@ -20,5 +20,5 @@ export const registerValidator = {
 
 export const changePasswordValidator = {
   currentPassword: { required: true, type: 'string', min: 1 },
-  newPassword: { required: true, type: 'string', min: 8 },
+  newPassword: { required: true, type: 'string', min: 12 },
 };

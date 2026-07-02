@@ -22,7 +22,7 @@ const SITE_OPTIONS = ['San Pablo City (HQ)', 'Candelaria', 'WFH', 'Hybrid'];
 // Assignable roles are fetched live from the roles table (Super Admin is excluded).
 
 const PASSWORD_RULES = [
-  { label: 'At least 8 characters', test: (value: string) => value.length >= 8 },
+  { label: 'At least 12 characters', test: (value: string) => value.length >= 12 },
   { label: 'One uppercase letter', test: (value: string) => /[A-Z]/.test(value) },
   { label: 'One lowercase letter', test: (value: string) => /[a-z]/.test(value) },
   { label: 'One number', test: (value: string) => /\d/.test(value) },
@@ -336,7 +336,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
                 onChange={setPassword}
                 showPassword={showPassword}
                 onToggleVisibility={() => setShowPassword(!showPassword)}
-                minLength={8}
+                minLength={12}
                 error={registrationErrors.password}
               />
               <div className="space-y-2">
@@ -368,7 +368,7 @@ export default function RegisterForm({ onSuccess, showHeader = true }: RegisterF
                 onChange={setConfirmPassword}
                 showPassword={showPassword}
                 onToggleVisibility={() => setShowPassword(!showPassword)}
-                minLength={8}
+                minLength={12}
                 placeholder="Re-enter password"
                 error={registrationErrors.confirmPassword}
               />
